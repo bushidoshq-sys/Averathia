@@ -490,10 +490,10 @@ function resolveTurnUndead(ev){
   for(const e of en){if(used+e.hdDice<=affectedHD){affected.push(e);used+=e.hdDice}else remain.push(e)}
   if(!affected.length&&en.length){affected.push(en[0]);remain=en.slice(1)}
  }else remain=en.slice();
- let verb=destroy?"destroyed":"turned";
+ let verb=destroy?"destroyed":"turned",baseXP=success?(ev.choices?.find(c=>c.result==="clericTurn")?.xp||0):0,xp=baseXP?awardXP(baseXP):0;
  let result=success?`SUCCESS — ${affected.length} ${type}${affected.length===1?"":"s"} ${verb}`:"FAILURE";
- journal({id:ev.id,type:ev.type,title:ev.title,text:ev.text,choice:"Turn Undead",result,xp:0,coins:[0,0,0],roll,target:val,affected:affected.length,remaining:remain.length});
- addlog(`${ev.title}: Turn Undead — ${result}. ${remain.length} remain.`);
+ journal({id:ev.id,type:ev.type,title:ev.title,text:ev.text,choice:"Turn Undead",result,xp,coins:[0,0,0],roll,target:val,affected:affected.length,remaining:remain.length});
+ addlog(`${ev.title}: Turn Undead — ${result}. ${remain.length} remain.${xp?` +${xp} XP.`:""}`);
  h.pendingEvent=null;save();renderPendingEvent();
  if(remain.length)startUndeadCombat(remain,`${affected.length?affected.length+" "+type+(affected.length===1?" is":"s are")+" "+verb+". ":""}${remain.length} undead remain — combat begins.`);
  else{addlog("All undead are driven off. No combat remains.");endTripPause();save();page("depart");refresh();tick()}
