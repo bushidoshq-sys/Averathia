@@ -268,6 +268,7 @@ const SAVE_BASE={
 };
 const SAVE_NAMES=["Death/Poison","Wands","Paralysis/Stone","Breath","Spells"];
 function savingThrow(category,bonus=0){
+ if(h?.spells?.buffs)bonus+=h.spells.buffs.reduce((n,b)=>n+(b.saveBonus||0),0);
  let i=typeof category==="number"?category:SAVE_NAMES.indexOf(category),base=(SAVE_BASE[h.className]||SAVE_BASE.Fighter)[Math.max(0,i)];
  let steps=["Fighter","Dwarf","Elf"].includes(h.className)?Math.floor((h.level-1)/3):Math.floor((h.level-1)/4);
  let target=Math.max(2,base-steps),roll=d(20)+bonus;
@@ -461,7 +462,9 @@ function autonomousCombat(isBoss=false){
 function playerStrike(){
  if(h.combat?.paralyzed){clog(`${h.name} is paralyzed and cannot act.`);return}
  let haste=h.spells?.buffs?.some(b=>b.extraAttack);
-let c=h.combat,t=c.enemies[c.target];if(!t||t.hp<=0){t=living()[0];c.target=t.id}let w=combatStats().weapon,at=ammoTypeFor(w);if(at&&!spendAmmoFor(w)){clog(`No ${at.toLowerCase()} left for ${w}.`);return}if(c.skipNext){clog("Critical fumble: you lose this initiative.");c.skipNext=false;return}let r=d(20),isRanged=RANGED_WEAPONS.has(w),atkMod=isRanged?mod(h.stats.DEX):mod(h.stats.STR),dmgMod=isRanged?0:mod(h.stats.STR);if(r===1){clog("Natural 1 — critical fumble. Next initiative is lost.");c.skipNext=true}else if(r===20||r+atkMod+spellAttackBonus()+(isRanged?rangeAttackMod():0)>=characterNeed(t.ac)){let extra=h.spells?.buffs?.filter(b=>b.damageBonus).reduce((n,b)=>n+rollExpr(b.damageBonus),0)||0;let dmg=Math.max(1,rollExpr(combatStats().damage)+dmgMod+extra);if(r===20)dmg*=2;t.hp=Math.max(0,t.hp-dmg);clog(`${r===20?"Critical hit! ":""}You hit ${t.n} for ${dmg}.`);if(t.hp<=0){h.xp+=t.xp;clog(`${t.n} defeated. +${t.xp} XP.`)}}else clog(`You miss ${t.n}.`);if(haste&&h.combat&&living().length){clog("Quickening grants a second weapon attack.");h.spells.buffs.find(b=>b.extraAttack).extraAttack=false;playerStrike()}}
+function playerStrikeSingle(){
+let c=h.combat,t=c.enemies[c.target];if(!t||t.hp<=0){t=living()[0];c.target=t.id}let w=combatStats().weapon,at=ammoTypeFor(w);if(at&&!spendAmmoFor(w)){clog(`No ${at.toLowerCase()} left for ${w}.`);return}if(c.skipNext){clog("Critical fumble: you lose this initiative.");c.skipNext=false;return}let r=d(20),isRanged=RANGED_WEAPONS.has(w),atkMod=isRanged?mod(h.stats.DEX):mod(h.stats.STR),dmgMod=isRanged?0:mod(h.stats.STR);if(r===1){clog("Natural 1 — critical fumble. Next initiative is lost.");c.skipNext=true}else if(r===20||r+atkMod+spellAttackBonus()+(isRanged?rangeAttackMod():0)>=characterNeed(t.ac)){let extra=h.spells?.buffs?.filter(b=>b.damageBonus).reduce((n,b)=>n+rollExpr(b.damageBonus),0)||0;let dmg=Math.max(1,rollExpr(combatStats().damage)+dmgMod+extra);if(r===20)dmg*=2;t.hp=Math.max(0,t.hp-dmg);clog(`${r===20?"Critical hit! ":""}You hit ${t.n} for ${dmg}.`);if(t.hp<=0){h.xp+=t.xp;clog(`${t.n} defeated. +${t.xp} XP.`)}}else clog(`You miss ${t.n}.`);if(haste&&h.combat&&living().length){clog("Quickening grants a second weapon attack.");playerStrikeSingle()}}}
+}
 function monsterRangeStep(e){
  if(e.disabledRounds>0){clog(`${e.n} cannot change range while immobilized.`);return false}
  let order=["Hand-to-Hand","Close","Medium","Long"],i=order.indexOf(h.combat?.range||"Close");
@@ -531,14 +534,14 @@ const ARCANE_NOW=[
 ];
 const CLERIC_NOW=[
  {id:"cure_light",name:"Mending Light",rc:"Cure Light Wounds",sl:1,kind:"heal",heal:"1d6+1"},
- {id:"prot_evil",name:"Sacred Guard",rc:"Protection from Evil",sl:1,kind:"buff",ac:-1,duration:6},
+ {id:"prot_evil",name:"Sacred Guard",rc:"Protection from Evil",sl:1,kind:"buff",ac:-1,saveBonus:1,durationPerLevel:12},
  {id:"remove_fear",name:"Steady Heart",rc:"Remove Fear",sl:1,kind:"cleanse",condition:"Afraid"},
  {id:"resist_cold",name:"Winter Ward",rc:"Resist Cold",sl:1,kind:"buff",resist:"cold",duration:6},
- {id:"bless",name:"Battle Blessing",rc:"Bless",sl:2,kind:"buff",attack:1,duration:6},
+ {id:"bless",name:"Battle Blessing",rc:"Bless",sl:2,kind:"buff",attack:1,morale:1,duration:60},
  {id:"hold_person_c",name:"Sacred Binding",rc:"Hold Person",sl:2,kind:"hold",save:"Spells",durationPerLevel:10,maxTargets:4,humanoidOnly:true},
  {id:"resist_fire",name:"Flame Ward",rc:"Resist Fire",sl:2,kind:"buff",resist:"fire",duration:6},
  {id:"cure_disease",name:"Restoring Grace",rc:"Cure Disease",sl:3,kind:"cleanse",condition:"Diseased"},
- {id:"striking",name:"War Prayer",rc:"Striking",sl:3,kind:"buff",damageBonus:"1d6",duration:6}
+ {id:"striking",name:"War Prayer",rc:"Striking",sl:3,kind:"buff",damageBonus:"1d6",durationPerLevel:10}
 ];
 const SPELLS={Arcanist:ARCANE_NOW,Elf:ARCANE_NOW.map(x=>({...x,id:"elf_"+x.id,name:x.name.replace("Arcane","Star")})),Cleric:CLERIC_NOW};
 
