@@ -665,7 +665,7 @@ const SPELL_PROGRESS={
  Cleric:spellProgressFromColumns(CLERIC_ACTIVE_SLOT_COLUMNS,36)
 };
 const ARCANE_NOW=[
- {id:"magic_missile",name:"Magic Missile",rc:"Magic Missile",sl:1,kind:"damage",damage:"1d6+1",autoHit:true,missilesByLevel:true,enemyTarget:true,rangeFeet:150},
+ {id:"magic_missile",name:"Arcane Dart",rc:"Magic Missile",sl:1,kind:"damage",damage:"1d6+1",autoHit:true,missilesByLevel:true,enemyTarget:true,rangeFeet:150},
  {id:"shield",name:"Shield",rc:"Shield",sl:1,kind:"buff",fixedAC:4,fixedMissileAC:2,magicMissileSave:true,durationTurns:2},
  {id:"sleep",name:"Sleep",rc:"Sleep",sl:1,kind:"sleep",save:null,durationTurnsDice:"4d4",enemyTarget:true,rangeFeet:240,areaFeet:40},
  {id:"light",name:"Light",rc:"Light",sl:1,kind:"blind",save:"Spells",enemyTarget:true,rangeFeet:120,durationTurnsBase:6,durationTurnsPerLevel:1},
