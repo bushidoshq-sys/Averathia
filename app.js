@@ -484,7 +484,7 @@ function startUndeadCombat(en,opening){
  if(h.trip?.mode==="auto")runAutonomousCombat();else renderCombat()
 }
 function resolveTurnUndead(ev){
- let en=makeUndeadGroup(),type=en[0].turnType,val=turnValue(type,h.level),roll=d(6)+d(6);
+ let resumeAfter=h.pendingEvent===ev,en=makeUndeadGroup(),type=en[0].turnType,val=turnValue(type,h.level),roll=d(6)+d(6);
  let success=val==="T"||val==="D"||(typeof val==="number"&&roll>=val),destroy=val==="D";
  let affectedHD=success?d(6)+d(6):0,affected=[],used=0,remain=[];
  if(success){
@@ -497,7 +497,7 @@ function resolveTurnUndead(ev){
  addlog(`${ev.title}: Turn Undead — ${result}. ${remain.length} remain.${xp?` +${xp} XP.`:""}`);
  h.pendingEvent=null;save();renderPendingEvent();
  if(remain.length)startUndeadCombat(remain,`${affected.length?affected.length+" "+type+(affected.length===1?" is":"s are")+" "+verb+". ":""}${remain.length} undead remain — combat begins.`);
- else{addlog("All undead are driven off. No combat remains.");endTripPause();save();page("depart");refresh();tick()}
+ else{addlog("All undead are driven off. No combat remains.");endTripPause();save();page("depart");refresh();if(resumeAfter)tick()}
 }
 function startClericUndeadFight(ev){
  let en=makeUndeadGroup();h.pendingEvent=null;
@@ -919,6 +919,7 @@ function clericWisCheck(difficulty="Normal"){
  return{roll,target,success:roll<=target}
 }
 function applyEventChoice(ev,ch){
+ let resumeAfter=h.pendingEvent===ev;
  if(ch?.result==="clericTurn"){resolveTurnUndead(ev);return}
  if(ch?.result==="combat"&&ev?.id?.startsWith("CLE-")&&ev.type==="Encounter"){startClericUndeadFight(ev);return}
  if(ch?.result==="clericWis"){
@@ -926,7 +927,7 @@ function applyEventChoice(ev,ch){
    let outcome=test.success?"SUCCESS":"FAILURE";
    journal({id:ev.id,type:ev.type,title:ev.title,text:ev.text,choice:ch.label,result:outcome,xp,coins:[0,0,0],ability:"WIS",roll:test.roll,target:test.target});
    addlog(`${ev.title}: ${ch.label} — ${outcome} (WIS ${test.roll} / ${test.target}).${xp?` +${xp} XP.`:""}`);
-   h.pendingEvent=null;endTripPause();save();renderPendingEvent();tick();return
+   h.pendingEvent=null;endTripPause();save();renderPendingEvent();if(resumeAfter)tick();return
  }
  if(ch?.result==="classAbility"){
    let adj=ch.difficulty==="Easy"?4:ch.difficulty==="Hard"?-4:0,ability=ch.ability||"WIS";
@@ -934,14 +935,14 @@ function applyEventChoice(ev,ch){
    let outcome=success?"SUCCESS":"FAILURE";
    journal({id:ev.id,type:ev.type,title:ev.title,text:ev.text,choice:ch.label,result:outcome,xp,coins:[0,0,0],ability,roll,target});
    addlog(`${ev.title}: ${ch.label} — ${outcome} (${ability} ${roll} / ${target}).${xp?` +${xp} XP.`:""}`);
-   h.pendingEvent=null;endTripPause();save();renderPendingEvent();tick();return
+   h.pendingEvent=null;endTripPause();save();renderPendingEvent();if(resumeAfter)tick();return
  }
  if(ch?.result==="thiefSkill"){
    let test=thiefSkillCheck(ch.skill),baseXP=test.success?(ch.xp||0):0,xp=baseXP?awardXP(baseXP):0;
    let outcome=test.success?"SUCCESS":"FAILURE";
    journal({id:ev.id,type:ev.type,title:ev.title,text:ev.text,choice:ch.label,result:outcome,xp,coins:[0,0,0],skill:ch.skill,roll:test.roll,chance:test.chance});
    addlog(`${ev.title}: ${ch.label} — ${outcome} (${test.roll} / ${test.chance}%).${xp?` +${xp} XP.`:""}`);
-   h.pendingEvent=null;endTripPause();save();renderPendingEvent();tick();return
+   h.pendingEvent=null;endTripPause();save();renderPendingEvent();if(resumeAfter)tick();return
  }
  let baseXP=ch?.xp??ev.xp??0,xp=baseXP?awardXP(baseXP):0,coin=ch?.coins??ev.coins??[0,0,0];
  if(coin)addCoins(coin[0]||0,coin[1]||0,coin[2]||0)
@@ -949,7 +950,7 @@ function applyEventChoice(ev,ch){
  journal({id:ev.id,type:ev.type,title:ev.title,text:ev.text,choice:ch?.label||null,result,xp,coins:coin});
  addlog(`${ev.title}: ${ch?.label?ch.label+". ":""}${xp?`+${xp} XP. `:""}${coin&&(coin[0]||coin[1]||coin[2])?`${coin[0]||0} GP, ${coin[1]||0} SP, ${coin[2]||0} CP.`:""}`);
  if(result==="combat"){h.pendingEvent=null;save();if(h.trip?.mode==="auto")autonomousCombat(false);else makeCombat();return}
- h.pendingEvent=null;endTripPause();save();renderPendingEvent();tick()
+ h.pendingEvent=null;endTripPause();save();renderPendingEvent();if(resumeAfter)tick()
 }
 function autonomousChoice(ev){
  let choices=ev?.choices||[];if(!choices.length)return null;
