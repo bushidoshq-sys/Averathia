@@ -701,6 +701,17 @@ function spellDuration(s){
  return s.duration||3
 }
 function magicMissileCount(){return 1+2*Math.floor(Math.max(0,h.level-1)/5)}
+function autonomousMissileTargetIds(n){
+ let pool=[...living()].sort((a,b)=>a.hp-b.hp||a.id-b.id),out=[],left=n;
+ for(const q of pool){
+  if(left<=0)break;
+  let avg=q.mummy?2.25:4.5,needed=Math.max(1,Math.ceil(q.hp/avg)),take=Math.min(left,needed);
+  for(let i=0;i<take;i++)out.push(q.id);
+  left-=take;
+ }
+ while(left>0&&pool.length){out.push(pool[pool.length-1].id);left--}
+ return out
+}
 const RC_SAVE_ROWS={
  Fighter:[{min:0,max:0,v:[14,15,16,17,17]},{min:1,max:3,v:[12,13,14,15,16]},{min:4,max:6,v:[10,11,12,13,14]},{min:7,max:9,v:[8,9,10,11,12]},{min:10,max:12,v:[6,7,8,9,10]},{min:13,max:15,v:[6,6,7,8,9]},{min:16,max:18,v:[5,6,6,7,8]},{min:19,max:21,v:[5,5,6,6,7]},{min:22,max:24,v:[4,5,5,5,6]},{min:25,max:27,v:[4,5,5,4,5]},{min:28,max:30,v:[3,4,5,3,4]},{min:31,max:33,v:[3,4,4,2,3]},{min:34,max:36,v:[2,3,3,2,2]}],
  Cleric:[{min:1,max:4,v:[11,12,14,16,15]},{min:5,max:8,v:[9,10,12,14,13]},{min:9,max:12,v:[7,8,10,12,11]},{min:13,max:16,v:[6,7,8,10,9]},{min:17,max:20,v:[5,6,6,8,7]},{min:21,max:24,v:[4,5,5,6,5]},{min:25,max:28,v:[3,4,4,4,4]},{min:29,max:32,v:[2,3,3,3,3]},{min:33,max:36,v:[2,2,2,2,2]}],
@@ -740,11 +751,19 @@ function gridlessAreaTargets(primary,diameterFeet=40){
  let p=primary&&primary.hp>0?primary:alive[0],center=gridlessLaneOffset(p),radius=Math.max(5,diameterFeet/2);
  return alive.filter(x=>Math.abs(gridlessLaneOffset(x)-center)<=radius)
 }
-function resolveSpellEffect(s,t=null,autonomous=false,holdMode=null){
+function resolveSpellEffect(s,t=null,autonomous=false,holdMode=null,missileTargetIds=null){
  ensureSpellState();let targets=[];
  if(s.kind==="damage"||s.kind==="area"||s.kind==="line"){
   targets=s.kind==="area"?gridlessAreaTargets(t,s.areaFeet||40):s.kind==="line"?gridlessLineTargets(t):[t||living()[0]];
-  if(s.missilesByLevel){let q=t||living()[0],n=magicMissileCount();if(q){let dmg=0;for(let i=0;i<n;i++)dmg+=rollExpr(s.damage);if(q.mummy)dmg=Math.floor(dmg/2);q.hp=Math.max(0,q.hp-dmg);clog(`${s.name} launches ${n} dart${n===1?"":"s"} and automatically hits ${q.n} for ${dmg} damage.`);if(q.hp<=0){let gained=awardXP(q.xp);clog(`${q.n} defeated. +${gained} XP.`)}}return}
+  if(s.missilesByLevel){
+   let fallback=t||living()[0],n=magicMissileCount();if(!fallback)return;
+   let ids=Array.isArray(missileTargetIds)?missileTargetIds.slice(0,n):[];
+   while(ids.length<n)ids.push(fallback.id);
+   let groups=new Map();
+   for(const id of ids){let q=h.combat?.enemies?.find(e=>e.id===id&&e.hp>0)||fallback;if(!q||q.hp<=0)continue;let g=groups.get(q.id)||{q,count:0};g.count++;groups.set(q.id,g)}
+   for(const {q,count} of groups.values()){let dmg=0;for(let i=0;i<count;i++)dmg+=rollExpr(s.damage);if(q.mummy)dmg=Math.floor(dmg/2);q.hp=Math.max(0,q.hp-dmg);clog(`${s.name} launches ${count} dart${count===1?"":"s"} at ${q.n} for ${dmg} damage.`);if(q.hp<=0){let gained=awardXP(q.xp);clog(`${q.n} defeated. +${gained} XP.`)}}
+   return
+  }
   let sharedDamage=(s.kind==="area"||s.kind==="line")?rollSpellDamage(s):null;for(const q of targets.filter(Boolean)){let dmg=sharedDamage??rollSpellDamage(s);if(s.save){let sv=monsterSpellSave(q,s.save||"Spells");clog(`${q.n} save ${sv.roll} vs ${sv.target}${sv.saveAs?` [${sv.saveAs}]`:""}: ${sv.success?"success":"FAIL"}.`);if(sv.success&&s.half)dmg=Math.floor(dmg/2)}if(q.mummy)dmg=Math.floor(dmg/2);q.hp=Math.max(0,q.hp-dmg);clog(`${autonomous?"Autonomous: ":""}${s.name} strikes ${q.n} for ${dmg} damage.`);if(s.damageType==="fire"&&q.webbed&&q.hp>0){let burn=d(6);if(q.mummy)burn=Math.floor(burn/2);q.hp=Math.max(0,q.hp-burn);q.disabledRounds=Math.min(Math.max(1,q.disabledRounds||2),2);q.webbed=true;clog(`The web catches fire around ${q.n}; ${q.n} takes ${burn} fire damage and the web will burn away in 2 rounds.`)}if(q.hp<=0){let gained=awardXP(q.xp);clog(`${q.n} defeated. +${gained} XP.`)}}if(s.kind==="area"&&s.damageType==="fire"&&combatDistance()<=((s.areaFeet||40)/2)&&h.combat){let mirror=h.spells?.buffs?.find(b=>b.kind==="images"&&b.images>0);if(mirror){mirror.images=0;clog("The area attack destroys all Mirror Phantoms.")}let base=sharedDamage??rollSpellDamage(s),sv=savingThrow("Spells",0,"fire"),dmg=sv.success?Math.floor(base/2):base;dmg=applyElementalResistance(dmg,Math.max(1,Math.min(h.level,20))+"d6","fire",true);h.hp=Math.max(0,h.hp-dmg);clog(`You are caught in the blast: save ${sv.roll} vs ${sv.target} — ${sv.success?"success":"FAIL"}; ${dmg} fire damage.`);if(h.hp<=0)return combatDeath("Your own fireball engulfs you.")}
  }else if(s.kind==="heal"){if(mummyDiseaseActive()){clog(`${s.name} cannot heal through Mummy disease.`)}else{let heal=rollExpr(s.heal),before=h.hp;h.hp=Math.min(h.maxhp,h.hp+heal);clog(`${autonomous?"Autonomous: ":""}${s.name} restores ${h.hp-before} HP.`)}}
  else if(s.kind==="buff"){
@@ -765,7 +784,7 @@ function resolveSpellEffect(s,t=null,autonomous=false,holdMode=null){
  else if(s.kind==="blind"){let q=t||living()[0];if(q){let sv=monsterSpellSave(q,s.save||"Spells");clog(`${q.n} save ${sv.roll} vs ${sv.target}${sv.saveAs?` [${sv.saveAs}]`:""}: ${sv.success?"success":"FAIL"}.`);if(!sv.success){q.blindRounds=spellDuration(s);clog(`${q.n} is blinded by ${s.name}.`)}else clog(`${s.name} fails to blind ${q.n}.`)}}
  else if(s.kind==="utility"){clog(`${s.name} is active; no current combat target effect.`)}
 }
-function castCombatSpell(id,holdMode=null){
+function castCombatSpell(id,holdMode=null,missileTargetIds=null){
  let s=(SPELLS[h.className]||[]).find(x=>x.id===id),c=h.combat;if(!s||!c||!availableCombatSpells().some(x=>x.id===id))return;if(c.paralyzed){clog(`${h.name} is paralyzed and cannot cast.`);return renderCombat()}if(s.enemyTarget&&Number.isFinite(s.rangeFeet)&&combatDistance()>s.rangeFeet){clog(`${s.name} is out of range: target is ${combatDistance()} ft away; spell range is ${s.rangeFeet} ft.`);return renderCombat()}
  // RC: casting is the caster's action for the round. If the enemy wins initiative and disturbs the caster, the spell is lost.
  let pr=d(6),er=d(6);while(pr===er){pr=d(6);er=d(6)}clog(`Spell initiative: you ${pr}, enemies ${er}.`);
@@ -775,7 +794,7 @@ function castCombatSpell(id,holdMode=null){
    enemyStrike();if(!h.combat)return;
    if(h.hp<hpBefore||(h.conditions||[]).length>conditionsBefore){clog(`${s.name} is disrupted and lost.`);tickSpellBuffs();tickEnemySpellEffects();tickPlayerConditions();c.round++;save();renderCombat();return}
  }
- let t=c.enemies[c.target];if(!t||t.hp<=0)t=living()[0];resolveSpellEffect(s,t,false,holdMode);
+ let t=c.enemies[c.target];if(!t||t.hp<=0)t=living()[0];if(s.missilesByLevel&&!missileTargetIds&&autonomousCombatRunning)missileTargetIds=autonomousMissileTargetIds(magicMissileCount());resolveSpellEffect(s,t,autonomousCombatRunning,holdMode,missileTargetIds);
  if(!h.combat)return;if(!living().length)return finishCombat();
  if(pr>er)enemyStrike();
  if(h.combat){tickSpellBuffs();tickEnemySpellEffects();tickPlayerConditions();h.combat.round++;save();renderCombat()}
@@ -787,10 +806,24 @@ function spellACBonus(){ensureSpellState();return h.spells.buffs.reduce((a,b)=>a
 function effectiveAC(isMissile=false){let ac=combatStats().ac+spellACBonus();for(const b of h.spells.buffs){let fixed=isMissile?b.fixedMissileAC:b.fixedAC;if(fixed!=null)ac=Math.min(ac,fixed)}return ac}
 function tickSpellBuffs(){ensureSpellState();h.spells.buffs.forEach(b=>b.rounds--);h.spells.buffs=h.spells.buffs.filter(b=>b.rounds>0)}
 function resetDailySpells(){ensureSpellState();h.spells.used={};h.spells.spentMem=[];h.spells.buffs=[]}
+function beginMissileAllocation(s,menu){
+ let total=magicMissileCount(),picks=[];
+ if(total<=1||living().length<=1){menu.classList.add("hide");castCombatSpell(s.id);return}
+ const draw=()=>{
+  let left=total-picks.length,counts={};for(const id of picks)counts[id]=(counts[id]||0)+1;
+  menu.innerHTML=`<div class="small"><b>${s.name}</b> — assign ${total} darts before casting. ${left} remaining.</div>`+
+   living().map(e=>`<div class="item"><span><b>${e.n}</b><div class="small">Assigned: ${counts[e.id]||0}</div></span><button data-missile-one="${e.id}">+1</button><button data-missile-rest="${e.id}">All remaining</button></div>`).join("")+
+   '<button data-missile-cancel>Cancel</button>';
+  $("[data-missile-one]").forEach(b=>b.onclick=()=>{if(left<=0)return;picks.push(+b.dataset.missileOne);if(picks.length>=total){menu.classList.add("hide");castCombatSpell(s.id,null,picks)}else draw()});
+  $("[data-missile-rest]").forEach(b=>b.onclick=()=>{while(picks.length<total)picks.push(+b.dataset.missileRest);menu.classList.add("hide");castCombatSpell(s.id,null,picks)});
+  let cancel=$("[data-missile-cancel]");if(cancel)cancel.onclick=()=>{menu.classList.add("hide");renderCombat()}
+ };
+ draw()
+}
 function renderSpellButton(){
  let b=$("#spellBtn");if(!b||!h?.combat)return;let spells=availableCombatSpells();
  b.classList.toggle("hide",!spells.length);b.textContent=spells.length?`✨ Spell (${spells.length})`:"✨ Spell";
- b.onclick=()=>{let menu=$("#spellMenu");if(!menu)return;$("#rangeMenu")?.classList.add("hide");menu.innerHTML=spells.flatMap(s=>{let oor=s.enemyTarget&&Number.isFinite(s.rangeFeet)&&combatDistance()>s.rangeFeet,rt=Number.isFinite(s.rangeFeet)?` · ${s.rangeFeet} ft`:"";return s.kind==="hold"?[`<button class="spellChoice" data-cast-spell="${s.id}" data-hold-mode="single" ${oor?"disabled":""}><b>${s.name}</b> <span class="small">Single · -2 save${rt}${oor?" · OUT OF RANGE":""}</span></button>`,`<button class="spellChoice" data-cast-spell="${s.id}" data-hold-mode="group" ${oor?"disabled":""}><b>${s.name}</b> <span class="small">Group · up to 4${rt}${oor?" · OUT OF RANGE":""}</span></button>`]:[`<button class="spellChoice" data-cast-spell="${s.id}" ${oor?"disabled":""}><b>${s.name}</b> <span class="small">L${s.sl}${rt}${oor?" · OUT OF RANGE":""}</span></button>`]}).join("");menu.classList.toggle("hide");$$("[data-cast-spell]").forEach(x=>x.onclick=()=>{menu.classList.add("hide");castCombatSpell(x.dataset.castSpell,x.dataset.holdMode||null)})}
+ b.onclick=()=>{let menu=$("#spellMenu");if(!menu)return;$("#rangeMenu")?.classList.add("hide");menu.innerHTML=spells.flatMap(s=>{let oor=s.enemyTarget&&Number.isFinite(s.rangeFeet)&&combatDistance()>s.rangeFeet,rt=Number.isFinite(s.rangeFeet)?` · ${s.rangeFeet} ft`:"";return s.kind==="hold"?[`<button class="spellChoice" data-cast-spell="${s.id}" data-hold-mode="single" ${oor?"disabled":""}><b>${s.name}</b> <span class="small">Single · -2 save${rt}${oor?" · OUT OF RANGE":""}</span></button>`,`<button class="spellChoice" data-cast-spell="${s.id}" data-hold-mode="group" ${oor?"disabled":""}><b>${s.name}</b> <span class="small">Group · up to 4${rt}${oor?" · OUT OF RANGE":""}</span></button>`]:[`<button class="spellChoice" data-cast-spell="${s.id}" ${oor?"disabled":""}><b>${s.name}</b> <span class="small">L${s.sl}${rt}${oor?" · OUT OF RANGE":""}</span></button>`]}).join("");menu.classList.toggle("hide");$("[data-cast-spell]").forEach(x=>x.onclick=()=>{let chosen=spells.find(s=>s.id===x.dataset.castSpell);if(chosen?.missilesByLevel&&magicMissileCount()>1&&living().length>1)return beginMissileAllocation(chosen,menu);menu.classList.add("hide");castCombatSpell(x.dataset.castSpell,x.dataset.holdMode||null)})}
 }
 function rangeAttackMod(weapon=combatStats().weapon){
  let ranges=WEAPON_RANGES[weapon],dist=combatDistance();if(!ranges)return 0;
