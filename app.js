@@ -375,7 +375,7 @@ function makeCombat(isBoss=false){
  let picks=buildEncounter(isBoss),en=[];
  for(let i=0;i<picks.length;i++){
    let b=picks[i],hp=0;for(let k=0;k<b.hdDice;k++)hp+=d(8);hp=Math.max(1,hp+(b.hdAdj||0));
-   en.push({...b,id:i,hp,maxhp:hp,damage:b.damage[0],boss:isBoss,iahd:rcAdjustedHD(b)})
+   en.push({...b,id:i,hp,maxhp:hp,damage:b.damage[0],ammo:b.rangedDamage?d(6):0,boss:isBoss,iahd:rcAdjustedHD(b)})
  }
  let total=+en.reduce((a,e)=>a+e.iahd,0).toFixed(2),tpl=rcTPL(),pct=rcChallengePct(total,tpl);
  h.combat={round:1,enemies:en,target:0,log:[],skipNext:false,isBoss,range:["Close","Medium","Long"][d(3)-1],rcTPL:tpl,rcIAHD:total,rcChallengePct:pct,rcChallenge:rcChallengeName(pct)};
@@ -460,7 +460,7 @@ let c=h.combat,t=c.enemies[c.target];if(!t||t.hp<=0){t=living()[0];c.target=t.id
 function monsterRangeStep(e){
  let order=["Hand-to-Hand","Close","Medium","Long"],i=order.indexOf(h.combat?.range||"Close");
  if(e.rangedDamage&&e.meleeDamage){
-   if(i===0)return false; // hybrid keeps range while it can shoot
+   if((e.ammo||0)<=0&&i>0){h.combat.range=order[i-1];clog(`${e.n} is out of ammunition and closes to ${h.combat.range}.`);return true}
    return false;
  }
  if(!e.rangedDamage&&i>0){h.combat.range=order[i-1];clog(`${e.n} closes the distance to ${h.combat.range}.`);return true}
@@ -475,7 +475,7 @@ function enemyStrike(){
   if(monsterRangeStep(e))continue;
   let r=d(20);
   if(r===1){clog(`${e.n} rolls a natural 1 — critical fumble. Next initiative is lost.`);e.skipNext=true;continue}
-  let mr=h.combat?.range||"Close";if(e.rangedDamage&&mr!=="Hand-to-Hand"){e.damage=e.rangedDamage;e.activeWeapon=e.rangedWeapon||"Ranged weapon"}else if(e.meleeDamage){e.damage=e.meleeDamage;e.activeWeapon=e.meleeWeapon||"Melee weapon"}if(r===20||r>=monsterNeed(e)){
+  let mr=h.combat?.range||"Close";if(e.rangedDamage&&mr!=="Hand-to-Hand"&&(e.ammo||0)>0){e.damage=e.rangedDamage;e.activeWeapon=e.rangedWeapon||"Ranged weapon";e.ammo--}else if(e.meleeDamage){e.damage=e.meleeDamage;e.activeWeapon=e.meleeWeapon||"Melee weapon"}if(r===20||r>=monsterNeed(e)){
    let mirror=h.spells?.buffs?.find(b=>b.kind==="images"&&b.images>0);if(mirror){mirror.images--;clog(`${e.n} destroys a mirror image.`);continue}
    let dmg=rollExpr(e.damage);if(r===20)dmg*=2;h.hp=Math.max(0,h.hp-dmg);
    clog(`${e.n} hits with ${e.activeWeapon||"its attack"} for ${dmg}${r===20?" — critical":""}.`);
