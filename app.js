@@ -734,5 +734,25 @@ $("#start").onclick=begin;$("#recall").onclick=()=>returnEarly();
 renderClasses();renderAv();rerollAll();
 $("#attackBtn").onclick=resolveAttack;$("#potionBtn").onclick=usePotionCombat;$("#retreatBtn").onclick=retreatCombat;
 
+// Persistent save bootstrap
+(function loadPersistentCharacter(){
+ try{
+  const raw=localStorage.getItem("averathia-v041");
+  if(!raw)return;
+  const saved=JSON.parse(raw);
+  if(!saved||!saved.name||!saved.className)return;
+  h=saved;
+  chosenClass=h.className||h.mechanicsClass||"Fighter";
+  sex=h.sex||"Male"; avatar=Number.isInteger(h.avatar)?h.avatar:0;
+  $("#create").classList.add("hide");
+  $("#game").classList.remove("hide");
+  ensureWorldClock();
+  if(h.deadUntil&&Date.now()<h.deadUntil){renderDeathPage();return}
+  if(h.combat){page("combat");renderCombat();return}
+  if(h.trip){page("depart");refresh();tick();return}
+  page("town");refresh();
+ }catch(err){console.error("Could not restore Averathia save",err)}
+})();
+
 // v1.0.8 PWA bootstrap
 if("serviceWorker" in navigator){window.addEventListener("load",()=>navigator.serviceWorker.register("./sw.js").catch(err=>console.warn("Service worker registration failed",err)))}
