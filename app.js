@@ -6,7 +6,7 @@ function artPath(cls,sx,i,kind="full"){return `${classSlug(cls)}_${sx.toLowerCas
 const CLASSES=[["Fighter","⚔️","Human"],["Cleric","✦","Human"],["Arcanist","✧","Human"],["Thief","🗝️","Human"],["Elf","🏹","Race-as-class"],["Dwarf","⛏️","Race-as-class"]];
 const FN={Male:["Aldric","Edric","Garran","Leofric","Oswin","Roderic","Wulfric","Cedric","Beren","Tobran"],Female:["Alda","Elowen","Mara","Rowena","Isolde","Aveline","Seren","Edith","Brynja","Tamsin"]};
 const LN=["Stonefield","Ashford","Blackwood","Thorne","Vale","Ironwood","Hawke","Westmere","Oakheart","Ravenbrook","Greyward","Redfern"];
-const SHOP={Weapons:[["Club",3,"1d4"],["Dagger",3,"1d4"],["Hand Axe",4,"1d6"],["Spear",3,"1d6"],["Mace",5,"1d6"],["War Hammer",5,"1d6"],["Battle Axe",7,"1d8"],["Short Sword",7,"1d6"],["Sword",10,"1d8"],["Two-Handed Sword",15,"1d10"],["Short Bow",25,"1d6"],["Long Bow",40,"1d6"],["Light Crossbow",30,"1d6"],["Heavy Crossbow",50,"1d6"],["Sling",2,"1d4"]],Armor:[["Shield",10,"AC -1"],["Leather Armor",20,"AC 7"],["Scale Mail",30,"AC 6"],["Chain Mail",40,"AC 5"],["Banded Mail",50,"AC 4"],["Plate Mail",60,"AC 3"],["Suit Armor",250,"AC 0"]],Gear:[["Rations — 7 days",5,"7 days food"],["Waterskin",1,"1 quart; reusable"],["Torch",0.17,"1 hour light"],["6 Torches",1,"6 hours light"],["Lantern",10,""],["Oil Flask",2,"4 hours lantern fuel"],["Backpack",5,""],["50-foot Rope",1,""],["Tinder Box",3,""],["Grappling Hook",25,""],["Healing Potion",10,"1D6+1 HP"]]};
+const SHOP={Weapons:[["Battle Axe",7,"1d8"],["Hand Axe",4,"1d6"],["Short Bow",25,"1d6"],["Long Bow",40,"1d6"],["Light Crossbow",30,"1d6"],["Heavy Crossbow",50,"2d4"],["Blackjack",5,"1d2"],["Club",3,"1d4"],["Throwing Hammer",4,"1d4"],["War Hammer",5,"1d6"],["Mace",5,"1d6"],["Staff",5,"1d6"],["Dagger",3,"1d4"],["Silver Dagger",30,"1d4"],["Halberd",7,"1d10"],["Javelin",1,"1d6"],["Lance",10,"1d10"],["Pike",3,"1d10"],["Polearm",7,"1d10"],["Poleaxe",5,"1d10"],["Spear",3,"1d6"],["Trident",5,"1d6"],["Short Sword",7,"1d6"],["Sword",10,"1d8"],["Bastard Sword (1H)",15,"1d6+1"],["Bastard Sword (2H)",15,"1d8+1"],["Two-Handed Sword",15,"1d10"],["Blowgun",6,"1"],["Bola",5,"1d2"],["Cestus",5,"1d3"],["Net",5,"0"],["Sling",2,"1d4"],["Whip",1,"1d2"]],Armor:[["Shield",10,"AC -1"],["Leather Armor",20,"AC 7"],["Scale Mail",30,"AC 6"],["Chain Mail",40,"AC 5"],["Banded Mail",50,"AC 4"],["Plate Mail",60,"AC 3"],["Suit Armor",250,"AC 0"]],Gear:[["Rations — 7 days",5,"7 days food"],["Waterskin",1,"1 quart; reusable"],["Torch",0.17,"1 hour light"],["6 Torches",1,"6 hours light"],["Lantern",10,""],["Oil Flask",2,"4 hours lantern fuel"],["Backpack",5,""],["50-foot Rope",1,""],["Tinder Box",3,""],["Grappling Hook",25,""],["Healing Potion",10,"1D6+1 HP"]]};
 function mod(v){return v===18?3:v>=16?2:v>=13?1:0}
 const CREATION_ABILITY_PRIORITY={
  Fighter:["STR","CON","DEX","CHA","WIS","INT"],
@@ -106,7 +106,7 @@ function renderDeathPage(){if(!h?.deadUntil)return;clearTimeout(timer);$$(".page
 function page(id){if(h?.deadUntil&&Date.now()<h.deadUntil&&id!=="death"){renderDeathPage();return}$$(".page").forEach(x=>x.classList.add("hide"));$("#"+id).classList.remove("hide");$$("[data-page]").forEach(x=>x.classList.toggle("on",x.dataset.page===id));refresh()}
 $$("[data-page]").forEach(b=>b.onclick=()=>page(b.dataset.page));$$("[data-go]").forEach(b=>b.onclick=()=>page(b.dataset.go));
 function home(){if(!h)return;h.water=h.waterCapacity;save()}
-const TWO_HANDED=new Set(["Two-Handed Sword","Short Bow","Long Bow","Light Crossbow","Heavy Crossbow"]);
+const TWO_HANDED=new Set(["Staff","Halberd","Pike","Polearm","Poleaxe","Bastard Sword (2H)","Two-Handed Sword","Short Bow","Long Bow","Light Crossbow","Heavy Crossbow"]);
 function itemData(name){for(const x of SHOP.Weapons)if(x[0]===name)return{damage:x[2],two:TWO_HANDED.has(name)};for(const x of SHOP.Armor)if(x[0]===name)return name==="Shield"?{shield:true,acBonus:-1}:{armor:true,ac:+x[2].match(/\d+/)[0]};return{}}
 function combatStats(){let weapon=h.inv.find(x=>x.kind==="weapon"&&x.eq),armor=h.inv.find(x=>x.kind==="armor"&&x.eq),shield=h.inv.find(x=>x.kind==="shield"&&x.eq),wd=weapon?itemData(weapon.n):{},ad=armor?itemData(armor.n):{};return{weapon:weapon?.n||"Unarmed",damage:wd.damage||"1d2",armor:armor?.n||"None",shield:shield?.n||"None",ac:(ad.ac??9)+(shield?-1:0)}}
 function sheetInventory(){
@@ -171,7 +171,7 @@ function sell(i){
 const CLASS_EQUIPMENT={
  Fighter:{armor:"all",weapons:"all"},
  Cleric:{armor:"all",weapons:["Club","Mace","War Hammer","Sling"]},
- Arcanist:{armor:[],weapons:["Dagger"]},
+ Arcanist:{armor:[],weapons:["Dagger","Silver Dagger","Staff"]},
  Thief:{armor:["Leather Armor"],weapons:["Club","Dagger","Hand Axe","Spear","Mace","War Hammer","Short Sword","Sword","Short Bow","Light Crossbow","Sling"]},
  Dwarf:{armor:"all",weapons:["Club","Dagger","Hand Axe","Spear","Mace","War Hammer","Battle Axe","Short Sword","Sword","Short Bow","Light Crossbow","Heavy Crossbow","Sling"]},
  Elf:{armor:"all",weapons:"all"}
