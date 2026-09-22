@@ -460,7 +460,8 @@ function autonomousCombat(isBoss=false){
 }
 function playerStrike(){
  if(h.combat?.paralyzed){clog(`${h.name} is paralyzed and cannot act.`);return}
-let c=h.combat,t=c.enemies[c.target];if(!t||t.hp<=0){t=living()[0];c.target=t.id}let w=combatStats().weapon,at=ammoTypeFor(w);if(at&&!spendAmmoFor(w)){clog(`No ${at.toLowerCase()} left for ${w}.`);return}if(c.skipNext){clog("Critical fumble: you lose this initiative.");c.skipNext=false;return}let r=d(20),isRanged=RANGED_WEAPONS.has(w),atkMod=isRanged?mod(h.stats.DEX):mod(h.stats.STR),dmgMod=isRanged?0:mod(h.stats.STR);if(r===1){clog("Natural 1 — critical fumble. Next initiative is lost.");c.skipNext=true}else if(r===20||r+atkMod+spellAttackBonus()+(isRanged?rangeAttackMod():0)>=characterNeed(t.ac)){let extra=h.spells?.buffs?.filter(b=>b.damageBonus).reduce((n,b)=>n+rollExpr(b.damageBonus),0)||0;let dmg=Math.max(1,rollExpr(combatStats().damage)+dmgMod+extra);if(r===20)dmg*=2;t.hp=Math.max(0,t.hp-dmg);clog(`${r===20?"Critical hit! ":""}You hit ${t.n} for ${dmg}.`);if(t.hp<=0){h.xp+=t.xp;clog(`${t.n} defeated. +${t.xp} XP.`)}}else clog(`You miss ${t.n}.`)}
+ let haste=h.spells?.buffs?.some(b=>b.extraAttack);
+let c=h.combat,t=c.enemies[c.target];if(!t||t.hp<=0){t=living()[0];c.target=t.id}let w=combatStats().weapon,at=ammoTypeFor(w);if(at&&!spendAmmoFor(w)){clog(`No ${at.toLowerCase()} left for ${w}.`);return}if(c.skipNext){clog("Critical fumble: you lose this initiative.");c.skipNext=false;return}let r=d(20),isRanged=RANGED_WEAPONS.has(w),atkMod=isRanged?mod(h.stats.DEX):mod(h.stats.STR),dmgMod=isRanged?0:mod(h.stats.STR);if(r===1){clog("Natural 1 — critical fumble. Next initiative is lost.");c.skipNext=true}else if(r===20||r+atkMod+spellAttackBonus()+(isRanged?rangeAttackMod():0)>=characterNeed(t.ac)){let extra=h.spells?.buffs?.filter(b=>b.damageBonus).reduce((n,b)=>n+rollExpr(b.damageBonus),0)||0;let dmg=Math.max(1,rollExpr(combatStats().damage)+dmgMod+extra);if(r===20)dmg*=2;t.hp=Math.max(0,t.hp-dmg);clog(`${r===20?"Critical hit! ":""}You hit ${t.n} for ${dmg}.`);if(t.hp<=0){h.xp+=t.xp;clog(`${t.n} defeated. +${t.xp} XP.`)}}else clog(`You miss ${t.n}.`);if(haste&&h.combat&&living().length){clog("Quickening grants a second weapon attack.");h.spells.buffs.find(b=>b.extraAttack).extraAttack=false;playerStrike()}}
 function monsterRangeStep(e){
  if(e.disabledRounds>0){clog(`${e.n} cannot change range while immobilized.`);return false}
  let order=["Hand-to-Hand","Close","Medium","Long"],i=order.indexOf(h.combat?.range||"Close");
@@ -618,7 +619,7 @@ function castCombatSpell(id){
 }
 function tickEnemySpellEffects(){if(!h.combat)return;for(const e of living()){if(e.disabledRounds>0)e.disabledRounds--;if(e.slowRounds>0)e.slowRounds--}}
 function spellAttackBonus(){ensureSpellState();return h.spells.buffs.reduce((a,b)=>a+(b.attack||0),0)}
-function spellACBonus(){ensureSpellState();return h.spells.buffs.reduce((a,b)=>a+(b.ac||0),0)}
+function spellACBonus(){ensureSpellState();let ranged=h.combat?.range&&h.combat.range!=="Hand-to-Hand";return h.spells.buffs.reduce((a,b)=>a+(ranged&&b.missileAC!=null?b.missileAC:(b.ac||0)),0)}
 function tickSpellBuffs(){ensureSpellState();h.spells.buffs.forEach(b=>b.rounds--);h.spells.buffs=h.spells.buffs.filter(b=>b.rounds>0)}
 function resetDailySpells(){ensureSpellState();h.spells.used={};h.spells.spentMem=[];h.spells.buffs=[]}
 function renderSpellButton(){
