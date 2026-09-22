@@ -757,6 +757,10 @@ function gridlessAreaTargets(primary,diameterFeet=40){
  let p=primary&&primary.hp>0?primary:alive[0],center=gridlessLaneOffset(p),radius=Math.max(5,diameterFeet/2);
  return alive.filter(x=>Math.abs(gridlessLaneOffset(x)-center)<=radius)
 }
+function sleepEligible(q){
+ let hd=Number(q?.hdDice)||1,adj=Number(q?.hdAdj)||0;
+ return !q?.undead&&(hd<4||(hd===4&&adj<=1))
+}
 function resolveSpellEffect(s,t=null,autonomous=false,holdMode=null,missileTargetIds=null){
  ensureSpellState();let targets=[];
  if(s.kind==="damage"||s.kind==="area"||s.kind==="line"){
@@ -783,7 +787,7 @@ function resolveSpellEffect(s,t=null,autonomous=false,holdMode=null,missileTarge
  }
  else if(s.kind==="cleanse"){h.conditions=h.conditions||[];let before=h.conditions.length;h.conditions=h.conditions.filter(x=>x!==s.condition);if(s.rc==="Cure Disease"&&before!==h.conditions.length)h.mummyDisease=false;clog(before!==h.conditions.length?`${s.name} removes ${s.condition}.`:`${s.name} finds nothing to remove.`)}
  else if(s.kind==="images"){let n=rollExpr(s.images);h.spells.buffs.push({...s,images:n,rounds:spellDuration(s)});clog(`${s.name} creates ${n} illusory images.`)}
- else if(s.kind==="sleep"){let eligible=gridlessAreaTargets(t,s.areaFeet||40).filter(q=>!q.undead&&(Number(q.hdDice)||1)<=4.5).sort((a,b)=>(Number(a.hdDice)||1)-(Number(b.hdDice)||1)),hdBudget=d(8)+d(8),rounds=spellDuration(s),affected=0;for(const q of eligible){let hd=Math.max(1,Number(q.hdDice)||1);if(hd>hdBudget)continue;hdBudget-=hd;q.disabledRounds=Math.max(q.disabledRounds||0,rounds);q.sleeping=true;affected++;clog(`${q.n} falls asleep for ${Math.ceil(rounds/RC_ROUNDS_PER_TURN)} turn(s).`)}if(!affected)clog(`${s.name} finds no eligible living creature of 4+1 HD or less.`)}
+ else if(s.kind==="sleep"){let eligible=gridlessAreaTargets(t,s.areaFeet||40).filter(sleepEligible).sort((a,b)=>(Number(a.hdDice)||1)-(Number(b.hdDice)||1)||(Number(a.hdAdj)||0)-(Number(b.hdAdj)||0)),hdBudget=d(8)+d(8),rounds=spellDuration(s),affected=0;for(const q of eligible){let hd=Math.max(1,Number(q.hdDice)||1);if(hd>hdBudget)continue;hdBudget-=hd;q.disabledRounds=Math.max(q.disabledRounds||0,rounds);q.sleeping=true;affected++;clog(`${q.n} falls asleep for ${Math.ceil(rounds/RC_ROUNDS_PER_TURN)} turn(s).`)}if(!affected)clog(`${s.name} finds no eligible living creature of 4+1 HD or less.`)}
  else if(s.kind==="web"){for(const q of gridlessAreaTargets(t,s.areaFeet||10)){let hd=Number(q.hdDice)||1,strong=q.webStrength==="great"||hd>=8,rounds=strong?2:(d(4)+d(4))*RC_ROUNDS_PER_TURN;q.disabledRounds=Math.min(rounds,spellDuration(s));q.webbed=true;clog(`${q.n} is caught in the web${strong?" and can tear free in 2 rounds":` for ${Math.ceil(rounds/RC_ROUNDS_PER_TURN)} turn(s)`}.`)}}
  else if(s.kind==="hold"){let valid=living().filter(q=>(!s.humanoidOnly||q.humanoid===true)&&!q.mummy),single=holdMode==="single",count=single?1:(s.maxTargets||4),qs=single?(t&&valid.includes(t)?[t]:[]):valid.slice(0,count),penalty=single?2:0;for(const q of qs){let sv=monsterSpellSave(q,s.save||"Spells");if(penalty)sv.roll-=penalty;sv.success=sv.roll>=sv.target;clog(`${q.n} save ${sv.roll} vs ${sv.target}${sv.saveAs?` [${sv.saveAs}]`:""}${penalty?" (-2 single-target penalty)":""}: ${sv.success?"success":"FAIL"}.`);if(!sv.success){q.disabledRounds=Math.max(q.disabledRounds||0,spellDuration(s));q.held=true;clog(`${q.n} is held.`)}else clog(`${q.n} resists ${s.name}.`)}if(!qs.length)clog(`${s.name} has no valid humanoid target.`)}
  else if(s.kind==="debuff"){let qs=s.rc==="Slow"?gridlessAreaTargets(t,s.areaFeet||60).slice(0,s.maxTargets||24):[t||living()[0]];for(const q of qs.filter(Boolean)){let sv=monsterSpellSave(q,s.save||"Spells");clog(`${q.n} save ${sv.roll} vs ${sv.target}${sv.saveAs?` [${sv.saveAs}]`:""}: ${sv.success?"success":"FAIL"}.`);if(!sv.success){q.slowRounds=spellDuration(s);clog(`${q.n} is slowed.`)}else clog(`${q.n} resists ${s.name}.`)}}
