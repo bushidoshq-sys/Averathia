@@ -460,7 +460,7 @@ function autonomousCombat(isBoss=false){
 }
 function playerStrike(){
  if(h.combat?.paralyzed){clog(`${h.name} is paralyzed and cannot act.`);return}
-let c=h.combat,t=c.enemies[c.target];if(!t||t.hp<=0){t=living()[0];c.target=t.id}let w=combatStats().weapon,at=ammoTypeFor(w);if(at&&!spendAmmoFor(w)){clog(`No ${at.toLowerCase()} left for ${w}.`);return}if(c.skipNext){clog("Critical fumble: you lose this initiative.");c.skipNext=false;return}let r=d(20),str=mod(h.stats.STR);if(r===1){clog("Natural 1 — critical fumble. Next initiative is lost.");c.skipNext=true}else if(r===20||r+str+spellAttackBonus()+rangeAttackMod()>=characterNeed(t.ac)){let extra=h.spells?.buffs?.filter(b=>b.damageBonus).reduce((n,b)=>n+rollExpr(b.damageBonus),0)||0;let dmg=Math.max(1,rollExpr(combatStats().damage)+str+extra);if(r===20)dmg*=2;t.hp=Math.max(0,t.hp-dmg);clog(`${r===20?"Critical hit! ":""}You hit ${t.n} for ${dmg}.`);if(t.hp<=0){h.xp+=t.xp;clog(`${t.n} defeated. +${t.xp} XP.`)}}else clog(`You miss ${t.n}.`)}
+let c=h.combat,t=c.enemies[c.target];if(!t||t.hp<=0){t=living()[0];c.target=t.id}let w=combatStats().weapon,at=ammoTypeFor(w);if(at&&!spendAmmoFor(w)){clog(`No ${at.toLowerCase()} left for ${w}.`);return}if(c.skipNext){clog("Critical fumble: you lose this initiative.");c.skipNext=false;return}let r=d(20),isRanged=RANGED_WEAPONS.has(w),atkMod=isRanged?mod(h.stats.DEX):mod(h.stats.STR),dmgMod=isRanged?0:mod(h.stats.STR);if(r===1){clog("Natural 1 — critical fumble. Next initiative is lost.");c.skipNext=true}else if(r===20||r+atkMod+spellAttackBonus()+(isRanged?rangeAttackMod():0)>=characterNeed(t.ac)){let extra=h.spells?.buffs?.filter(b=>b.damageBonus).reduce((n,b)=>n+rollExpr(b.damageBonus),0)||0;let dmg=Math.max(1,rollExpr(combatStats().damage)+dmgMod+extra);if(r===20)dmg*=2;t.hp=Math.max(0,t.hp-dmg);clog(`${r===20?"Critical hit! ":""}You hit ${t.n} for ${dmg}.`);if(t.hp<=0){h.xp+=t.xp;clog(`${t.n} defeated. +${t.xp} XP.`)}}else clog(`You miss ${t.n}.`)}
 function monsterRangeStep(e){
  let order=["Hand-to-Hand","Close","Medium","Long"],i=order.indexOf(h.combat?.range||"Close");
  if(e.rangedDamage&&e.meleeDamage){
@@ -585,8 +585,18 @@ function resolveSpellEffect(s,t=null,autonomous=false){
 }
 function castCombatSpell(id){
  let s=(SPELLS[h.className]||[]).find(x=>x.id===id),c=h.combat;if(!s||!c||!availableCombatSpells().some(x=>x.id===id))return;
- if(!consumeSpell(s))return;let t=c.enemies[c.target];if(!t||t.hp<=0)t=living()[0];resolveSpellEffect(s,t,false);
- if(!living().length)return finishCombat();enemyStrike();if(h.combat){tickSpellBuffs();tickEnemySpellEffects();h.combat.round++;save();renderCombat()}
+ // RC: casting is the caster's action for the round. If the enemy wins initiative and disturbs the caster, the spell is lost.
+ let pr=d(6),er=d(6);while(pr===er){pr=d(6);er=d(6)}clog(`Spell initiative: you ${pr}, enemies ${er}.`);
+ if(!consumeSpell(s))return;
+ if(er>pr){
+   let hpBefore=h.hp,conditionsBefore=(h.conditions||[]).length;
+   enemyStrike();if(!h.combat)return;
+   if(h.hp<hpBefore||(h.conditions||[]).length>conditionsBefore){clog(`${s.name} is disrupted and lost.`);tickSpellBuffs();tickEnemySpellEffects();c.round++;save();renderCombat();return}
+ }
+ let t=c.enemies[c.target];if(!t||t.hp<=0)t=living()[0];resolveSpellEffect(s,t,false);
+ if(!living().length)return finishCombat();
+ if(pr>er)enemyStrike();
+ if(h.combat){tickSpellBuffs();tickEnemySpellEffects();h.combat.round++;save();renderCombat()}
 }
 function tickEnemySpellEffects(){if(!h.combat)return;for(const e of living()){if(e.disabledRounds>0)e.disabledRounds--;if(e.slowRounds>0)e.slowRounds--}}
 function spellAttackBonus(){ensureSpellState();return h.spells.buffs.reduce((a,b)=>a+(b.attack||0),0)}
@@ -599,7 +609,7 @@ function renderSpellButton(){
  b.onclick=()=>{let menu=$("#spellMenu");if(!menu)return;menu.innerHTML=spells.map(s=>`<button class="spellChoice" data-cast-spell="${s.id}"><b>${s.name}</b> <span class="small">L${s.sl}</span></button>`).join("");menu.classList.toggle("hide");$("[data-cast-spell]").forEach(x=>x.onclick=()=>{menu.classList.add("hide");castCombatSpell(x.dataset.castSpell)})}
 }
 function rangeAttackMod(){
- let r=h.combat?.range||"Close";return r==="Long"?-1:0
+ let r=h.combat?.range||"Close";return r==="Close"?1:r==="Long"?-1:0
 }
 function changeRange(){
  if(!h?.combat)return;let order=["Hand-to-Hand","Close","Medium","Long"],i=order.indexOf(h.combat.range||"Close");
