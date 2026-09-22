@@ -427,7 +427,9 @@ function enemyStrike(){
  for(const e of living()){
   if(e.disabledRounds>0)continue;
   if(e.slowRounds>0&&h.combat.round%2===0){clog(`${e.n} is slowed and cannot act this round.`);continue}
+  if(e.skipNext){clog(`${e.n} loses this initiative after its fumble.`);e.skipNext=false;continue}
   let r=d(20);
+  if(r===1){clog(`${e.n} rolls a natural 1 — critical fumble. Next initiative is lost.`);e.skipNext=true;continue}
   if(r===20||r>=monsterNeed(e)){
    let mirror=h.spells?.buffs?.find(b=>b.kind==="images"&&b.images>0);if(mirror){mirror.images--;clog(`${e.n} destroys a mirror image.`);continue}
    let dmg=rollExpr(e.damage);if(r===20)dmg*=2;h.hp=Math.max(0,h.hp-dmg);
