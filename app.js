@@ -258,12 +258,12 @@ function savingThrow(category,bonus=0){
  return{roll,target,success:roll>=target,category:SAVE_NAMES[i]};
 }
 const CLASS_ATTACK_BASE={
- Fighter:[[1,19],[4,17],[7,14],[10,12],[13,10],[16,8],[19,6],[22,4],[25,2],[28,0],[31,-2],[34,-4]],
- Dwarf:[[1,19],[4,17],[7,14],[10,12]],
- Elf:[[1,19],[4,17],[7,14],[10,12]],
- Cleric:[[1,19],[5,17],[9,14],[13,12],[17,10],[21,8],[25,6],[29,4],[33,2]],
- Thief:[[1,19],[5,17],[9,14],[13,12],[17,10],[21,8],[25,6],[29,4],[33,2]],
- Arcanist:[[1,19],[6,17],[11,14],[16,12],[21,10],[26,8],[31,6],[36,4]]
+ Fighter:[[1,19],[4,17],[7,15],[10,13],[13,11],[16,9],[19,7],[22,5],[25,3],[28,1],[31,-1],[34,-3]],
+ Dwarf:[[1,19],[4,17],[7,15],[10,13]],
+ Elf:[[1,19],[4,17],[7,15],[10,13]],
+ Cleric:[[1,19],[5,17],[9,15],[13,13],[17,11],[21,9],[25,7],[29,5],[33,3],[36,1]],
+ Thief:[[1,19],[5,17],[9,15],[13,13],[17,11],[21,9],[25,7],[29,5],[33,3],[36,1]],
+ Arcanist:[[1,19],[6,17],[11,15],[16,13],[21,11],[26,9],[31,7],[36,5]]
 };
 function attackBase(cls=h.className,level=h.level){
  let rows=CLASS_ATTACK_BASE[cls]||CLASS_ATTACK_BASE.Fighter,base=rows[0][1];
@@ -271,7 +271,25 @@ function attackBase(cls=h.className,level=h.level){
  return base
 }
 function characterNeed(ac){return attackBase()-ac}
-function monsterNeed(e){return Math.max(2,(19-Math.floor(Math.max(0,e.hdDice-1)/2))-(combatStats().ac+spellACBonus()))}
+function monsterHitModifier(e){
+ let hd=Math.max(.5,Number(e.hdDice)||1),plus=(Number(e.hdAdj)||0)>0;
+ if(hd<=1)return 1;
+ if(hd<=2)return 2;
+ if(hd<=3)return 3;
+ if(hd<=4)return 4;
+ if(hd<=5)return 5;
+ if(hd<=6)return 6;
+ if(hd<=7)return 7;
+ if(hd<=8)return 8;
+ if(hd<=9)return 9;
+ if(hd<=11)return 10;
+ if(hd<=13)return 11;
+ if(hd<=15)return 12;
+ if(hd<=17)return 13;
+ if(hd<=19)return 14;
+ return 15+Math.floor((hd-19)/2);
+}
+function monsterNeed(e){return Math.max(2,(20-monsterHitModifier(e))-(combatStats().ac+spellACBonus()))}
 function clog(s){h.combat.log.push(s);if(h.combat.log.length>40)h.combat.log.shift();adventureLog(s,"Combat")}
 function living(){return h.combat.enemies.filter(e=>e.hp>0)}
 // RC Rules Cyclopedia, Balancing Encounters (pp.100-101): TPL -> IAHD -> challenge %.
