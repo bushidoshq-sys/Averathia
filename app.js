@@ -553,7 +553,7 @@ function enemyStrike(){
    }
   }else clog(`${e.n} misses.`);
   if(h.hp<=0){
-   clog(`You are DEAD. Resurrection in ${h.level*5} minutes.`); let deathLog=h.trip?.adventureLog||[]; h.lastAdventure=`FAILED — ${h.name} died. Adventure progress reset to zero.`; h.trip=null;h.pendingEvent=null;h.combat=null;h.deadUntil=Date.now()+h.level*5*60000;h.hp=0;localStorage.setItem("averathia-v041",JSON.stringify(h));renderDeathPage();return false
+   clog(`You are DEAD. Resurrection in ${h.level*5} minutes.`); let deathLog=h.trip?.adventureLog||[]; h.lastAdventure=`FAILED — ${h.name} died. Adventure progress reset to zero.`; recoverThrownWeapons();h.trip=null;h.pendingEvent=null;h.combat=null;h.deadUntil=Date.now()+h.level*5*60000;h.hp=0;localStorage.setItem("averathia-v041",JSON.stringify(h));renderDeathPage();return false
   }
  }
  for(const e of living())if(e.special==="regeneration"){
