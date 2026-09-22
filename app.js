@@ -569,18 +569,30 @@ function consumeSpell(s){
  h.spells.used[s.sl]=(h.spells.used[s.sl]||0)+1;return true;
 }
 function rollSpellDamage(s){if(s.perLevel){let n=Math.max(1,Math.min(h.level,10)),v=0;while(n--)v+=d(6);return v}return Math.max(1,rollExpr(s.damage))}
-function monsterSpellSave(m){let roll=d(20),target=15;return{roll,target,success:roll>=target}} // PROVISIONAL until RC monster-save table is sourced.
+function fighterSaveTarget(level,category="Spells"){
+ let base=SAVE_BASE.Fighter[SAVE_NAMES.indexOf(category)>=0?SAVE_NAMES.indexOf(category):4];
+ let steps=Math.floor((Math.max(1,level)-1)/3);
+ return Math.max(2,base-steps)
+}
+function monsterSaveLevel(m){
+ let hd=Math.max(.5,Number(m?.hdDice)||1),intelligent=m?.animalIntelligence!==true;
+ return Math.max(1,Math.ceil(intelligent?hd:hd/2))
+}
+function monsterSpellSave(m,category="Spells"){
+ let roll=d(20),level=monsterSaveLevel(m),target=fighterSaveTarget(level,category);
+ return{roll,target,success:roll>=target,level}
+}
 function resolveSpellEffect(s,t=null,autonomous=false){
  ensureSpellState();let targets=[];
  if(s.kind==="damage"||s.kind==="area"){
   targets=s.kind==="area"?living():[t||living()[0]];
-  for(const q of targets.filter(Boolean)){let dmg=rollSpellDamage(s);if(s.save){let sv=monsterSpellSave(q);if(sv.success&&s.half)dmg=Math.floor(dmg/2)}q.hp=Math.max(0,q.hp-dmg);clog(`${autonomous?"Autonomous: ":""}${s.name} strikes ${q.n} for ${dmg} damage.`);if(q.hp<=0){h.xp+=q.xp;clog(`${q.n} defeated. +${q.xp} XP.`);checkLevelUps()}}
+  for(const q of targets.filter(Boolean)){let dmg=rollSpellDamage(s);if(s.save){let sv=monsterSpellSave(q,s.save||"Spells");clog(`${q.n} save ${sv.roll} vs ${sv.target}: ${sv.success?"success":"FAIL"}.`);if(sv.success&&s.half)dmg=Math.floor(dmg/2)}q.hp=Math.max(0,q.hp-dmg);clog(`${autonomous?"Autonomous: ":""}${s.name} strikes ${q.n} for ${dmg} damage.`);if(q.hp<=0){h.xp+=q.xp;clog(`${q.n} defeated. +${q.xp} XP.`);checkLevelUps()}}
  }else if(s.kind==="heal"){let heal=rollExpr(s.heal),before=h.hp;h.hp=Math.min(h.maxhp,h.hp+heal);clog(`${autonomous?"Autonomous: ":""}${s.name} restores ${h.hp-before} HP.`)}
  else if(s.kind==="buff"){h.spells.buffs.push({...s,rounds:s.duration||3});clog(`${s.name} takes effect.`)}
  else if(s.kind==="cleanse"){h.conditions=h.conditions||[];let before=h.conditions.length;h.conditions=h.conditions.filter(x=>x!==s.condition);clog(before!==h.conditions.length?`${s.name} removes ${s.condition}.`:`${s.name} finds nothing to remove.`)}
  else if(s.kind==="images"){let n=rollExpr(s.images);h.spells.buffs.push({...s,images:n,rounds:s.duration||6});clog(`${s.name} creates ${n} illusory images.`)}
- else if(s.kind==="sleep"||s.kind==="hold"){let q=t||living()[0];if(!q)return;let sv=monsterSpellSave(q);if(!sv.success){q.disabledRounds=s.duration||6;clog(`${q.n} is ${s.kind==="sleep"?"put to sleep":"held"}.`)}else clog(`${q.n} resists ${s.name}.`)}
- else if(s.kind==="debuff"){let q=t||living()[0];if(!q)return;let sv=monsterSpellSave(q);if(!sv.success){q.slowRounds=s.duration||6;clog(`${q.n} is slowed.`)}else clog(`${q.n} resists ${s.name}.`)}
+ else if(s.kind==="sleep"||s.kind==="hold"){let q=t||living()[0];if(!q)return;let sv=monsterSpellSave(q,s.save||"Spells");clog(`${q.n} save ${sv.roll} vs ${sv.target}: ${sv.success?"success":"FAIL"}.`);if(!sv.success){q.disabledRounds=s.duration||6;clog(`${q.n} is ${s.kind==="sleep"?"put to sleep":"held"}.`)}else clog(`${q.n} resists ${s.name}.`)}
+ else if(s.kind==="debuff"){let q=t||living()[0];if(!q)return;let sv=monsterSpellSave(q,s.save||"Spells");clog(`${q.n} save ${sv.roll} vs ${sv.target}: ${sv.success?"success":"FAIL"}.`);if(!sv.success){q.slowRounds=s.duration||6;clog(`${q.n} is slowed.`)}else clog(`${q.n} resists ${s.name}.`)}
  else if(s.kind==="utility"){clog(`${s.name} is active; no current combat target effect.`)}
 }
 function castCombatSpell(id){
