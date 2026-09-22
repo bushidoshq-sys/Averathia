@@ -273,21 +273,21 @@ function attackBase(cls=h.className,level=h.level){
 function characterNeed(ac){return attackBase()-ac}
 function monsterHitModifier(e){
  let hd=Math.max(.5,Number(e.hdDice)||1),plus=(Number(e.hdAdj)||0)>0;
- if(hd<=1)return 1;
- if(hd<=2)return 2;
- if(hd<=3)return 3;
- if(hd<=4)return 4;
- if(hd<=5)return 5;
- if(hd<=6)return 6;
- if(hd<=7)return 7;
- if(hd<=8)return 8;
- if(hd<=9)return 9;
+ if(hd<=9)return Math.min(9,Math.floor(hd)+(plus?1:0));
  if(hd<=11)return 10;
  if(hd<=13)return 11;
  if(hd<=15)return 12;
  if(hd<=17)return 13;
  if(hd<=19)return 14;
- return 15+Math.floor((hd-19)/2);
+ if(hd<=21)return 15;
+ if(hd<=23)return 16;
+ if(hd<=25)return 17;
+ if(hd<=27)return 18;
+ if(hd<=29)return 19;
+ if(hd<=31)return 20;
+ if(hd<=33)return 21;
+ if(hd<=35)return 22;
+ return 23;
 }
 function monsterNeed(e){return Math.max(2,(20-monsterHitModifier(e))-(combatStats().ac+spellACBonus()))}
 function clog(s){h.combat.log.push(s);if(h.combat.log.length>40)h.combat.log.shift();adventureLog(s,"Combat")}
