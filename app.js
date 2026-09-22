@@ -779,11 +779,14 @@ function gridlessAreaTargets(primary,diameterFeet=40){
  let p=primary&&primary.hp>0?primary:alive[0],center=gridlessLaneOffset(p),radius=Math.max(5,diameterFeet/2);
  return alive.filter(x=>Math.abs(gridlessLaneOffset(x)-center)<=radius)
 }
+function validHoldTargets(s){
+ return living().filter(q=>(!s.humanoidOnly||q.humanoid===true)&&!q.mummy)
+}
 function sleepEligible(q){
  let hd=Number(q?.hdDice)||1,adj=Number(q?.hdAdj)||0;
  return !q?.undead&&(hd<4||(hd===4&&adj<=1))
 }
-function resolveSpellEffect(s,t=null,autonomous=false,holdMode=null,missileTargetIds=null){
+function resolveSpellEffect(s,t=null,autonomous=false,holdMode=null,missileTargetIds=null,holdTargetIds=null){
  ensureSpellState();let targets=[];
  if(s.kind==="damage"||s.kind==="area"||s.kind==="line"){
   targets=s.kind==="area"?gridlessAreaTargets(t,s.areaFeet||40):s.kind==="line"?gridlessLineTargets(t):[t||living()[0]];
@@ -811,13 +814,13 @@ function resolveSpellEffect(s,t=null,autonomous=false,holdMode=null,missileTarge
  else if(s.kind==="images"){let n=rollExpr(s.images);h.spells.buffs.push({...s,images:n,rounds:spellDuration(s)});clog(`${s.name} creates ${n} illusory images.`)}
  else if(s.kind==="sleep"){let eligible=gridlessAreaTargets(t,s.areaFeet||40).filter(sleepEligible).sort((a,b)=>(Number(a.hdDice)||1)-(Number(b.hdDice)||1)||(Number(a.hdAdj)||0)-(Number(b.hdAdj)||0)),hdBudget=d(8)+d(8),rounds=spellDuration(s),affected=0;for(const q of eligible){let hd=Math.max(1,Number(q.hdDice)||1);if(hd>hdBudget)continue;hdBudget-=hd;q.disabledRounds=Math.max(q.disabledRounds||0,rounds);q.sleeping=true;affected++;clog(`${q.n} falls asleep for ${Math.ceil(rounds/RC_ROUNDS_PER_TURN)} turn(s).`)}if(!affected)clog(`${s.name} finds no eligible living creature of 4+1 HD or less.`)}
  else if(s.kind==="web"){for(const q of gridlessAreaTargets(t,s.areaFeet||10)){let hd=Number(q.hdDice)||1,strong=q.webStrength==="great"||hd>=8,rounds=strong?2:(d(4)+d(4))*RC_ROUNDS_PER_TURN;q.disabledRounds=Math.min(rounds,spellDuration(s));q.webbed=true;clog(`${q.n} is caught in the web${strong?" and can tear free in 2 rounds":` for ${Math.ceil(rounds/RC_ROUNDS_PER_TURN)} turn(s)`}.`)}}
- else if(s.kind==="hold"){let valid=living().filter(q=>(!s.humanoidOnly||q.humanoid===true)&&!q.mummy),single=holdMode==="single",count=single?1:(s.maxTargets||4),qs=single?(t&&valid.includes(t)?[t]:[]):valid.slice(0,count),penalty=single?2:0;for(const q of qs){let sv=monsterSpellSave(q,s.save||"Spells");if(penalty)sv.roll-=penalty;sv.success=sv.roll>=sv.target;clog(`${q.n} save ${sv.roll} vs ${sv.target}${sv.saveAs?` [${sv.saveAs}]`:""}${penalty?" (-2 single-target penalty)":""}: ${sv.success?"success":"FAIL"}.`);if(!sv.success){q.disabledRounds=Math.max(q.disabledRounds||0,spellDuration(s));q.held=true;clog(`${q.n} is held.`)}else clog(`${q.n} resists ${s.name}.`)}if(!qs.length)clog(`${s.name} has no valid humanoid target.`)}
+ else if(s.kind==="hold"){let valid=validHoldTargets(s),single=holdMode==="single",count=single?1:(s.maxTargets||4),chosenIds=Array.isArray(holdTargetIds)?[...new Set(holdTargetIds)].slice(0,count):null,qs=single?(t&&valid.includes(t)?[t]:[]):chosenIds?chosenIds.map(id=>valid.find(q=>q.id===id)).filter(Boolean):valid.slice(0,count),penalty=single?2:0;for(const q of qs){let sv=monsterSpellSave(q,s.save||"Spells");if(penalty)sv.roll-=penalty;sv.success=sv.roll>=sv.target;clog(`${q.n} save ${sv.roll} vs ${sv.target}${sv.saveAs?` [${sv.saveAs}]`:""}${penalty?" (-2 single-target penalty)":""}: ${sv.success?"success":"FAIL"}.`);if(!sv.success){q.disabledRounds=Math.max(q.disabledRounds||0,spellDuration(s));q.held=true;clog(`${q.n} is held.`)}else clog(`${q.n} resists ${s.name}.`)}if(!qs.length)clog(`${s.name} has no valid humanoid target.`)}
  else if(s.kind==="debuff"){let qs=s.rc==="Slow"?gridlessAreaTargets(t,s.areaFeet||60).slice(0,s.maxTargets||24):[t||living()[0]];for(const q of qs.filter(Boolean)){let sv=monsterSpellSave(q,s.save||"Spells");clog(`${q.n} save ${sv.roll} vs ${sv.target}${sv.saveAs?` [${sv.saveAs}]`:""}: ${sv.success?"success":"FAIL"}.`);if(!sv.success){q.slowRounds=spellDuration(s);clog(`${q.n} is slowed.`)}else clog(`${q.n} resists ${s.name}.`)}}
  else if(s.kind==="blind"){let q=t||living()[0];if(q){let sv=monsterSpellSave(q,s.save||"Spells");clog(`${q.n} save ${sv.roll} vs ${sv.target}${sv.saveAs?` [${sv.saveAs}]`:""}: ${sv.success?"success":"FAIL"}.`);if(!sv.success){q.blindRounds=spellDuration(s);clog(`${q.n} is blinded by ${s.name}.`)}else clog(`${s.name} fails to blind ${q.n}.`)}}
  else if(s.kind==="utility"){clog(`${s.name} is active; no current combat target effect.`)}
 }
-function castCombatSpell(id,holdMode=null,missileTargetIds=null){
- let s=(SPELLS[h.className]||[]).find(x=>x.id===id),c=h.combat;if(!s||!c||!availableCombatSpells().some(x=>x.id===id))return;if(c.paralyzed){clog(`${h.name} is paralyzed and cannot cast.`);return renderCombat()}if(s.enemyTarget&&Number.isFinite(s.rangeFeet)&&combatDistance()>s.rangeFeet){clog(`${s.name} is out of range: target is ${combatDistance()} ft away; spell range is ${s.rangeFeet} ft.`);return renderCombat()}
+function castCombatSpell(id,holdMode=null,missileTargetIds=null,holdTargetIds=null){
+ let s=(SPELLS[h.className]||[]).find(x=>x.id===id),c=h.combat;if(!s||!c||!availableCombatSpells().some(x=>x.id===id))return;if(s.kind==="hold"&&!holdMode)holdMode=validHoldTargets(s).length===1?"single":"group";if(c.paralyzed){clog(`${h.name} is paralyzed and cannot cast.`);return renderCombat()}if(s.enemyTarget&&Number.isFinite(s.rangeFeet)&&combatDistance()>s.rangeFeet){clog(`${s.name} is out of range: target is ${combatDistance()} ft away; spell range is ${s.rangeFeet} ft.`);return renderCombat()}
  // RC: casting is the caster's action for the round. If the enemy wins initiative and disturbs the caster, the spell is lost.
  let pr=d(6),er=d(6);while(pr===er){pr=d(6);er=d(6)}clog(`Spell initiative: you ${pr}, enemies ${er}.`);
  if(!consumeSpell(s))return;
@@ -826,7 +829,7 @@ function castCombatSpell(id,holdMode=null,missileTargetIds=null){
    enemyStrike();if(!h.combat)return;
    if(h.hp<hpBefore||(h.conditions||[]).length>conditionsBefore){clog(`${s.name} is disrupted and lost.`);tickSpellBuffs();tickEnemySpellEffects();tickPlayerConditions();c.round++;save();renderCombat();return}
  }
- let t=c.enemies[c.target];if(!t||t.hp<=0)t=living()[0];if(s.missilesByLevel&&!missileTargetIds&&autonomousCombatRunning)missileTargetIds=autonomousMissileTargetIds(magicMissileCount());resolveSpellEffect(s,t,autonomousCombatRunning,holdMode,missileTargetIds);
+ let t=c.enemies[c.target];if(!t||t.hp<=0)t=living()[0];if(s.missilesByLevel&&!missileTargetIds&&autonomousCombatRunning)missileTargetIds=autonomousMissileTargetIds(magicMissileCount());resolveSpellEffect(s,t,autonomousCombatRunning,holdMode,missileTargetIds,holdTargetIds);
  if(!h.combat)return;if(!living().length)return finishCombat();
  if(pr>er)enemyStrike();
  if(h.combat){tickSpellBuffs();tickEnemySpellEffects();tickPlayerConditions();h.combat.round++;save();renderCombat()}
@@ -838,6 +841,21 @@ function spellACBonus(){ensureSpellState();return h.spells.buffs.reduce((a,b)=>a
 function effectiveAC(isMissile=false){let ac=combatStats().ac+spellACBonus();for(const b of h.spells.buffs){let fixed=isMissile?b.fixedMissileAC:b.fixedAC;if(fixed!=null)ac=Math.min(ac,fixed)}return ac}
 function tickSpellBuffs(){ensureSpellState();h.spells.buffs.forEach(b=>b.rounds--);h.spells.buffs=h.spells.buffs.filter(b=>b.rounds>0)}
 function resetDailySpells(){ensureSpellState();h.spells.used={};h.spells.spentMem=[];h.spells.buffs=[]}
+function beginHoldGroupSelection(s,menu){
+ let valid=validHoldTargets(s),chosen=[];
+ if(valid.length<2){menu.classList.add("hide");return renderCombat()}
+ if(valid.length<=4){menu.classList.add("hide");castCombatSpell(s.id,"group",null,valid.map(q=>q.id));return}
+ const draw=()=>{
+  let picked=new Set(chosen);
+  menu.innerHTML=`<div class="small"><b>${s.name}</b> — choose 2–4 humanoid targets. Selected: ${chosen.length}/4.</div>`+
+   valid.map(e=>`<button class="spellChoice ${picked.has(e.id)?"on":""}" data-hold-target="${e.id}">${picked.has(e.id)?"✓ ":""}${e.n}</button>`).join("")+
+   `<button data-hold-confirm ${chosen.length<2?"disabled":""}>Cast on selected</button><button data-hold-cancel>Cancel</button>`;
+  $("[data-hold-target]").forEach(b=>b.onclick=()=>{let id=+b.dataset.holdTarget,i=chosen.indexOf(id);if(i>=0)chosen.splice(i,1);else if(chosen.length<4)chosen.push(id);draw()});
+  let confirm=$("[data-hold-confirm]");if(confirm)confirm.onclick=()=>{if(chosen.length<2)return;menu.classList.add("hide");castCombatSpell(s.id,"group",null,chosen)};
+  let cancel=$("[data-hold-cancel]");if(cancel)cancel.onclick=()=>{menu.classList.add("hide");renderCombat()}
+ };
+ draw()
+}
 function beginMissileAllocation(s,menu){
  let total=magicMissileCount(),picks=[];
  if(total<=1||living().length<=1){menu.classList.add("hide");castCombatSpell(s.id);return}
@@ -855,7 +873,27 @@ function beginMissileAllocation(s,menu){
 function renderSpellButton(){
  let b=$("#spellBtn");if(!b||!h?.combat)return;let spells=availableCombatSpells();
  b.classList.toggle("hide",!spells.length);b.textContent=spells.length?`✨ Spell (${spells.length})`:"✨ Spell";
- b.onclick=()=>{let menu=$("#spellMenu");if(!menu)return;$("#rangeMenu")?.classList.add("hide");menu.innerHTML=spells.flatMap(s=>{let oor=s.enemyTarget&&Number.isFinite(s.rangeFeet)&&combatDistance()>s.rangeFeet,rt=Number.isFinite(s.rangeFeet)?` · ${s.rangeFeet} ft`:"";return s.kind==="hold"?[`<button class="spellChoice" data-cast-spell="${s.id}" data-hold-mode="single" ${oor?"disabled":""}><b>${s.name}</b> <span class="small">Single · -2 save${rt}${oor?" · OUT OF RANGE":""}</span></button>`,`<button class="spellChoice" data-cast-spell="${s.id}" data-hold-mode="group" ${oor?"disabled":""}><b>${s.name}</b> <span class="small">Group · up to 4${rt}${oor?" · OUT OF RANGE":""}</span></button>`]:[`<button class="spellChoice" data-cast-spell="${s.id}" ${oor?"disabled":""}><b>${s.name}</b> <span class="small">L${s.sl}${rt}${oor?" · OUT OF RANGE":""}</span></button>`]}).join("");menu.classList.toggle("hide");$("[data-cast-spell]").forEach(x=>x.onclick=()=>{let chosen=spells.find(s=>s.id===x.dataset.castSpell);if(chosen?.missilesByLevel&&magicMissileCount()>1&&living().length>1)return beginMissileAllocation(chosen,menu);menu.classList.add("hide");castCombatSpell(x.dataset.castSpell,x.dataset.holdMode||null)})}
+ b.onclick=()=>{
+  let menu=$("#spellMenu");if(!menu)return;$("#rangeMenu")?.classList.add("hide");
+  menu.innerHTML=spells.flatMap(s=>{
+   let oor=s.enemyTarget&&Number.isFinite(s.rangeFeet)&&combatDistance()>s.rangeFeet,rt=Number.isFinite(s.rangeFeet)?` · ${s.rangeFeet} ft`:"";
+   if(s.kind==="hold"){
+    let validCount=validHoldTargets(s).length,groupDisabled=oor||validCount<2;
+    return [
+     `<button class="spellChoice" data-cast-spell="${s.id}" data-hold-mode="single" ${oor||validCount<1?"disabled":""}><b>${s.name}</b> <span class="small">Single · -2 save${rt}${oor?" · OUT OF RANGE":""}</span></button>`,
+     `<button class="spellChoice" data-cast-spell="${s.id}" data-hold-mode="group" ${groupDisabled?"disabled":""}><b>${s.name}</b> <span class="small">Group · choose up to 4${rt}${validCount<2?" · NEEDS 2+ TARGETS":""}${oor?" · OUT OF RANGE":""}</span></button>`
+    ]
+   }
+   return [`<button class="spellChoice" data-cast-spell="${s.id}" ${oor?"disabled":""}><b>${s.name}</b> <span class="small">L${s.sl}${rt}${oor?" · OUT OF RANGE":""}</span></button>`]
+  }).join("");
+  menu.classList.toggle("hide");
+  $$("[data-cast-spell]").forEach(x=>x.onclick=()=>{
+   let chosen=spells.find(s=>s.id===x.dataset.castSpell),holdMode=x.dataset.holdMode||null;
+   if(chosen?.kind==="hold"&&holdMode==="group"&&validHoldTargets(chosen).length>4)return beginHoldGroupSelection(chosen,menu);
+   if(chosen?.missilesByLevel&&magicMissileCount()>1&&living().length>1)return beginMissileAllocation(chosen,menu);
+   menu.classList.add("hide");castCombatSpell(x.dataset.castSpell,holdMode)
+  })
+ }
 }
 function rangeAttackMod(weapon=combatStats().weapon){
  let ranges=WEAPON_RANGES[weapon],dist=combatDistance();if(!ranges)return 0;
