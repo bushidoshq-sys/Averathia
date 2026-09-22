@@ -521,7 +521,7 @@ function playerStrikeSingle(){
  let r=d(20),isMissile=mode==="missile",isThrown=mode==="thrown",atkMod=(isMissile||isThrown)?mod(h.stats.DEX):mod(h.stats.STR),dmgMod=isMissile?0:mod(h.stats.STR);
  if(r===1){clog("Natural 1 — critical fumble. Next initiative is lost.");c.skipNext=true}
  else if(r===20||r+atkMod+spellAttackBonus()+((isMissile||isThrown)?rangeAttackMod():0)>=characterNeed(t.ac)){
-  let extra=h.spells?.buffs?.filter(b=>b.damageBonus).reduce((n,b)=>n+rollExpr(b.damageBonus),0)||0,flat=h.spells?.buffs?.reduce((n,b)=>n+(b.flatDamageBonus||0),0)||0;
+  let extra=h.spells?.buffs?.filter(b=>b.damageBonus&&(!b.boundWeapon||b.boundWeapon===w)).reduce((n,b)=>n+rollExpr(b.damageBonus),0)||0,flat=h.spells?.buffs?.reduce((n,b)=>n+(b.flatDamageBonus||0),0)||0;
   let dmg=Math.max(1,rollExpr(cs.damage)+dmgMod+extra+flat);if(r===20)dmg*=2;t.hp=Math.max(0,t.hp-dmg);
   clog(`${r===20?"Critical hit! ":""}You ${isThrown?"throw "+w+" and ":""}hit ${t.n} for ${dmg}.`);
   if(t.sleeping&&t.hp>0){t.sleeping=false;t.disabledRounds=0;clog(`${t.n} awakens from the blow.`)}
@@ -667,7 +667,10 @@ function resolveSpellEffect(s,t=null,autonomous=false,holdMode=null){
   if(s.missilesByLevel){let q=t||living()[0],n=magicMissileCount();if(q){let dmg=0;for(let i=0;i<n;i++)dmg+=rollExpr(s.damage);q.hp=Math.max(0,q.hp-dmg);clog(`${s.name} launches ${n} dart${n===1?"":"s"} and automatically hits ${q.n} for ${dmg} damage.`);if(q.hp<=0){h.xp+=q.xp;clog(`${q.n} defeated. +${q.xp} XP.`);checkLevelUps()}}return}
   for(const q of targets.filter(Boolean)){let dmg=rollSpellDamage(s);if(s.save){let sv=monsterSpellSave(q,s.save||"Spells");clog(`${q.n} save ${sv.roll} vs ${sv.target}: ${sv.success?"success":"FAIL"}.`);if(sv.success&&s.half)dmg=Math.floor(dmg/2)}q.hp=Math.max(0,q.hp-dmg);clog(`${autonomous?"Autonomous: ":""}${s.name} strikes ${q.n} for ${dmg} damage.`);if(s.damageType==="fire"&&q.webbed&&q.hp>0){let burn=d(6);q.hp=Math.max(0,q.hp-burn);q.disabledRounds=0;q.webbed=false;clog(`The web burns away around ${q.n}; ${q.n} takes ${burn} fire damage.`)}if(q.hp<=0){h.xp+=q.xp;clog(`${q.n} defeated. +${q.xp} XP.`);checkLevelUps()}}
  }else if(s.kind==="heal"){let heal=rollExpr(s.heal),before=h.hp;h.hp=Math.min(h.maxhp,h.hp+heal);clog(`${autonomous?"Autonomous: ":""}${s.name} restores ${h.hp-before} HP.`)}
- else if(s.kind==="buff"){h.spells.buffs.push({...s,rounds:spellDuration(s)});clog(`${s.name} takes effect.`)}
+ else if(s.kind==="buff"){
+  if(s.rc==="Bless"&&h.combat?.range==="Hand-to-Hand"){clog(`${s.name} cannot affect you once you are already in melee.`)}
+  else{let buff={...s,rounds:spellDuration(s)};if(s.rc==="Striking")buff.boundWeapon=combatStats().weapon;h.spells.buffs.push(buff);clog(s.rc==="Striking"?`${s.name} empowers ${buff.boundWeapon}.`:`${s.name} takes effect.`)}
+ }
  else if(s.kind==="cleanse"){h.conditions=h.conditions||[];let before=h.conditions.length;h.conditions=h.conditions.filter(x=>x!==s.condition);clog(before!==h.conditions.length?`${s.name} removes ${s.condition}.`:`${s.name} finds nothing to remove.`)}
  else if(s.kind==="images"){let n=rollExpr(s.images);h.spells.buffs.push({...s,images:n,rounds:spellDuration(s)});clog(`${s.name} creates ${n} illusory images.`)}
  else if(s.kind==="sleep"){let eligible=living().filter(q=>!q.undead&&(Number(q.hdDice)||1)<=4.5).sort((a,b)=>(Number(a.hdDice)||1)-(Number(b.hdDice)||1)),hdBudget=d(8)+d(8),rounds=spellDuration(s),affected=0;for(const q of eligible){let hd=Math.max(1,Number(q.hdDice)||1);if(hd>hdBudget)continue;hdBudget-=hd;q.disabledRounds=Math.max(q.disabledRounds||0,rounds);q.sleeping=true;affected++;clog(`${q.n} falls asleep for ${Math.ceil(rounds/RC_ROUNDS_PER_TURN)} turn(s).`)}if(!affected)clog(`${s.name} finds no eligible living creature of 4+1 HD or less.`)}
