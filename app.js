@@ -520,7 +520,7 @@ function playerStrikeSingle(){
  if(w==="Heavy Crossbow"&&h.stats.STR<18)c.heavyCrossbowNextRound=c.round+2;
  let r=d(20),isMissile=mode==="missile",isThrown=mode==="thrown",atkMod=(isMissile||isThrown)?mod(h.stats.DEX):mod(h.stats.STR),dmgMod=isMissile?0:mod(h.stats.STR);
  if(r===1){clog("Natural 1 — critical fumble. Next initiative is lost.");c.skipNext=true}
- else if(r===20||r+atkMod+spellAttackBonus()+((isMissile||isThrown)?rangeAttackMod():0)>=characterNeed(t.ac)){
+ else if(r===20||r+atkMod+spellAttackBonus()+((isMissile||isThrown)?rangeAttackMod():0)>=characterNeed(t.ac+(t.blindRounds>0?4:0))){
   let extra=h.spells?.buffs?.filter(b=>b.damageBonus&&(!b.boundWeapon||b.boundWeapon===w)).reduce((n,b)=>n+rollExpr(b.damageBonus),0)||0,flat=h.spells?.buffs?.reduce((n,b)=>n+(b.flatDamageBonus||0),0)||0;
   let dmg=Math.max(1,rollExpr(cs.damage)+dmgMod+extra+flat);if(r===20)dmg*=2;t.hp=Math.max(0,t.hp-dmg);
   clog(`${r===20?"Critical hit! ":""}You ${isThrown?"throw "+w+" and ":""}hit ${t.n} for ${dmg}.`);
@@ -546,9 +546,9 @@ function enemyStrike(){
   if(e.skipNext){clog(`${e.n} loses this initiative after its fumble.`);e.skipNext=false;continue}
   if(monsterRangeStep(e))continue;
   if((h.combat?.range||"Close")==="Hand-to-Hand"&&e.enchanted&&protectionFromEvilActive()&&!h.combat.protEvilBarrierBroken){clog(`${e.n} cannot touch you through Sacred Guard.`);continue}
-  let r=d(20);
+  let r=d(20),blindPenalty=e.blindRounds>0?-6:0;
   if(r===1){clog(`${e.n} rolls a natural 1 — critical fumble. Next initiative is lost.`);e.skipNext=true;continue}
-  let mr=h.combat?.range||"Close",useRanged=false;if(e.rangedDamage&&mr!=="Hand-to-Hand"&&(e.ammo||0)>0){e.damage=e.rangedDamage;e.activeWeapon=e.rangedWeapon||"Ranged weapon";e.ammo--;useRanged=true}else if(e.meleeDamage){e.damage=e.meleeDamage;e.activeWeapon=e.meleeWeapon||"Melee weapon"}let need=Math.max(2,(20-monsterHitModifier(e))-effectiveAC(useRanged));if(r===20||r>=need){
+  let mr=h.combat?.range||"Close",useRanged=false;if(e.rangedDamage&&mr!=="Hand-to-Hand"&&(e.ammo||0)>0){e.damage=e.rangedDamage;e.activeWeapon=e.rangedWeapon||"Ranged weapon";e.ammo--;useRanged=true}else if(e.meleeDamage){e.damage=e.meleeDamage;e.activeWeapon=e.meleeWeapon||"Melee weapon"}let need=Math.max(2,(20-monsterHitModifier(e))-effectiveAC(useRanged));if(r===20||r+blindPenalty>=need){
    let mirror=h.spells?.buffs?.find(b=>b.kind==="images"&&b.images>0);if(mirror){mirror.images--;clog(`${e.n} destroys a mirror image.`);continue}
    if(h.spells?.buffs?.some(b=>b.missileWard)&&e.activeWeapon===e.rangedWeapon){clog(`${e.n}'s missile is stopped by your ward.`);continue}let dmg=rollExpr(e.damage);if(r===20)dmg*=2;if(e.damageType)dmg=applyElementalResistance(dmg,e.damage,e.damageType,e.damageNature!=="normal");h.hp=Math.max(0,h.hp-dmg);
    clog(`${e.n} hits with ${e.activeWeapon||"its attack"} for ${dmg}${r===20?" — critical":""}.`);
@@ -677,6 +677,7 @@ function resolveSpellEffect(s,t=null,autonomous=false,holdMode=null){
  else if(s.kind==="web"){for(const q of living()){let hd=Number(q.hdDice)||1,strong=q.webStrength==="great"||hd>=8,rounds=strong?2:(d(4)+d(4))*RC_ROUNDS_PER_TURN;q.disabledRounds=Math.min(rounds,spellDuration(s));q.webbed=true;clog(`${q.n} is caught in the web${strong?" and can tear free in 2 rounds":` for ${Math.ceil(rounds/RC_ROUNDS_PER_TURN)} turn(s)`}.`)}}
  else if(s.kind==="hold"){let valid=living().filter(q=>!s.humanoidOnly||q.humanoid===true),single=holdMode==="single",count=single?1:Math.min(d(4),s.maxTargets||4),qs=single?(t&&valid.includes(t)?[t]:[]):valid.slice(0,count),penalty=single?2:0;for(const q of qs){let sv=monsterSpellSave(q,s.save||"Spells");if(penalty)sv.roll-=penalty;sv.success=sv.roll>=sv.target;clog(`${q.n} save ${sv.roll} vs ${sv.target}${penalty?" (-2 single-target penalty)":""}: ${sv.success?"success":"FAIL"}.`);if(!sv.success){q.disabledRounds=Math.max(q.disabledRounds||0,spellDuration(s));q.held=true;clog(`${q.n} is held.`)}else clog(`${q.n} resists ${s.name}.`)}if(!qs.length)clog(`${s.name} has no valid humanoid target.`)}
  else if(s.kind==="debuff"){let qs=s.rc==="Slow"?living().slice(0,24):[t||living()[0]];for(const q of qs.filter(Boolean)){let sv=monsterSpellSave(q,s.save||"Spells");clog(`${q.n} save ${sv.roll} vs ${sv.target}: ${sv.success?"success":"FAIL"}.`);if(!sv.success){q.slowRounds=spellDuration(s);clog(`${q.n} is slowed.`)}else clog(`${q.n} resists ${s.name}.`)}}
+ else if(s.kind==="blind"){let q=t||living()[0];if(q){let sv=monsterSpellSave(q,s.save||"Spells");clog(`${q.n} save ${sv.roll} vs ${sv.target}: ${sv.success?"success":"FAIL"}.`);if(!sv.success){q.blindRounds=spellDuration(s);clog(`${q.n} is blinded by ${s.name}.`)}else clog(`${s.name} fails to blind ${q.n}.`)}}
  else if(s.kind==="utility"){clog(`${s.name} is active; no current combat target effect.`)}
 }
 function castCombatSpell(id,holdMode=null){
@@ -694,7 +695,7 @@ function castCombatSpell(id,holdMode=null){
  if(pr>er)enemyStrike();
  if(h.combat){tickSpellBuffs();tickEnemySpellEffects();h.combat.round++;save();renderCombat()}
 }
-function tickEnemySpellEffects(){if(!h.combat)return;for(const e of living()){if(e.disabledRounds>0)e.disabledRounds--;if(e.disabledRounds<=0&&e.webbed){e.webbed=false;clog(`${e.n} breaks free of the web.`)}if(e.disabledRounds<=0&&e.sleeping){e.sleeping=false;clog(`${e.n} awakens.`)}if(e.disabledRounds<=0&&e.held){e.held=false;clog(`${e.n} is no longer held.`)}if(e.slowRounds>0)e.slowRounds--}}
+function tickEnemySpellEffects(){if(!h.combat)return;for(const e of living()){if(e.disabledRounds>0)e.disabledRounds--;if(e.disabledRounds<=0&&e.webbed){e.webbed=false;clog(`${e.n} breaks free of the web.`)}if(e.disabledRounds<=0&&e.sleeping){e.sleeping=false;clog(`${e.n} awakens.`)}if(e.disabledRounds<=0&&e.held){e.held=false;clog(`${e.n} is no longer held.`)}if(e.slowRounds>0)e.slowRounds--;if(e.blindRounds>0){e.blindRounds--;if(e.blindRounds<=0)clog(`${e.n} can see again.`)}}}
 function spellAttackBonus(){ensureSpellState();return h.spells.buffs.reduce((a,b)=>a+(b.attack||0),0)}
 function spellACBonus(){ensureSpellState();return h.spells.buffs.reduce((a,b)=>a+(b.ac||0),0)}
 function effectiveAC(isMissile=false){let ac=combatStats().ac+spellACBonus();for(const b of h.spells.buffs){let fixed=isMissile?b.fixedMissileAC:b.fixedAC;if(fixed!=null)ac=Math.min(ac,fixed)}return ac}
