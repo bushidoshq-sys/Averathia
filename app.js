@@ -850,7 +850,7 @@ function beginHoldGroupSelection(s,menu){
   menu.innerHTML=`<div class="small"><b>${s.name}</b> — choose 2–4 humanoid targets. Selected: ${chosen.length}/4.</div>`+
    valid.map(e=>`<button class="spellChoice ${picked.has(e.id)?"on":""}" data-hold-target="${e.id}">${picked.has(e.id)?"✓ ":""}${e.n}</button>`).join("")+
    `<button data-hold-confirm ${chosen.length<2?"disabled":""}>Cast on selected</button><button data-hold-cancel>Cancel</button>`;
-  $("[data-hold-target]").forEach(b=>b.onclick=()=>{let id=+b.dataset.holdTarget,i=chosen.indexOf(id);if(i>=0)chosen.splice(i,1);else if(chosen.length<4)chosen.push(id);draw()});
+  $$("[data-hold-target]").forEach(b=>b.onclick=()=>{let id=+b.dataset.holdTarget,i=chosen.indexOf(id);if(i>=0)chosen.splice(i,1);else if(chosen.length<4)chosen.push(id);draw()});
   let confirm=$("[data-hold-confirm]");if(confirm)confirm.onclick=()=>{if(chosen.length<2)return;menu.classList.add("hide");castCombatSpell(s.id,"group",null,chosen)};
   let cancel=$("[data-hold-cancel]");if(cancel)cancel.onclick=()=>{menu.classList.add("hide");renderCombat()}
  };
@@ -864,8 +864,8 @@ function beginMissileAllocation(s,menu){
   menu.innerHTML=`<div class="small"><b>${s.name}</b> — assign ${total} darts before casting. ${left} remaining.</div>`+
    living().map(e=>`<div class="item"><span><b>${e.n}</b><div class="small">Assigned: ${counts[e.id]||0}</div></span><button data-missile-one="${e.id}">+1</button><button data-missile-rest="${e.id}">All remaining</button></div>`).join("")+
    '<button data-missile-cancel>Cancel</button>';
-  $("[data-missile-one]").forEach(b=>b.onclick=()=>{if(left<=0)return;picks.push(+b.dataset.missileOne);if(picks.length>=total){menu.classList.add("hide");castCombatSpell(s.id,null,picks)}else draw()});
-  $("[data-missile-rest]").forEach(b=>b.onclick=()=>{while(picks.length<total)picks.push(+b.dataset.missileRest);menu.classList.add("hide");castCombatSpell(s.id,null,picks)});
+  $$("[data-missile-one]").forEach(b=>b.onclick=()=>{if(left<=0)return;picks.push(+b.dataset.missileOne);if(picks.length>=total){menu.classList.add("hide");castCombatSpell(s.id,null,picks)}else draw()});
+  $$("[data-missile-rest]").forEach(b=>b.onclick=()=>{while(picks.length<total)picks.push(+b.dataset.missileRest);menu.classList.add("hide");castCombatSpell(s.id,null,picks)});
   let cancel=$("[data-missile-cancel]");if(cancel)cancel.onclick=()=>{menu.classList.add("hide");renderCombat()}
  };
  draw()
