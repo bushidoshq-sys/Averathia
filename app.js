@@ -586,7 +586,7 @@ const ARCANE_NOW=[
  {id:"magic_missile",name:"Arcane Dart",rc:"Magic Missile",sl:1,kind:"damage",damage:"1d6+1",autoHit:true,missilesByLevel:true},
  {id:"shield",name:"Arcane Ward",rc:"Shield",sl:1,kind:"buff",fixedAC:4,fixedMissileAC:2,magicMissileSave:true,durationTurns:2},
  {id:"sleep",name:"Dreamfall",rc:"Sleep",sl:1,kind:"sleep",save:null,durationTurnsDice:"4d4"},
- {id:"light",name:"Mage Light",rc:"Light",sl:1,kind:"utility"},
+ {id:"light",name:"Mage Light",rc:"Light",sl:1,kind:"blind",save:"Spells",rangeFeet:120,durationTurnsBase:6,durationTurnsPerLevel:1},
  {id:"mirror_image",name:"Mirror Phantoms",rc:"Mirror Image",sl:2,kind:"images",images:"1d4",durationTurns:6},
  {id:"web",name:"Binding Web",rc:"Web",sl:2,kind:"web",durationTurns:48},
  {id:"fireball",name:"Flameburst",rc:"Fireball",sl:3,kind:"area",perLevel:true,save:"Spells",half:true,damageType:"fire"},
@@ -641,7 +641,7 @@ function rollSpellDamage(s){if(s.perLevel){let n=Math.max(1,Math.min(h.level,10)
 const RC_ROUNDS_PER_TURN=60;
 function spellDuration(s){
  if(s.durationTurnsDice)return Math.max(1,rollExpr(s.durationTurnsDice)*RC_ROUNDS_PER_TURN);
- if(s.durationTurnsPerLevel)return Math.max(1,h.level*s.durationTurnsPerLevel*RC_ROUNDS_PER_TURN);
+ if(s.durationTurnsBase||s.durationTurnsPerLevel)return Math.max(1,((s.durationTurnsBase||0)+h.level*(s.durationTurnsPerLevel||0))*RC_ROUNDS_PER_TURN);
  if(s.durationTurns)return Math.max(1,s.durationTurns*RC_ROUNDS_PER_TURN);
  if(s.durationPerLevel)return Math.max(1,h.level*s.durationPerLevel);
  return s.duration||3
@@ -657,7 +657,7 @@ function monsterSaveLevel(m){
  return Math.max(1,Math.ceil(intelligent?hd:hd/2))
 }
 function monsterSpellSave(m,category="Spells"){
- let roll=d(20),level=monsterSaveLevel(m),target=fighterSaveTarget(level,category);
+ let roll=d(20)+(m?.blindRounds>0?-4:0),level=monsterSaveLevel(m),target=fighterSaveTarget(level,category);
  return{roll,target,success:roll>=target,level}
 }
 function resolveSpellEffect(s,t=null,autonomous=false,holdMode=null){
