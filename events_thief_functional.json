@@ -1,0 +1,612 @@
+[
+  {
+    "id": "THI-001",
+    "type": "Encounter",
+    "title": "Warehouse Patrol",
+    "text": "Lantern-bearing guards round the warehouse corner.",
+    "choices": [
+      {
+        "label": "Slip past quietly",
+        "result": "thiefSkill",
+        "skill": "moveSilently",
+        "xp": 3
+      },
+      {
+        "label": "Confront them",
+        "result": "passed"
+      }
+    ]
+  },
+  {
+    "id": "THI-002",
+    "type": "Encounter",
+    "title": "Rooftop Watch",
+    "text": "A watchman scans the roofs from a bell tower.",
+    "choices": [
+      {
+        "label": "Melt into the shadows",
+        "result": "thiefSkill",
+        "skill": "hideInShadows",
+        "xp": 3
+      },
+      {
+        "label": "Withdraw",
+        "result": "passed"
+      }
+    ]
+  },
+  {
+    "id": "THI-003",
+    "type": "Encounter",
+    "title": "Manor Guard",
+    "text": "A guard pauses outside the room you entered.",
+    "choices": [
+      {
+        "label": "Listen through the door",
+        "result": "thiefSkill",
+        "skill": "hearNoise",
+        "xp": 3
+      },
+      {
+        "label": "Risk the corridor",
+        "result": "passed"
+      }
+    ]
+  },
+  {
+    "id": "THI-004",
+    "type": "Encounter",
+    "title": "Guild Enforcer",
+    "text": "A guild enforcer has his back to you in a narrow passage.",
+    "choices": [
+      {
+        "label": "Get behind him",
+        "result": "thiefSkill",
+        "skill": "moveSilently",
+        "xp": 3
+      },
+      {
+        "label": "Back away",
+        "result": "passed"
+      }
+    ]
+  },
+  {
+    "id": "THI-005",
+    "type": "Encounter",
+    "title": "Courtyard Patrol",
+    "text": "Bootsteps approach across the manor courtyard.",
+    "choices": [
+      {
+        "label": "Hide in the arcade",
+        "result": "thiefSkill",
+        "skill": "hideInShadows",
+        "xp": 3
+      },
+      {
+        "label": "Run",
+        "result": "passed"
+      }
+    ]
+  },
+  {
+    "id": "THI-006",
+    "type": "Encounter",
+    "title": "Cellar Sentry",
+    "text": "A sentry guards the cellar stairs beneath a tavern.",
+    "choices": [
+      {
+        "label": "Sneak past",
+        "result": "thiefSkill",
+        "skill": "moveSilently",
+        "xp": 3
+      },
+      {
+        "label": "Leave",
+        "result": "passed"
+      }
+    ]
+  },
+  {
+    "id": "THI-007",
+    "type": "Encounter",
+    "title": "Sleeping Guard",
+    "text": "A guard dozes beside the counting-room door.",
+    "choices": [
+      {
+        "label": "Lift his key",
+        "result": "thiefSkill",
+        "skill": "pickPockets",
+        "xp": 3
+      },
+      {
+        "label": "Leave him",
+        "result": "passed"
+      }
+    ]
+  },
+  {
+    "id": "THI-008",
+    "type": "Encounter",
+    "title": "Rooftop Pursuit",
+    "text": "Watchmen are gaining on you across wet rooftops.",
+    "choices": [
+      {
+        "label": "Scale the next wall",
+        "result": "thiefSkill",
+        "skill": "climbWalls",
+        "xp": 3
+      },
+      {
+        "label": "Take the stairs",
+        "result": "passed"
+      }
+    ]
+  },
+  {
+    "id": "THI-009",
+    "type": "Encounter",
+    "title": "Closed Gate",
+    "text": "The alley ends at a high locked gate as pursuers approach.",
+    "choices": [
+      {
+        "label": "Pick the gate lock",
+        "result": "thiefSkill",
+        "skill": "openLocks",
+        "xp": 3
+      },
+      {
+        "label": "Turn and fight",
+        "result": "passed"
+      }
+    ]
+  },
+  {
+    "id": "THI-010",
+    "type": "Encounter",
+    "title": "Dark Stairwell",
+    "text": "Someone is climbing the stairs below you.",
+    "choices": [
+      {
+        "label": "Listen and judge the approach",
+        "result": "thiefSkill",
+        "skill": "hearNoise",
+        "xp": 3
+      },
+      {
+        "label": "Hide blindly",
+        "result": "passed"
+      }
+    ]
+  },
+  {
+    "id": "THI-011",
+    "type": "Decision",
+    "title": "Counting House Door",
+    "text": "A reinforced side door protects a merchant counting house.",
+    "choices": [
+      {
+        "label": "Pick the lock",
+        "result": "thiefSkill",
+        "skill": "openLocks",
+        "xp": 3
+      },
+      {
+        "label": "Move on",
+        "result": "passed"
+      }
+    ]
+  },
+  {
+    "id": "THI-012",
+    "type": "Decision",
+    "title": "Upper Window",
+    "text": "A second-floor window stands above a narrow alley.",
+    "choices": [
+      {
+        "label": "Climb to the window",
+        "result": "thiefSkill",
+        "skill": "climbWalls",
+        "xp": 3
+      },
+      {
+        "label": "Move on",
+        "result": "passed"
+      }
+    ]
+  },
+  {
+    "id": "THI-013",
+    "type": "Decision",
+    "title": "Jeweller's Back Room",
+    "text": "A delicate lock protects the jeweller's back room.",
+    "choices": [
+      {
+        "label": "Work the lock",
+        "result": "thiefSkill",
+        "skill": "openLocks",
+        "xp": 3
+      },
+      {
+        "label": "Leave",
+        "result": "passed"
+      }
+    ]
+  },
+  {
+    "id": "THI-014",
+    "type": "Decision",
+    "title": "Merchant's Pocket",
+    "text": "A wealthy merchant watches a street performance.",
+    "choices": [
+      {
+        "label": "Lift his purse",
+        "result": "thiefSkill",
+        "skill": "pickPockets",
+        "xp": 3
+      },
+      {
+        "label": "Leave him",
+        "result": "passed"
+      }
+    ]
+  },
+  {
+    "id": "THI-015",
+    "type": "Decision",
+    "title": "Guard Rotation",
+    "text": "There is a short gap between two patrols.",
+    "choices": [
+      {
+        "label": "Cross silently",
+        "result": "thiefSkill",
+        "skill": "moveSilently",
+        "xp": 3
+      },
+      {
+        "label": "Wait",
+        "result": "passed"
+      }
+    ]
+  },
+  {
+    "id": "THI-016",
+    "type": "Decision",
+    "title": "Lamplit Gallery",
+    "text": "A servant crosses the gallery at irregular intervals.",
+    "choices": [
+      {
+        "label": "Use the shadows",
+        "result": "thiefSkill",
+        "skill": "hideInShadows",
+        "xp": 3
+      },
+      {
+        "label": "Withdraw",
+        "result": "passed"
+      }
+    ]
+  },
+  {
+    "id": "THI-017",
+    "type": "Decision",
+    "title": "Suspicious Floor",
+    "text": "One flagstone sits slightly higher than the others.",
+    "choices": [
+      {
+        "label": "Check for a trap",
+        "result": "thiefSkill",
+        "skill": "findTraps",
+        "xp": 3
+      },
+      {
+        "label": "Step over it",
+        "result": "passed"
+      }
+    ]
+  },
+  {
+    "id": "THI-018",
+    "type": "Decision",
+    "title": "Trapped Strongbox",
+    "text": "A wire disappears beneath the lid of a strongbox.",
+    "choices": [
+      {
+        "label": "Disarm the trap",
+        "result": "thiefSkill",
+        "skill": "removeTraps",
+        "xp": 3
+      },
+      {
+        "label": "Leave it",
+        "result": "passed"
+      }
+    ]
+  },
+  {
+    "id": "THI-019",
+    "type": "Decision",
+    "title": "Office Door",
+    "text": "Voices may be coming from behind the office door.",
+    "choices": [
+      {
+        "label": "Listen at the door",
+        "result": "thiefSkill",
+        "skill": "hearNoise",
+        "xp": 3
+      },
+      {
+        "label": "Open it",
+        "result": "passed"
+      }
+    ]
+  },
+  {
+    "id": "THI-020",
+    "type": "Decision",
+    "title": "Noble's Balcony",
+    "text": "The balcony above leads directly into the private apartments.",
+    "choices": [
+      {
+        "label": "Scale the facade",
+        "result": "thiefSkill",
+        "skill": "climbWalls",
+        "xp": 3
+      },
+      {
+        "label": "Find another route",
+        "result": "passed"
+      }
+    ]
+  },
+  {
+    "id": "THI-021",
+    "type": "Discovery",
+    "title": "Locked Cashbox",
+    "text": "A small iron cashbox is hidden beneath loose floorboards.",
+    "choices": [
+      {
+        "label": "Open the cashbox",
+        "result": "thiefSkill",
+        "skill": "openLocks",
+        "xp": 3
+      },
+      {
+        "label": "Leave it",
+        "result": "passed"
+      }
+    ]
+  },
+  {
+    "id": "THI-022",
+    "type": "Discovery",
+    "title": "Needle Trap",
+    "text": "A tiny hole beside the chest lock looks suspicious.",
+    "choices": [
+      {
+        "label": "Inspect the mechanism",
+        "result": "thiefSkill",
+        "skill": "findTraps",
+        "xp": 3
+      },
+      {
+        "label": "Ignore it",
+        "result": "passed"
+      }
+    ]
+  },
+  {
+    "id": "THI-023",
+    "type": "Discovery",
+    "title": "Armed Chest",
+    "text": "You identify a trap mechanism protecting an old chest.",
+    "choices": [
+      {
+        "label": "Disarm it",
+        "result": "thiefSkill",
+        "skill": "removeTraps",
+        "xp": 3
+      },
+      {
+        "label": "Leave it",
+        "result": "passed"
+      }
+    ]
+  },
+  {
+    "id": "THI-024",
+    "type": "Discovery",
+    "title": "Loose Purse",
+    "text": "A distracted gambler has a heavy purse at his belt.",
+    "choices": [
+      {
+        "label": "Take the purse",
+        "result": "thiefSkill",
+        "skill": "pickPockets",
+        "xp": 3
+      },
+      {
+        "label": "Leave it",
+        "result": "passed"
+      }
+    ]
+  },
+  {
+    "id": "THI-025",
+    "type": "Discovery",
+    "title": "High Cache",
+    "text": "A smuggler's cache is visible above a sheer warehouse wall.",
+    "choices": [
+      {
+        "label": "Climb to it",
+        "result": "thiefSkill",
+        "skill": "climbWalls",
+        "xp": 3
+      },
+      {
+        "label": "Leave it",
+        "result": "passed"
+      }
+    ]
+  },
+  {
+    "id": "THI-026",
+    "type": "Discovery",
+    "title": "Secret Meeting",
+    "text": "Muffled voices come through a thin cellar wall.",
+    "choices": [
+      {
+        "label": "Listen closely",
+        "result": "thiefSkill",
+        "skill": "hearNoise",
+        "xp": 3
+      },
+      {
+        "label": "Move on",
+        "result": "passed"
+      }
+    ]
+  },
+  {
+    "id": "THI-027",
+    "type": "Discovery",
+    "title": "Moonlit Courtyard",
+    "text": "A bright courtyard separates you from an open study window.",
+    "choices": [
+      {
+        "label": "Cross unseen",
+        "result": "thiefSkill",
+        "skill": "hideInShadows",
+        "xp": 3
+      },
+      {
+        "label": "Go around",
+        "result": "passed"
+      }
+    ]
+  },
+  {
+    "id": "THI-028",
+    "type": "Discovery",
+    "title": "Servants' Passage",
+    "text": "A narrow servants' passage leads deeper into the manor.",
+    "choices": [
+      {
+        "label": "Proceed silently",
+        "result": "thiefSkill",
+        "skill": "moveSilently",
+        "xp": 3
+      },
+      {
+        "label": "Leave",
+        "result": "passed"
+      }
+    ]
+  },
+  {
+    "id": "THI-029",
+    "type": "Discovery",
+    "title": "Locked Ledger Desk",
+    "text": "A merchant's desk has a sophisticated lock.",
+    "choices": [
+      {
+        "label": "Pick the desk lock",
+        "result": "thiefSkill",
+        "skill": "openLocks",
+        "xp": 3
+      },
+      {
+        "label": "Leave",
+        "result": "passed"
+      }
+    ]
+  },
+  {
+    "id": "THI-030",
+    "type": "Discovery",
+    "title": "Suspicious Rug",
+    "text": "A rug conceals an oddly shaped seam in the floor.",
+    "choices": [
+      {
+        "label": "Examine it carefully",
+        "result": "thiefSkill",
+        "skill": "findTraps",
+        "xp": 3
+      },
+      {
+        "label": "Ignore it",
+        "result": "passed"
+      }
+    ]
+  },
+  {
+    "id": "THI-031",
+    "type": "Quiet",
+    "title": "Sleeping Street",
+    "text": "The district lies quiet beneath shuttered windows.",
+    "choices": []
+  },
+  {
+    "id": "THI-032",
+    "type": "Quiet",
+    "title": "Empty Rooftop",
+    "text": "Rain taps softly on an empty rooftop.",
+    "choices": []
+  },
+  {
+    "id": "THI-033",
+    "type": "Quiet",
+    "title": "Canal Walk",
+    "text": "Black water moves beside silent warehouses.",
+    "choices": []
+  },
+  {
+    "id": "THI-034",
+    "type": "Quiet",
+    "title": "Abandoned Loft",
+    "text": "A dusty loft offers a concealed place to rest.",
+    "choices": []
+  },
+  {
+    "id": "THI-035",
+    "type": "Quiet",
+    "title": "Market After Dark",
+    "text": "Canvas awnings flap over deserted market stalls.",
+    "choices": []
+  },
+  {
+    "id": "THI-036",
+    "type": "Quiet",
+    "title": "Bell Tower",
+    "text": "The city spreads below the silent bell tower.",
+    "choices": []
+  },
+  {
+    "id": "THI-037",
+    "type": "Quiet",
+    "title": "Back Alley",
+    "text": "For once, no footsteps follow you through the alley.",
+    "choices": []
+  },
+  {
+    "id": "THI-038",
+    "type": "Quiet",
+    "title": "Warehouse Rafters",
+    "text": "You pause unseen among the rafters.",
+    "choices": []
+  },
+  {
+    "id": "THI-039",
+    "type": "Quiet",
+    "title": "Sewer Junction",
+    "text": "Only running water echoes through the brick tunnels.",
+    "choices": []
+  },
+  {
+    "id": "THI-040",
+    "type": "Quiet",
+    "title": "Inn Roof",
+    "text": "Warm chimney smoke drifts across the quiet roof.",
+    "choices": []
+  }
+]

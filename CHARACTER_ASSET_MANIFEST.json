@@ -1,0 +1,14 @@
+{
+  "version": "0.6.4",
+  "source": "Averthia Characters.zip",
+  "fullBodyMasters": 36,
+  "policy": "User-clipped full-body PNG is authoritative. Headshots and sprites are generated only from matching full-body master.",
+  "knownRejectedDerivatives": [
+    "Dwarf Female 2 Headshot.png (beard mismatch)",
+    "Dwarf Female 1 Miniature.png (beard mismatch)"
+  ],
+  "knownVisualIssueRequiringArtEdit": "Arcanist Male 1 full-body contains shield; Arcanist may not use shield. Source master retained pending visual edit.",
+  "arcanistMale1": "Replaced with user-approved newly generated shieldless Arcanist; full/head/sprite all derived from approved replacement.",
+  "arcanistMale2": "Replaced with Peter-supplied PNG; head/sprite derived from exact supplied master.",
+  "arcanistFemale2": "Replaced with Peter-supplied PNG; head/sprite derived from exact supplied master."
+}

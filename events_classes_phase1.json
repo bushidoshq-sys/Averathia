@@ -1,0 +1,2767 @@
+{
+  "Cleric": [
+    {
+      "id": "CLE-001",
+      "type": "Encounter",
+      "title": "Restless Crypt",
+      "text": "The crypt door yawns open and dead hands scrape against stone.",
+      "choices": [
+        {
+          "label": "Turn Undead",
+          "result": "clericTurn",
+          "xp": 4
+        },
+        {
+          "label": "Fight",
+          "result": "combat"
+        },
+        {
+          "label": "Withdraw",
+          "result": "avoided"
+        }
+      ]
+    },
+    {
+      "id": "CLE-002",
+      "type": "Encounter",
+      "title": "Bone Chapel",
+      "text": "Skeletons rise among the shattered pews of a burial chapel.",
+      "choices": [
+        {
+          "label": "Turn Undead",
+          "result": "clericTurn",
+          "xp": 4
+        },
+        {
+          "label": "Fight",
+          "result": "combat"
+        },
+        {
+          "label": "Withdraw",
+          "result": "avoided"
+        }
+      ]
+    },
+    {
+      "id": "CLE-003",
+      "type": "Encounter",
+      "title": "Grave Watch",
+      "text": "Restless dead move between leaning grave markers.",
+      "choices": [
+        {
+          "label": "Turn Undead",
+          "result": "clericTurn",
+          "xp": 4
+        },
+        {
+          "label": "Fight",
+          "result": "combat"
+        },
+        {
+          "label": "Withdraw",
+          "result": "avoided"
+        }
+      ]
+    },
+    {
+      "id": "CLE-004",
+      "type": "Encounter",
+      "title": "Catacomb Procession",
+      "text": "A procession of the dead blocks the narrow catacomb passage.",
+      "choices": [
+        {
+          "label": "Turn Undead",
+          "result": "clericTurn",
+          "xp": 4
+        },
+        {
+          "label": "Fight",
+          "result": "combat"
+        },
+        {
+          "label": "Withdraw",
+          "result": "avoided"
+        }
+      ]
+    },
+    {
+      "id": "CLE-005",
+      "type": "Encounter",
+      "title": "Desecrated Tomb",
+      "text": "The corpse within a broken tomb lurches upright.",
+      "choices": [
+        {
+          "label": "Turn Undead",
+          "result": "clericTurn",
+          "xp": 4
+        },
+        {
+          "label": "Fight",
+          "result": "combat"
+        },
+        {
+          "label": "Withdraw",
+          "result": "avoided"
+        }
+      ]
+    },
+    {
+      "id": "CLE-006",
+      "type": "Encounter",
+      "title": "Ashen Ossuary",
+      "text": "Dry bones knit themselves together around the ossuary.",
+      "choices": [
+        {
+          "label": "Turn Undead",
+          "result": "clericTurn",
+          "xp": 4
+        },
+        {
+          "label": "Fight",
+          "result": "combat"
+        },
+        {
+          "label": "Withdraw",
+          "result": "avoided"
+        }
+      ]
+    },
+    {
+      "id": "CLE-007",
+      "type": "Encounter",
+      "title": "Sunken Mausoleum",
+      "text": "Dead guardians climb from black water around a sunken mausoleum.",
+      "choices": [
+        {
+          "label": "Turn Undead",
+          "result": "clericTurn",
+          "xp": 4
+        },
+        {
+          "label": "Fight",
+          "result": "combat"
+        },
+        {
+          "label": "Withdraw",
+          "result": "avoided"
+        }
+      ]
+    },
+    {
+      "id": "CLE-008",
+      "type": "Encounter",
+      "title": "Bell-Tower Dead",
+      "text": "A dead bell-keeper descends the ruined tower stairs.",
+      "choices": [
+        {
+          "label": "Turn Undead",
+          "result": "clericTurn",
+          "xp": 4
+        },
+        {
+          "label": "Fight",
+          "result": "combat"
+        },
+        {
+          "label": "Withdraw",
+          "result": "avoided"
+        }
+      ]
+    },
+    {
+      "id": "CLE-009",
+      "type": "Encounter",
+      "title": "Sepulchral Guard",
+      "text": "Ancient corpses stand between you and the inner sepulchre.",
+      "choices": [
+        {
+          "label": "Turn Undead",
+          "result": "clericTurn",
+          "xp": 4
+        },
+        {
+          "label": "Fight",
+          "result": "combat"
+        },
+        {
+          "label": "Withdraw",
+          "result": "avoided"
+        }
+      ]
+    },
+    {
+      "id": "CLE-010",
+      "type": "Encounter",
+      "title": "Necropolis Gate",
+      "text": "The dead gather beneath the cracked arch of the necropolis.",
+      "choices": [
+        {
+          "label": "Turn Undead",
+          "result": "clericTurn",
+          "xp": 4
+        },
+        {
+          "label": "Fight",
+          "result": "combat"
+        },
+        {
+          "label": "Withdraw",
+          "result": "avoided"
+        }
+      ]
+    },
+    {
+      "id": "CLE-011",
+      "type": "Decision",
+      "title": "Sealed Ossuary",
+      "text": "Sacred markings cover a sealed ossuary. Something about them feels wrong.",
+      "choices": [
+        {
+          "label": "Read the sacred signs",
+          "result": "clericWis",
+          "difficulty": "Normal",
+          "xp": 3
+        },
+        {
+          "label": "Leave it",
+          "result": "passed"
+        }
+      ]
+    },
+    {
+      "id": "CLE-012",
+      "type": "Decision",
+      "title": "Broken Shrine",
+      "text": "A neglected shrine has been deliberately defaced.",
+      "choices": [
+        {
+          "label": "Reconsecrate the shrine",
+          "result": "clericWis",
+          "difficulty": "Normal",
+          "xp": 3
+        },
+        {
+          "label": "Leave it",
+          "result": "passed"
+        }
+      ]
+    },
+    {
+      "id": "CLE-013",
+      "type": "Decision",
+      "title": "Funeral Bell",
+      "text": "A bell rings somewhere beneath the earth although no living hand pulls its rope.",
+      "choices": [
+        {
+          "label": "Follow the omen",
+          "result": "clericWis",
+          "difficulty": "Normal",
+          "xp": 3
+        },
+        {
+          "label": "Leave it",
+          "result": "passed"
+        }
+      ]
+    },
+    {
+      "id": "CLE-014",
+      "type": "Decision",
+      "title": "Forbidden Reliquary",
+      "text": "A reliquary has been forced open and its wards disturbed.",
+      "choices": [
+        {
+          "label": "Examine the wards",
+          "result": "clericWis",
+          "difficulty": "Normal",
+          "xp": 3
+        },
+        {
+          "label": "Leave it",
+          "result": "passed"
+        }
+      ]
+    },
+    {
+      "id": "CLE-015",
+      "type": "Decision",
+      "title": "Pilgrim's Warning",
+      "text": "A frightened pilgrim insists the burial road is cursed.",
+      "choices": [
+        {
+          "label": "Judge the warning",
+          "result": "clericWis",
+          "difficulty": "Normal",
+          "xp": 3
+        },
+        {
+          "label": "Leave it",
+          "result": "passed"
+        }
+      ]
+    },
+    {
+      "id": "CLE-016",
+      "type": "Decision",
+      "title": "Black Candles",
+      "text": "Black candles burn before an empty tomb without melting.",
+      "choices": [
+        {
+          "label": "Test the profane rite",
+          "result": "clericWis",
+          "difficulty": "Normal",
+          "xp": 3
+        },
+        {
+          "label": "Leave it",
+          "result": "passed"
+        }
+      ]
+    },
+    {
+      "id": "CLE-017",
+      "type": "Decision",
+      "title": "Unquiet Grave",
+      "text": "Fresh soil moves on a grave that has stood for generations.",
+      "choices": [
+        {
+          "label": "Perform a calming rite",
+          "result": "clericWis",
+          "difficulty": "Normal",
+          "xp": 3
+        },
+        {
+          "label": "Leave it",
+          "result": "passed"
+        }
+      ]
+    },
+    {
+      "id": "CLE-018",
+      "type": "Decision",
+      "title": "Chapel Threshold",
+      "text": "A cold pressure hangs across the chapel threshold.",
+      "choices": [
+        {
+          "label": "Bless the threshold",
+          "result": "clericWis",
+          "difficulty": "Normal",
+          "xp": 3
+        },
+        {
+          "label": "Leave it",
+          "result": "passed"
+        }
+      ]
+    },
+    {
+      "id": "CLE-019",
+      "type": "Decision",
+      "title": "Nameless Sarcophagus",
+      "text": "Every name has been chiselled from an ancient sarcophagus.",
+      "choices": [
+        {
+          "label": "Study the desecration",
+          "result": "clericWis",
+          "difficulty": "Normal",
+          "xp": 3
+        },
+        {
+          "label": "Leave it",
+          "result": "passed"
+        }
+      ]
+    },
+    {
+      "id": "CLE-020",
+      "type": "Decision",
+      "title": "Whispering Vault",
+      "text": "Whispers answer every prayer spoken near a sealed vault.",
+      "choices": [
+        {
+          "label": "Discern the voices",
+          "result": "clericWis",
+          "difficulty": "Normal",
+          "xp": 3
+        },
+        {
+          "label": "Leave it",
+          "result": "passed"
+        }
+      ]
+    },
+    {
+      "id": "CLE-021",
+      "type": "Discovery",
+      "title": "Saint's Niche",
+      "text": "A hidden niche contains an old devotional token.",
+      "choices": [
+        {
+          "label": "Examine the niche",
+          "result": "clericWis",
+          "difficulty": "Normal",
+          "xp": 3
+        },
+        {
+          "label": "Leave it",
+          "result": "left"
+        }
+      ]
+    },
+    {
+      "id": "CLE-022",
+      "type": "Discovery",
+      "title": "Catacomb Map",
+      "text": "Faded devotional marks form a map of forgotten passages.",
+      "choices": [
+        {
+          "label": "Interpret the markings",
+          "result": "clericWis",
+          "difficulty": "Normal",
+          "xp": 3
+        },
+        {
+          "label": "Leave it",
+          "result": "left"
+        }
+      ]
+    },
+    {
+      "id": "CLE-023",
+      "type": "Discovery",
+      "title": "Consecrated Spring",
+      "text": "Clear water gathers beneath a weathered sacred carving.",
+      "choices": [
+        {
+          "label": "Recognize the blessing",
+          "result": "clericWis",
+          "difficulty": "Normal",
+          "xp": 3
+        },
+        {
+          "label": "Leave it",
+          "result": "left"
+        }
+      ]
+    },
+    {
+      "id": "CLE-024",
+      "type": "Discovery",
+      "title": "Burial Ledger",
+      "text": "A stone ledger records generations of forgotten burials.",
+      "choices": [
+        {
+          "label": "Study the names",
+          "result": "clericWis",
+          "difficulty": "Normal",
+          "xp": 3
+        },
+        {
+          "label": "Leave it",
+          "result": "left"
+        }
+      ]
+    },
+    {
+      "id": "CLE-025",
+      "type": "Discovery",
+      "title": "Ancient Epitaph",
+      "text": "An inscription records why this crypt was sealed.",
+      "choices": [
+        {
+          "label": "Interpret the epitaph",
+          "result": "clericWis",
+          "difficulty": "Normal",
+          "xp": 3
+        },
+        {
+          "label": "Leave it",
+          "result": "left"
+        }
+      ]
+    },
+    {
+      "id": "CLE-026",
+      "type": "Discovery",
+      "title": "Reliquary Fragment",
+      "text": "A fragment of a small reliquary lies beneath fallen masonry.",
+      "choices": [
+        {
+          "label": "Identify the fragment",
+          "result": "clericWis",
+          "difficulty": "Normal",
+          "xp": 3
+        },
+        {
+          "label": "Leave it",
+          "result": "left"
+        }
+      ]
+    },
+    {
+      "id": "CLE-027",
+      "type": "Discovery",
+      "title": "Votive Chamber",
+      "text": "Hundreds of tiny offerings cover a chamber wall.",
+      "choices": [
+        {
+          "label": "Read their pattern",
+          "result": "clericWis",
+          "difficulty": "Normal",
+          "xp": 3
+        },
+        {
+          "label": "Leave it",
+          "result": "left"
+        }
+      ]
+    },
+    {
+      "id": "CLE-028",
+      "type": "Discovery",
+      "title": "Saint Ordel's Mark",
+      "text": "An unfamiliar carved symbol resembles accounts of Saint Ordel.",
+      "choices": [
+        {
+          "label": "Recall the tradition",
+          "result": "clericWis",
+          "difficulty": "Normal",
+          "xp": 3
+        },
+        {
+          "label": "Leave it",
+          "result": "left"
+        }
+      ]
+    },
+    {
+      "id": "CLE-029",
+      "type": "Discovery",
+      "title": "Processional Mosaic",
+      "text": "A damaged mosaic depicts an old funerary procession.",
+      "choices": [
+        {
+          "label": "Study the mosaic",
+          "result": "clericWis",
+          "difficulty": "Normal",
+          "xp": 3
+        },
+        {
+          "label": "Leave it",
+          "result": "left"
+        }
+      ]
+    },
+    {
+      "id": "CLE-030",
+      "type": "Discovery",
+      "title": "Hidden Vestry",
+      "text": "A concealed vestry holds mouldering vestments and records.",
+      "choices": [
+        {
+          "label": "Search the records",
+          "result": "clericWis",
+          "difficulty": "Normal",
+          "xp": 3
+        },
+        {
+          "label": "Leave it",
+          "result": "left"
+        }
+      ]
+    },
+    {
+      "id": "CLE-031",
+      "type": "Quiet",
+      "title": "Silent Nave",
+      "text": "Only dust moves through the ruined chapel.",
+      "choices": []
+    },
+    {
+      "id": "CLE-032",
+      "type": "Quiet",
+      "title": "Candle Alcove",
+      "text": "An abandoned candle alcove offers a sheltered pause.",
+      "choices": []
+    },
+    {
+      "id": "CLE-033",
+      "type": "Quiet",
+      "title": "Old Cemetery",
+      "text": "The cemetery lies quiet beneath the grey sky.",
+      "choices": []
+    },
+    {
+      "id": "CLE-034",
+      "type": "Quiet",
+      "title": "Crypt Landing",
+      "text": "Nothing stirs on the broad stone landing.",
+      "choices": []
+    },
+    {
+      "id": "CLE-035",
+      "type": "Quiet",
+      "title": "Monastery Ruin",
+      "text": "Wind passes through the empty cloister.",
+      "choices": []
+    },
+    {
+      "id": "CLE-036",
+      "type": "Quiet",
+      "title": "Wayside Shrine",
+      "text": "A small roadside shrine remains undisturbed.",
+      "choices": []
+    },
+    {
+      "id": "CLE-037",
+      "type": "Quiet",
+      "title": "Stone Cloister",
+      "text": "Rain taps softly against the old cloister roof.",
+      "choices": []
+    },
+    {
+      "id": "CLE-038",
+      "type": "Quiet",
+      "title": "Pilgrim Steps",
+      "text": "Worn steps offer a place to rest before the climb.",
+      "choices": []
+    },
+    {
+      "id": "CLE-039",
+      "type": "Quiet",
+      "title": "Memorial Garden",
+      "text": "Dead leaves gather around weathered memorial stones.",
+      "choices": []
+    },
+    {
+      "id": "CLE-040",
+      "type": "Quiet",
+      "title": "Dawn Chapel",
+      "text": "Pale morning light enters through a roofless chapel.",
+      "choices": []
+    }
+  ],
+  "Thief": [
+    {
+      "id": "THI-001",
+      "type": "Encounter",
+      "title": "Warehouse Patrol",
+      "text": "Lantern-bearing guards round the warehouse corner.",
+      "choices": [
+        {
+          "label": "Face the threat",
+          "result": "combat"
+        },
+        {
+          "label": "Avoid it",
+          "result": "avoided"
+        }
+      ]
+    },
+    {
+      "id": "THI-002",
+      "type": "Encounter",
+      "title": "Rooftop Pursuit",
+      "text": "Boots hammer across the tiles behind you.",
+      "choices": [
+        {
+          "label": "Face the threat",
+          "result": "combat"
+        },
+        {
+          "label": "Avoid it",
+          "result": "avoided"
+        }
+      ]
+    },
+    {
+      "id": "THI-003",
+      "type": "Encounter",
+      "title": "Back-Alley Watch",
+      "text": "A pair of watchmen blocks the narrow alley.",
+      "choices": [
+        {
+          "label": "Face the threat",
+          "result": "combat"
+        },
+        {
+          "label": "Avoid it",
+          "result": "avoided"
+        }
+      ]
+    },
+    {
+      "id": "THI-004",
+      "type": "Encounter",
+      "title": "Guild Enforcers",
+      "text": "Two hard-looking figures step from a doorway.",
+      "choices": [
+        {
+          "label": "Face the threat",
+          "result": "combat"
+        },
+        {
+          "label": "Avoid it",
+          "result": "avoided"
+        }
+      ]
+    },
+    {
+      "id": "THI-005",
+      "type": "Encounter",
+      "title": "Manor Guard",
+      "text": "A guard appears at the end of the gallery.",
+      "choices": [
+        {
+          "label": "Face the threat",
+          "result": "combat"
+        },
+        {
+          "label": "Avoid it",
+          "result": "avoided"
+        }
+      ]
+    },
+    {
+      "id": "THI-006",
+      "type": "Decision",
+      "title": "Locked Counting House",
+      "text": "A side door to a counting house has a difficult lock.",
+      "choices": [
+        {
+          "label": "Investigate",
+          "result": "investigated",
+          "xp": 2
+        },
+        {
+          "label": "Move on",
+          "result": "passed"
+        }
+      ]
+    },
+    {
+      "id": "THI-007",
+      "type": "Decision",
+      "title": "Open Window",
+      "text": "An upper window has been left slightly open.",
+      "choices": [
+        {
+          "label": "Investigate",
+          "result": "investigated",
+          "xp": 2
+        },
+        {
+          "label": "Move on",
+          "result": "passed"
+        }
+      ]
+    },
+    {
+      "id": "THI-008",
+      "type": "Decision",
+      "title": "Guard Rotation",
+      "text": "The patrol leaves a brief gap near the courtyard wall.",
+      "choices": [
+        {
+          "label": "Investigate",
+          "result": "investigated",
+          "xp": 2
+        },
+        {
+          "label": "Move on",
+          "result": "passed"
+        }
+      ]
+    },
+    {
+      "id": "THI-009",
+      "type": "Decision",
+      "title": "Merchant's Ledger",
+      "text": "An unattended ledger could reveal something valuable.",
+      "choices": [
+        {
+          "label": "Investigate",
+          "result": "investigated",
+          "xp": 2
+        },
+        {
+          "label": "Move on",
+          "result": "passed"
+        }
+      ]
+    },
+    {
+      "id": "THI-010",
+      "type": "Decision",
+      "title": "Narrow Escape",
+      "text": "Two routes lead away from the scene: rooftops or sewers.",
+      "choices": [
+        {
+          "label": "Investigate",
+          "result": "investigated",
+          "xp": 2
+        },
+        {
+          "label": "Move on",
+          "result": "passed"
+        }
+      ]
+    },
+    {
+      "id": "THI-011",
+      "type": "Discovery",
+      "title": "Hidden Purse",
+      "text": "A purse has been tucked beneath a loose brick.",
+      "choices": [
+        {
+          "label": "Examine it",
+          "result": "discovered",
+          "xp": 2
+        },
+        {
+          "label": "Leave it",
+          "result": "left"
+        }
+      ]
+    },
+    {
+      "id": "THI-012",
+      "type": "Discovery",
+      "title": "Smuggler Mark",
+      "text": "A discreet symbol marks a cellar entrance.",
+      "choices": [
+        {
+          "label": "Examine it",
+          "result": "discovered",
+          "xp": 2
+        },
+        {
+          "label": "Leave it",
+          "result": "left"
+        }
+      ]
+    },
+    {
+      "id": "THI-013",
+      "type": "Discovery",
+      "title": "Forgotten Key",
+      "text": "A small iron key lies behind a rain barrel.",
+      "choices": [
+        {
+          "label": "Examine it",
+          "result": "discovered",
+          "xp": 2
+        },
+        {
+          "label": "Leave it",
+          "result": "left"
+        }
+      ]
+    },
+    {
+      "id": "THI-014",
+      "type": "Discovery",
+      "title": "Fence's Cache",
+      "text": "A concealed compartment holds trade goods.",
+      "choices": [
+        {
+          "label": "Examine it",
+          "result": "discovered",
+          "xp": 2
+        },
+        {
+          "label": "Leave it",
+          "result": "left"
+        }
+      ]
+    },
+    {
+      "id": "THI-015",
+      "type": "Discovery",
+      "title": "Secret Passage",
+      "text": "A disguised panel opens into a service corridor.",
+      "choices": [
+        {
+          "label": "Examine it",
+          "result": "discovered",
+          "xp": 2
+        },
+        {
+          "label": "Leave it",
+          "result": "left"
+        }
+      ]
+    },
+    {
+      "id": "THI-016",
+      "type": "Quiet",
+      "title": "Sleeping Street",
+      "text": "The district lies quiet under shuttered windows.",
+      "choices": []
+    },
+    {
+      "id": "THI-017",
+      "type": "Quiet",
+      "title": "Empty Rooftop",
+      "text": "No one looks up as you cross the roofs.",
+      "choices": []
+    },
+    {
+      "id": "THI-018",
+      "type": "Quiet",
+      "title": "Market After Dark",
+      "text": "The stalls are closed and the square is empty.",
+      "choices": []
+    },
+    {
+      "id": "THI-019",
+      "type": "Quiet",
+      "title": "Abandoned Loft",
+      "text": "A dusty loft offers a safe pause.",
+      "choices": []
+    },
+    {
+      "id": "THI-020",
+      "type": "Quiet",
+      "title": "Canal Walk",
+      "text": "Only black water moves beside the silent warehouses.",
+      "choices": []
+    }
+  ],
+  "Arcanist": [
+    {
+      "id": "ARC-001",
+      "type": "Encounter",
+      "title": "Tower Familiar",
+      "text": "A hostile magical creature circles the stair of an abandoned arcane tower.",
+      "choices": [
+        {
+          "label": "Face the threat",
+          "result": "combat"
+        },
+        {
+          "label": "Avoid it",
+          "result": "avoided"
+        }
+      ]
+    },
+    {
+      "id": "ARC-002",
+      "type": "Encounter",
+      "title": "Unstable Summoning",
+      "text": "A summoned creature strains against a failing containment circle.",
+      "choices": [
+        {
+          "label": "Face the threat",
+          "result": "combat"
+        },
+        {
+          "label": "Avoid it",
+          "result": "avoided"
+        }
+      ]
+    },
+    {
+      "id": "ARC-003",
+      "type": "Encounter",
+      "title": "Arcane Sentinel",
+      "text": "An enchanted guardian wakes beside a sealed laboratory.",
+      "choices": [
+        {
+          "label": "Face the threat",
+          "result": "combat"
+        },
+        {
+          "label": "Avoid it",
+          "result": "avoided"
+        }
+      ]
+    },
+    {
+      "id": "ARC-004",
+      "type": "Encounter",
+      "title": "Rift Creature",
+      "text": "Something clawed crawls through a dimensional tear.",
+      "choices": [
+        {
+          "label": "Face the threat",
+          "result": "combat"
+        },
+        {
+          "label": "Avoid it",
+          "result": "avoided"
+        }
+      ]
+    },
+    {
+      "id": "ARC-005",
+      "type": "Encounter",
+      "title": "Living Spell",
+      "text": "Loose magic condenses into a violent, shifting form.",
+      "choices": [
+        {
+          "label": "Face the threat",
+          "result": "combat"
+        },
+        {
+          "label": "Avoid it",
+          "result": "avoided"
+        }
+      ]
+    },
+    {
+      "id": "ARC-006",
+      "type": "Encounter",
+      "title": "Glass Golem",
+      "text": "A crystalline guardian steps from a shattered display chamber.",
+      "choices": [
+        {
+          "label": "Face the threat",
+          "result": "combat"
+        },
+        {
+          "label": "Avoid it",
+          "result": "avoided"
+        }
+      ]
+    },
+    {
+      "id": "ARC-007",
+      "type": "Encounter",
+      "title": "Aether Parasite",
+      "text": "A pale creature feeds on the glow of an arcane conduit.",
+      "choices": [
+        {
+          "label": "Face the threat",
+          "result": "combat"
+        },
+        {
+          "label": "Avoid it",
+          "result": "avoided"
+        }
+      ]
+    },
+    {
+      "id": "ARC-008",
+      "type": "Encounter",
+      "title": "Mirror Double",
+      "text": "A hostile reflection steps free of a black mirror.",
+      "choices": [
+        {
+          "label": "Face the threat",
+          "result": "combat"
+        },
+        {
+          "label": "Avoid it",
+          "result": "avoided"
+        }
+      ]
+    },
+    {
+      "id": "ARC-009",
+      "type": "Encounter",
+      "title": "Runic Guardian",
+      "text": "A rune-carved construct blocks the archive stairs.",
+      "choices": [
+        {
+          "label": "Face the threat",
+          "result": "combat"
+        },
+        {
+          "label": "Avoid it",
+          "result": "avoided"
+        }
+      ]
+    },
+    {
+      "id": "ARC-010",
+      "type": "Encounter",
+      "title": "Portal Hunter",
+      "text": "A strange predator emerges from a portal and fixes on you.",
+      "choices": [
+        {
+          "label": "Face the threat",
+          "result": "combat"
+        },
+        {
+          "label": "Avoid it",
+          "result": "avoided"
+        }
+      ]
+    },
+    {
+      "id": "ARC-011",
+      "type": "Decision",
+      "title": "Dimensional Door",
+      "text": "A thin doorway opens onto impossible stars.",
+      "choices": [
+        {
+          "label": "Analyse the doorway",
+          "result": "classAbility",
+          "ability": "INT",
+          "difficulty": "Normal",
+          "xp": 3
+        },
+        {
+          "label": "Move on",
+          "result": "passed"
+        }
+      ]
+    },
+    {
+      "id": "ARC-012",
+      "type": "Decision",
+      "title": "Runed Observatory",
+      "text": "The observatory controls are covered in shifting runes.",
+      "choices": [
+        {
+          "label": "Decode the controls",
+          "result": "classAbility",
+          "ability": "INT",
+          "difficulty": "Normal",
+          "xp": 3
+        },
+        {
+          "label": "Move on",
+          "result": "passed"
+        }
+      ]
+    },
+    {
+      "id": "ARC-013",
+      "type": "Decision",
+      "title": "Broken Portal",
+      "text": "A damaged portal flickers between unknown destinations.",
+      "choices": [
+        {
+          "label": "Stabilise the pattern",
+          "result": "classAbility",
+          "ability": "INT",
+          "difficulty": "Normal",
+          "xp": 3
+        },
+        {
+          "label": "Move on",
+          "result": "passed"
+        }
+      ]
+    },
+    {
+      "id": "ARC-014",
+      "type": "Decision",
+      "title": "Forbidden Formula",
+      "text": "An unfinished formula covers an entire wall.",
+      "choices": [
+        {
+          "label": "Complete the reasoning",
+          "result": "classAbility",
+          "ability": "INT",
+          "difficulty": "Normal",
+          "xp": 3
+        },
+        {
+          "label": "Move on",
+          "result": "passed"
+        }
+      ]
+    },
+    {
+      "id": "ARC-015",
+      "type": "Decision",
+      "title": "Mirror Passage",
+      "text": "A black mirror reflects a corridor that is not here.",
+      "choices": [
+        {
+          "label": "Test the reflection",
+          "result": "classAbility",
+          "ability": "INT",
+          "difficulty": "Normal",
+          "xp": 3
+        },
+        {
+          "label": "Move on",
+          "result": "passed"
+        }
+      ]
+    },
+    {
+      "id": "ARC-016",
+      "type": "Decision",
+      "title": "Clockwork Orrery",
+      "text": "A brass model of unknown worlds turns by itself.",
+      "choices": [
+        {
+          "label": "Reconstruct its sequence",
+          "result": "classAbility",
+          "ability": "INT",
+          "difficulty": "Normal",
+          "xp": 3
+        },
+        {
+          "label": "Move on",
+          "result": "passed"
+        }
+      ]
+    },
+    {
+      "id": "ARC-017",
+      "type": "Decision",
+      "title": "Arcane Lock",
+      "text": "A door is sealed by interlocking magical symbols.",
+      "choices": [
+        {
+          "label": "Solve the sigil",
+          "result": "classAbility",
+          "ability": "INT",
+          "difficulty": "Normal",
+          "xp": 3
+        },
+        {
+          "label": "Move on",
+          "result": "passed"
+        }
+      ]
+    },
+    {
+      "id": "ARC-018",
+      "type": "Decision",
+      "title": "Gravity Well",
+      "text": "Loose stones hang motionless above a dark stair.",
+      "choices": [
+        {
+          "label": "Calculate a safe route",
+          "result": "classAbility",
+          "ability": "INT",
+          "difficulty": "Normal",
+          "xp": 3
+        },
+        {
+          "label": "Move on",
+          "result": "passed"
+        }
+      ]
+    },
+    {
+      "id": "ARC-019",
+      "type": "Decision",
+      "title": "Memory Prism",
+      "text": "A prism projects fragments of another scholar's memories.",
+      "choices": [
+        {
+          "label": "Order the fragments",
+          "result": "classAbility",
+          "ability": "INT",
+          "difficulty": "Normal",
+          "xp": 3
+        },
+        {
+          "label": "Move on",
+          "result": "passed"
+        }
+      ]
+    },
+    {
+      "id": "ARC-020",
+      "type": "Decision",
+      "title": "Shifting Library",
+      "text": "Shelves rearrange whenever you stop looking at them.",
+      "choices": [
+        {
+          "label": "Predict the pattern",
+          "result": "classAbility",
+          "ability": "INT",
+          "difficulty": "Normal",
+          "xp": 3
+        },
+        {
+          "label": "Move on",
+          "result": "passed"
+        }
+      ]
+    },
+    {
+      "id": "ARC-021",
+      "type": "Discovery",
+      "title": "Spell Fragment",
+      "text": "A surviving page contains a fragment of arcane notation.",
+      "choices": [
+        {
+          "label": "Interpret the notation",
+          "result": "classAbility",
+          "ability": "INT",
+          "difficulty": "Normal",
+          "xp": 3
+        },
+        {
+          "label": "Leave it",
+          "result": "left"
+        }
+      ]
+    },
+    {
+      "id": "ARC-022",
+      "type": "Discovery",
+      "title": "Aether Crystal",
+      "text": "A humming crystal rests in a brass cradle.",
+      "choices": [
+        {
+          "label": "Identify its function",
+          "result": "classAbility",
+          "ability": "INT",
+          "difficulty": "Normal",
+          "xp": 3
+        },
+        {
+          "label": "Leave it",
+          "result": "left"
+        }
+      ]
+    },
+    {
+      "id": "ARC-023",
+      "type": "Discovery",
+      "title": "Tower Archive",
+      "text": "A sealed cabinet preserves old magical records.",
+      "choices": [
+        {
+          "label": "Study the archive",
+          "result": "classAbility",
+          "ability": "INT",
+          "difficulty": "Normal",
+          "xp": 3
+        },
+        {
+          "label": "Leave it",
+          "result": "left"
+        }
+      ]
+    },
+    {
+      "id": "ARC-024",
+      "type": "Discovery",
+      "title": "Planar Residue",
+      "text": "Strange residue marks where another dimension touched this one.",
+      "choices": [
+        {
+          "label": "Analyse the residue",
+          "result": "classAbility",
+          "ability": "INT",
+          "difficulty": "Normal",
+          "xp": 3
+        },
+        {
+          "label": "Leave it",
+          "result": "left"
+        }
+      ]
+    },
+    {
+      "id": "ARC-025",
+      "type": "Discovery",
+      "title": "Astral Lens",
+      "text": "A cracked lens still reveals distant lights.",
+      "choices": [
+        {
+          "label": "Calibrate the lens",
+          "result": "classAbility",
+          "ability": "INT",
+          "difficulty": "Normal",
+          "xp": 3
+        },
+        {
+          "label": "Leave it",
+          "result": "left"
+        }
+      ]
+    },
+    {
+      "id": "ARC-026",
+      "type": "Discovery",
+      "title": "Sealed Thesis",
+      "text": "A metal tube protects a forgotten magical thesis.",
+      "choices": [
+        {
+          "label": "Evaluate the thesis",
+          "result": "classAbility",
+          "ability": "INT",
+          "difficulty": "Normal",
+          "xp": 3
+        },
+        {
+          "label": "Leave it",
+          "result": "left"
+        }
+      ]
+    },
+    {
+      "id": "ARC-027",
+      "type": "Discovery",
+      "title": "Portal Coordinates",
+      "text": "A slate records a sequence of impossible coordinates.",
+      "choices": [
+        {
+          "label": "Decode the sequence",
+          "result": "classAbility",
+          "ability": "INT",
+          "difficulty": "Normal",
+          "xp": 3
+        },
+        {
+          "label": "Leave it",
+          "result": "left"
+        }
+      ]
+    },
+    {
+      "id": "ARC-028",
+      "type": "Discovery",
+      "title": "Failed Homunculus",
+      "text": "Notes beside an inert construct document a failed experiment.",
+      "choices": [
+        {
+          "label": "Study the notes",
+          "result": "classAbility",
+          "ability": "INT",
+          "difficulty": "Normal",
+          "xp": 3
+        },
+        {
+          "label": "Leave it",
+          "result": "left"
+        }
+      ]
+    },
+    {
+      "id": "ARC-029",
+      "type": "Discovery",
+      "title": "Star Map",
+      "text": "A ceiling chart shows constellations that do not belong to this sky.",
+      "choices": [
+        {
+          "label": "Compare the pattern",
+          "result": "classAbility",
+          "ability": "INT",
+          "difficulty": "Normal",
+          "xp": 3
+        },
+        {
+          "label": "Leave it",
+          "result": "left"
+        }
+      ]
+    },
+    {
+      "id": "ARC-030",
+      "type": "Discovery",
+      "title": "Ciphered Grimoire",
+      "text": "A damaged book is written in a dense arcane cipher.",
+      "choices": [
+        {
+          "label": "Break the cipher",
+          "result": "classAbility",
+          "ability": "INT",
+          "difficulty": "Normal",
+          "xp": 3
+        },
+        {
+          "label": "Leave it",
+          "result": "left"
+        }
+      ]
+    },
+    {
+      "id": "ARC-031",
+      "type": "Quiet",
+      "title": "Empty Laboratory",
+      "text": "Cold burners and dusty glassware fill the silent room.",
+      "choices": []
+    },
+    {
+      "id": "ARC-032",
+      "type": "Quiet",
+      "title": "Tower Balcony",
+      "text": "The ruined tower offers a clear view of the land below.",
+      "choices": []
+    },
+    {
+      "id": "ARC-033",
+      "type": "Quiet",
+      "title": "Dormant Circle",
+      "text": "An old summoning circle lies cold and inactive.",
+      "choices": []
+    },
+    {
+      "id": "ARC-034",
+      "type": "Quiet",
+      "title": "Dusty Archive",
+      "text": "Nothing moves among the shelves but drifting dust.",
+      "choices": []
+    },
+    {
+      "id": "ARC-035",
+      "type": "Quiet",
+      "title": "Observatory Dome",
+      "text": "The great dome stands open beneath the night sky.",
+      "choices": []
+    },
+    {
+      "id": "ARC-036",
+      "type": "Quiet",
+      "title": "Scribe's Chamber",
+      "text": "Dry ink pots and blank parchment remain on a scholar's desk.",
+      "choices": []
+    },
+    {
+      "id": "ARC-037",
+      "type": "Quiet",
+      "title": "Quiet Portal Hall",
+      "text": "Every portal frame is dark and still.",
+      "choices": []
+    },
+    {
+      "id": "ARC-038",
+      "type": "Quiet",
+      "title": "Abandoned Lecture Room",
+      "text": "Rows of stone benches face a cracked slate.",
+      "choices": []
+    },
+    {
+      "id": "ARC-039",
+      "type": "Quiet",
+      "title": "Aether Garden",
+      "text": "Harmless motes of light drift through a glass-roofed chamber.",
+      "choices": []
+    },
+    {
+      "id": "ARC-040",
+      "type": "Quiet",
+      "title": "Silent Study",
+      "text": "A heavy desk and extinguished lamp offer a safe pause.",
+      "choices": []
+    }
+  ],
+  "Dwarf": [
+    {
+      "id": "DWA-001",
+      "type": "Encounter",
+      "title": "Mine Tunnel Ambush",
+      "text": "Movement breaks the darkness in an abandoned mine tunnel.",
+      "choices": [
+        {
+          "label": "Face the threat",
+          "result": "combat"
+        },
+        {
+          "label": "Avoid it",
+          "result": "avoided"
+        }
+      ]
+    },
+    {
+      "id": "DWA-002",
+      "type": "Encounter",
+      "title": "Cavern Predator",
+      "text": "A subterranean predator emerges between the rocks.",
+      "choices": [
+        {
+          "label": "Face the threat",
+          "result": "combat"
+        },
+        {
+          "label": "Avoid it",
+          "result": "avoided"
+        }
+      ]
+    },
+    {
+      "id": "DWA-003",
+      "type": "Encounter",
+      "title": "Collapsed Gallery",
+      "text": "Something waits beyond a recently collapsed mining gallery.",
+      "choices": [
+        {
+          "label": "Face the threat",
+          "result": "combat"
+        },
+        {
+          "label": "Avoid it",
+          "result": "avoided"
+        }
+      ]
+    },
+    {
+      "id": "DWA-004",
+      "type": "Encounter",
+      "title": "Deep Delvers",
+      "text": "Hostile figures appear farther down the tunnel.",
+      "choices": [
+        {
+          "label": "Face the threat",
+          "result": "combat"
+        },
+        {
+          "label": "Avoid it",
+          "result": "avoided"
+        }
+      ]
+    },
+    {
+      "id": "DWA-005",
+      "type": "Encounter",
+      "title": "Underground Nest",
+      "text": "A nest blocks the narrow cave passage.",
+      "choices": [
+        {
+          "label": "Face the threat",
+          "result": "combat"
+        },
+        {
+          "label": "Avoid it",
+          "result": "avoided"
+        }
+      ]
+    },
+    {
+      "id": "DWA-006",
+      "type": "Encounter",
+      "title": "Mushroom Cavern",
+      "text": "A creature crashes through a forest of giant cave fungi.",
+      "choices": [
+        {
+          "label": "Face the threat",
+          "result": "combat"
+        },
+        {
+          "label": "Avoid it",
+          "result": "avoided"
+        }
+      ]
+    },
+    {
+      "id": "DWA-007",
+      "type": "Encounter",
+      "title": "Old Guard Post",
+      "text": "Hostile squatters occupy a forgotten underground guard post.",
+      "choices": [
+        {
+          "label": "Face the threat",
+          "result": "combat"
+        },
+        {
+          "label": "Avoid it",
+          "result": "avoided"
+        }
+      ]
+    },
+    {
+      "id": "DWA-008",
+      "type": "Encounter",
+      "title": "Deep Chasm",
+      "text": "Something climbs from a chasm beside the trail.",
+      "choices": [
+        {
+          "label": "Face the threat",
+          "result": "combat"
+        },
+        {
+          "label": "Avoid it",
+          "result": "avoided"
+        }
+      ]
+    },
+    {
+      "id": "DWA-009",
+      "type": "Encounter",
+      "title": "Ore Cart Ambush",
+      "text": "An abandoned ore cart hides movement in the dark.",
+      "choices": [
+        {
+          "label": "Face the threat",
+          "result": "combat"
+        },
+        {
+          "label": "Avoid it",
+          "result": "avoided"
+        }
+      ]
+    },
+    {
+      "id": "DWA-010",
+      "type": "Encounter",
+      "title": "Buried Hall",
+      "text": "A beast has made its lair inside an ancestral stone hall.",
+      "choices": [
+        {
+          "label": "Face the threat",
+          "result": "combat"
+        },
+        {
+          "label": "Avoid it",
+          "result": "avoided"
+        }
+      ]
+    },
+    {
+      "id": "DWA-011",
+      "type": "Decision",
+      "title": "Forked Mine",
+      "text": "The old mine splits into a worked tunnel and a natural cave.",
+      "choices": [
+        {
+          "label": "Read the stonework",
+          "result": "classAbility",
+          "ability": "INT",
+          "difficulty": "Normal",
+          "xp": 3
+        },
+        {
+          "label": "Move on",
+          "result": "passed"
+        }
+      ]
+    },
+    {
+      "id": "DWA-012",
+      "type": "Decision",
+      "title": "Unstable Supports",
+      "text": "Rotten timbers hold up the passage ahead.",
+      "choices": [
+        {
+          "label": "Judge the structure",
+          "result": "classAbility",
+          "ability": "INT",
+          "difficulty": "Normal",
+          "xp": 3
+        },
+        {
+          "label": "Move on",
+          "result": "passed"
+        }
+      ]
+    },
+    {
+      "id": "DWA-013",
+      "type": "Decision",
+      "title": "Flooded Shaft",
+      "text": "A mine shaft descends into black water.",
+      "choices": [
+        {
+          "label": "Assess the shaft",
+          "result": "classAbility",
+          "ability": "INT",
+          "difficulty": "Normal",
+          "xp": 3
+        },
+        {
+          "label": "Move on",
+          "result": "passed"
+        }
+      ]
+    },
+    {
+      "id": "DWA-014",
+      "type": "Decision",
+      "title": "Ore Vein",
+      "text": "A promising vein disappears behind fractured stone.",
+      "choices": [
+        {
+          "label": "Examine the vein",
+          "result": "classAbility",
+          "ability": "INT",
+          "difficulty": "Normal",
+          "xp": 3
+        },
+        {
+          "label": "Move on",
+          "result": "passed"
+        }
+      ]
+    },
+    {
+      "id": "DWA-015",
+      "type": "Decision",
+      "title": "Sealed Deep Door",
+      "text": "A heavy stone door closes an ancient tunnel.",
+      "choices": [
+        {
+          "label": "Inspect the masonry",
+          "result": "classAbility",
+          "ability": "INT",
+          "difficulty": "Normal",
+          "xp": 3
+        },
+        {
+          "label": "Move on",
+          "result": "passed"
+        }
+      ]
+    },
+    {
+      "id": "DWA-016",
+      "type": "Decision",
+      "title": "False Wall",
+      "text": "One stretch of rock looks subtly different from the rest.",
+      "choices": [
+        {
+          "label": "Test the stone",
+          "result": "classAbility",
+          "ability": "INT",
+          "difficulty": "Normal",
+          "xp": 3
+        },
+        {
+          "label": "Move on",
+          "result": "passed"
+        }
+      ]
+    },
+    {
+      "id": "DWA-017",
+      "type": "Decision",
+      "title": "Ancient Lift",
+      "text": "A counterweighted mining lift hangs over a deep shaft.",
+      "choices": [
+        {
+          "label": "Inspect the mechanism",
+          "result": "classAbility",
+          "ability": "INT",
+          "difficulty": "Normal",
+          "xp": 3
+        },
+        {
+          "label": "Move on",
+          "result": "passed"
+        }
+      ]
+    },
+    {
+      "id": "DWA-018",
+      "type": "Decision",
+      "title": "Fault Line",
+      "text": "A fresh crack runs across the cavern roof.",
+      "choices": [
+        {
+          "label": "Judge the danger",
+          "result": "classAbility",
+          "ability": "INT",
+          "difficulty": "Normal",
+          "xp": 3
+        },
+        {
+          "label": "Move on",
+          "result": "passed"
+        }
+      ]
+    },
+    {
+      "id": "DWA-019",
+      "type": "Decision",
+      "title": "Ventilation Shaft",
+      "text": "A narrow shaft carries warm air from somewhere below.",
+      "choices": [
+        {
+          "label": "Trace the airflow",
+          "result": "classAbility",
+          "ability": "INT",
+          "difficulty": "Normal",
+          "xp": 3
+        },
+        {
+          "label": "Move on",
+          "result": "passed"
+        }
+      ]
+    },
+    {
+      "id": "DWA-020",
+      "type": "Decision",
+      "title": "Lost Hold Gate",
+      "text": "An immense gate bears weathered clan marks.",
+      "choices": [
+        {
+          "label": "Read the construction",
+          "result": "classAbility",
+          "ability": "INT",
+          "difficulty": "Normal",
+          "xp": 3
+        },
+        {
+          "label": "Move on",
+          "result": "passed"
+        }
+      ]
+    },
+    {
+      "id": "DWA-021",
+      "type": "Discovery",
+      "title": "Forgotten Tools",
+      "text": "Old mining tools remain where their owners left them.",
+      "choices": [
+        {
+          "label": "Inspect the workmanship",
+          "result": "classAbility",
+          "ability": "INT",
+          "difficulty": "Normal",
+          "xp": 3
+        },
+        {
+          "label": "Leave it",
+          "result": "left"
+        }
+      ]
+    },
+    {
+      "id": "DWA-022",
+      "type": "Discovery",
+      "title": "Miner's Cache",
+      "text": "A hidden niche contains a miner's emergency cache.",
+      "choices": [
+        {
+          "label": "Find its purpose",
+          "result": "classAbility",
+          "ability": "INT",
+          "difficulty": "Normal",
+          "xp": 3
+        },
+        {
+          "label": "Leave it",
+          "result": "left"
+        }
+      ]
+    },
+    {
+      "id": "DWA-023",
+      "type": "Discovery",
+      "title": "Crystal Cavern",
+      "text": "Natural crystals glitter across the cavern walls.",
+      "choices": [
+        {
+          "label": "Assess the formation",
+          "result": "classAbility",
+          "ability": "INT",
+          "difficulty": "Normal",
+          "xp": 3
+        },
+        {
+          "label": "Leave it",
+          "result": "left"
+        }
+      ]
+    },
+    {
+      "id": "DWA-024",
+      "type": "Discovery",
+      "title": "Old Survey Marks",
+      "text": "Chiselled marks reveal the mine's forgotten layout.",
+      "choices": [
+        {
+          "label": "Read the survey marks",
+          "result": "classAbility",
+          "ability": "INT",
+          "difficulty": "Normal",
+          "xp": 3
+        },
+        {
+          "label": "Leave it",
+          "result": "left"
+        }
+      ]
+    },
+    {
+      "id": "DWA-025",
+      "type": "Discovery",
+      "title": "Buried Strongbox",
+      "text": "A battered strongbox protrudes from a cave-in.",
+      "choices": [
+        {
+          "label": "Examine the hiding place",
+          "result": "classAbility",
+          "ability": "INT",
+          "difficulty": "Normal",
+          "xp": 3
+        },
+        {
+          "label": "Leave it",
+          "result": "left"
+        }
+      ]
+    },
+    {
+      "id": "DWA-026",
+      "type": "Discovery",
+      "title": "Ancestral Carving",
+      "text": "A wall carving records names from a forgotten dwarf line.",
+      "choices": [
+        {
+          "label": "Read the genealogy",
+          "result": "classAbility",
+          "ability": "INT",
+          "difficulty": "Normal",
+          "xp": 3
+        },
+        {
+          "label": "Leave it",
+          "result": "left"
+        }
+      ]
+    },
+    {
+      "id": "DWA-027",
+      "type": "Discovery",
+      "title": "Worked Seam",
+      "text": "Tool marks reveal where miners followed a vanished ore seam.",
+      "choices": [
+        {
+          "label": "Reconstruct the work",
+          "result": "classAbility",
+          "ability": "INT",
+          "difficulty": "Normal",
+          "xp": 3
+        },
+        {
+          "label": "Leave it",
+          "result": "left"
+        }
+      ]
+    },
+    {
+      "id": "DWA-028",
+      "type": "Discovery",
+      "title": "Stone Cistern",
+      "text": "A carefully built cistern still collects clean cave water.",
+      "choices": [
+        {
+          "label": "Inspect the engineering",
+          "result": "classAbility",
+          "ability": "INT",
+          "difficulty": "Normal",
+          "xp": 3
+        },
+        {
+          "label": "Leave it",
+          "result": "left"
+        }
+      ]
+    },
+    {
+      "id": "DWA-029",
+      "type": "Discovery",
+      "title": "Rune Fragment",
+      "text": "A broken stone bears part of an old family rune.",
+      "choices": [
+        {
+          "label": "Interpret the fragment",
+          "result": "classAbility",
+          "ability": "INT",
+          "difficulty": "Normal",
+          "xp": 3
+        },
+        {
+          "label": "Leave it",
+          "result": "left"
+        }
+      ]
+    },
+    {
+      "id": "DWA-030",
+      "type": "Discovery",
+      "title": "Foundation Stone",
+      "text": "A massive dressed stone carries the mason's original mark.",
+      "choices": [
+        {
+          "label": "Identify the mason mark",
+          "result": "classAbility",
+          "ability": "INT",
+          "difficulty": "Normal",
+          "xp": 3
+        },
+        {
+          "label": "Leave it",
+          "result": "left"
+        }
+      ]
+    },
+    {
+      "id": "DWA-031",
+      "type": "Quiet",
+      "title": "Dry Cavern",
+      "text": "A broad dry cavern offers a safe place to pause.",
+      "choices": []
+    },
+    {
+      "id": "DWA-032",
+      "type": "Quiet",
+      "title": "Old Mine Office",
+      "text": "A stone desk stands untouched in a forgotten mine office.",
+      "choices": []
+    },
+    {
+      "id": "DWA-033",
+      "type": "Quiet",
+      "title": "Deep Hearth",
+      "text": "A cold hearth remains in an abandoned underground hall.",
+      "choices": []
+    },
+    {
+      "id": "DWA-034",
+      "type": "Quiet",
+      "title": "Echo Chamber",
+      "text": "Only the sound of dripping water crosses the cavern.",
+      "choices": []
+    },
+    {
+      "id": "DWA-035",
+      "type": "Quiet",
+      "title": "Tool Alcove",
+      "text": "An empty tool alcove provides shelter from the tunnel.",
+      "choices": []
+    },
+    {
+      "id": "DWA-036",
+      "type": "Quiet",
+      "title": "Stone Bridge",
+      "text": "An old bridge spans a silent underground stream.",
+      "choices": []
+    },
+    {
+      "id": "DWA-037",
+      "type": "Quiet",
+      "title": "Abandoned Forge",
+      "text": "The forge is cold, but its stonework remains sound.",
+      "choices": []
+    },
+    {
+      "id": "DWA-038",
+      "type": "Quiet",
+      "title": "Survey Chamber",
+      "text": "Faded maps cover the walls of an otherwise empty room.",
+      "choices": []
+    },
+    {
+      "id": "DWA-039",
+      "type": "Quiet",
+      "title": "Deep Well",
+      "text": "A covered well stands beside a quiet passage.",
+      "choices": []
+    },
+    {
+      "id": "DWA-040",
+      "type": "Quiet",
+      "title": "Ancestral Hall",
+      "text": "Rows of worn stone pillars disappear into the darkness.",
+      "choices": []
+    }
+  ],
+  "Elf": [
+    {
+      "id": "ELF-001",
+      "type": "Encounter",
+      "title": "Forest Stalker",
+      "text": "Something follows silently between the trees.",
+      "choices": [
+        {
+          "label": "Face the threat",
+          "result": "combat"
+        },
+        {
+          "label": "Avoid it",
+          "result": "avoided"
+        }
+      ]
+    },
+    {
+      "id": "ELF-002",
+      "type": "Encounter",
+      "title": "Ruined Grove",
+      "text": "Hostile movement disturbs an ancient grove.",
+      "choices": [
+        {
+          "label": "Face the threat",
+          "result": "combat"
+        },
+        {
+          "label": "Avoid it",
+          "result": "avoided"
+        }
+      ]
+    },
+    {
+      "id": "ELF-003",
+      "type": "Encounter",
+      "title": "Woodland Ambush",
+      "text": "Shapes shift among the ferns beside the trail.",
+      "choices": [
+        {
+          "label": "Face the threat",
+          "result": "combat"
+        },
+        {
+          "label": "Avoid it",
+          "result": "avoided"
+        }
+      ]
+    },
+    {
+      "id": "ELF-004",
+      "type": "Encounter",
+      "title": "Riverbank Predator",
+      "text": "A predator emerges near the forest river.",
+      "choices": [
+        {
+          "label": "Face the threat",
+          "result": "combat"
+        },
+        {
+          "label": "Avoid it",
+          "result": "avoided"
+        }
+      ]
+    },
+    {
+      "id": "ELF-005",
+      "type": "Encounter",
+      "title": "Overgrown Ruin",
+      "text": "Something has made its lair in a vine-covered ruin.",
+      "choices": [
+        {
+          "label": "Face the threat",
+          "result": "combat"
+        },
+        {
+          "label": "Avoid it",
+          "result": "avoided"
+        }
+      ]
+    },
+    {
+      "id": "ELF-006",
+      "type": "Encounter",
+      "title": "Blighted Clearing",
+      "text": "A hostile creature prowls a clearing where the plants have blackened.",
+      "choices": [
+        {
+          "label": "Face the threat",
+          "result": "combat"
+        },
+        {
+          "label": "Avoid it",
+          "result": "avoided"
+        }
+      ]
+    },
+    {
+      "id": "ELF-007",
+      "type": "Encounter",
+      "title": "Canopy Hunter",
+      "text": "Branches shake overhead as a predator follows from tree to tree.",
+      "choices": [
+        {
+          "label": "Face the threat",
+          "result": "combat"
+        },
+        {
+          "label": "Avoid it",
+          "result": "avoided"
+        }
+      ]
+    },
+    {
+      "id": "ELF-008",
+      "type": "Encounter",
+      "title": "Poacher Camp",
+      "text": "Armed intruders guard traps set along an animal trail.",
+      "choices": [
+        {
+          "label": "Face the threat",
+          "result": "combat"
+        },
+        {
+          "label": "Avoid it",
+          "result": "avoided"
+        }
+      ]
+    },
+    {
+      "id": "ELF-009",
+      "type": "Encounter",
+      "title": "Root-Cave Lair",
+      "text": "A beast bursts from beneath the roots of an ancient tree.",
+      "choices": [
+        {
+          "label": "Face the threat",
+          "result": "combat"
+        },
+        {
+          "label": "Avoid it",
+          "result": "avoided"
+        }
+      ]
+    },
+    {
+      "id": "ELF-010",
+      "type": "Encounter",
+      "title": "Thorn Hollow",
+      "text": "Something dangerous moves inside a dense hollow of thorns.",
+      "choices": [
+        {
+          "label": "Face the threat",
+          "result": "combat"
+        },
+        {
+          "label": "Avoid it",
+          "result": "avoided"
+        }
+      ]
+    },
+    {
+      "id": "ELF-011",
+      "type": "Decision",
+      "title": "Hidden Trail",
+      "text": "A barely visible trail leaves the main woodland path.",
+      "choices": [
+        {
+          "label": "Read the trail",
+          "result": "classAbility",
+          "ability": "WIS",
+          "difficulty": "Normal",
+          "xp": 3
+        },
+        {
+          "label": "Move on",
+          "result": "passed"
+        }
+      ]
+    },
+    {
+      "id": "ELF-012",
+      "type": "Decision",
+      "title": "Ancient Grove",
+      "text": "Old trees encircle a place untouched by axes.",
+      "choices": [
+        {
+          "label": "Sense the grove",
+          "result": "classAbility",
+          "ability": "WIS",
+          "difficulty": "Normal",
+          "xp": 3
+        },
+        {
+          "label": "Move on",
+          "result": "passed"
+        }
+      ]
+    },
+    {
+      "id": "ELF-013",
+      "type": "Decision",
+      "title": "River Crossing",
+      "text": "The forest river runs fast after recent rain.",
+      "choices": [
+        {
+          "label": "Choose a safe crossing",
+          "result": "classAbility",
+          "ability": "WIS",
+          "difficulty": "Normal",
+          "xp": 3
+        },
+        {
+          "label": "Move on",
+          "result": "passed"
+        }
+      ]
+    },
+    {
+      "id": "ELF-014",
+      "type": "Decision",
+      "title": "Fallen Oak",
+      "text": "A gigantic fallen oak conceals a hollow beneath its roots.",
+      "choices": [
+        {
+          "label": "Inspect the hollow",
+          "result": "classAbility",
+          "ability": "WIS",
+          "difficulty": "Normal",
+          "xp": 3
+        },
+        {
+          "label": "Move on",
+          "result": "passed"
+        }
+      ]
+    },
+    {
+      "id": "ELF-015",
+      "type": "Decision",
+      "title": "Moonlit Stones",
+      "text": "Standing stones glow faintly in a moonlit clearing.",
+      "choices": [
+        {
+          "label": "Read the signs",
+          "result": "classAbility",
+          "ability": "WIS",
+          "difficulty": "Normal",
+          "xp": 3
+        },
+        {
+          "label": "Move on",
+          "result": "passed"
+        }
+      ]
+    },
+    {
+      "id": "ELF-016",
+      "type": "Decision",
+      "title": "Storm-Damaged Path",
+      "text": "Windfall has erased the trail ahead.",
+      "choices": [
+        {
+          "label": "Find the true path",
+          "result": "classAbility",
+          "ability": "WIS",
+          "difficulty": "Normal",
+          "xp": 3
+        },
+        {
+          "label": "Move on",
+          "result": "passed"
+        }
+      ]
+    },
+    {
+      "id": "ELF-017",
+      "type": "Decision",
+      "title": "Wounded Stag",
+      "text": "A wounded stag watches from beneath the trees.",
+      "choices": [
+        {
+          "label": "Approach carefully",
+          "result": "classAbility",
+          "ability": "WIS",
+          "difficulty": "Normal",
+          "xp": 3
+        },
+        {
+          "label": "Move on",
+          "result": "passed"
+        }
+      ]
+    },
+    {
+      "id": "ELF-018",
+      "type": "Decision",
+      "title": "Withered Copse",
+      "text": "A small stand of trees has withered without obvious cause.",
+      "choices": [
+        {
+          "label": "Trace the cause",
+          "result": "classAbility",
+          "ability": "WIS",
+          "difficulty": "Normal",
+          "xp": 3
+        },
+        {
+          "label": "Move on",
+          "result": "passed"
+        }
+      ]
+    },
+    {
+      "id": "ELF-019",
+      "type": "Decision",
+      "title": "Forked Game Trail",
+      "text": "Two animal trails split around a wooded ridge.",
+      "choices": [
+        {
+          "label": "Read the tracks",
+          "result": "classAbility",
+          "ability": "WIS",
+          "difficulty": "Normal",
+          "xp": 3
+        },
+        {
+          "label": "Move on",
+          "result": "passed"
+        }
+      ]
+    },
+    {
+      "id": "ELF-020",
+      "type": "Decision",
+      "title": "Encroaching Bramble",
+      "text": "An unnatural wall of bramble chokes an old woodland route.",
+      "choices": [
+        {
+          "label": "Find a passage",
+          "result": "classAbility",
+          "ability": "WIS",
+          "difficulty": "Normal",
+          "xp": 3
+        },
+        {
+          "label": "Move on",
+          "result": "passed"
+        }
+      ]
+    },
+    {
+      "id": "ELF-021",
+      "type": "Discovery",
+      "title": "Herbal Clearing",
+      "text": "Useful herbs grow in a sheltered clearing.",
+      "choices": [
+        {
+          "label": "Identify the herbs",
+          "result": "classAbility",
+          "ability": "WIS",
+          "difficulty": "Normal",
+          "xp": 3
+        },
+        {
+          "label": "Leave it",
+          "result": "left"
+        }
+      ]
+    },
+    {
+      "id": "ELF-022",
+      "type": "Discovery",
+      "title": "Hunter's Marker",
+      "text": "An old woodland marker points toward a forgotten route.",
+      "choices": [
+        {
+          "label": "Interpret the marker",
+          "result": "classAbility",
+          "ability": "WIS",
+          "difficulty": "Normal",
+          "xp": 3
+        },
+        {
+          "label": "Leave it",
+          "result": "left"
+        }
+      ]
+    },
+    {
+      "id": "ELF-023",
+      "type": "Discovery",
+      "title": "Forest Spring",
+      "text": "Clear water rises between moss-covered stones.",
+      "choices": [
+        {
+          "label": "Judge the spring",
+          "result": "classAbility",
+          "ability": "WIS",
+          "difficulty": "Normal",
+          "xp": 3
+        },
+        {
+          "label": "Leave it",
+          "result": "left"
+        }
+      ]
+    },
+    {
+      "id": "ELF-024",
+      "type": "Discovery",
+      "title": "Overgrown Shrine",
+      "text": "Roots curl around a small forgotten shrine.",
+      "choices": [
+        {
+          "label": "Examine the growth",
+          "result": "classAbility",
+          "ability": "WIS",
+          "difficulty": "Normal",
+          "xp": 3
+        },
+        {
+          "label": "Leave it",
+          "result": "left"
+        }
+      ]
+    },
+    {
+      "id": "ELF-025",
+      "type": "Discovery",
+      "title": "Ancient Tree",
+      "text": "Carvings on an immense tree record an old journey.",
+      "choices": [
+        {
+          "label": "Read the carvings",
+          "result": "classAbility",
+          "ability": "WIS",
+          "difficulty": "Normal",
+          "xp": 3
+        },
+        {
+          "label": "Leave it",
+          "result": "left"
+        }
+      ]
+    },
+    {
+      "id": "ELF-026",
+      "type": "Discovery",
+      "title": "Rare Seedpod",
+      "text": "An unfamiliar seedpod hangs from a single old branch.",
+      "choices": [
+        {
+          "label": "Identify the seed",
+          "result": "classAbility",
+          "ability": "WIS",
+          "difficulty": "Normal",
+          "xp": 3
+        },
+        {
+          "label": "Leave it",
+          "result": "left"
+        }
+      ]
+    },
+    {
+      "id": "ELF-027",
+      "type": "Discovery",
+      "title": "Animal Crossing",
+      "text": "Tracks from many species converge at one narrow place.",
+      "choices": [
+        {
+          "label": "Study the tracks",
+          "result": "classAbility",
+          "ability": "WIS",
+          "difficulty": "Normal",
+          "xp": 3
+        },
+        {
+          "label": "Leave it",
+          "result": "left"
+        }
+      ]
+    },
+    {
+      "id": "ELF-028",
+      "type": "Discovery",
+      "title": "Old Boundary Oak",
+      "text": "Faint cuts in an oak mark an ancient forest boundary.",
+      "choices": [
+        {
+          "label": "Recognise the boundary",
+          "result": "classAbility",
+          "ability": "WIS",
+          "difficulty": "Normal",
+          "xp": 3
+        },
+        {
+          "label": "Leave it",
+          "result": "left"
+        }
+      ]
+    },
+    {
+      "id": "ELF-029",
+      "type": "Discovery",
+      "title": "Hidden Orchard",
+      "text": "Wild descendants of an old orchard grow deep in the forest.",
+      "choices": [
+        {
+          "label": "Study the trees",
+          "result": "classAbility",
+          "ability": "WIS",
+          "difficulty": "Normal",
+          "xp": 3
+        },
+        {
+          "label": "Leave it",
+          "result": "left"
+        }
+      ]
+    },
+    {
+      "id": "ELF-030",
+      "type": "Discovery",
+      "title": "Burned Glade",
+      "text": "New green shoots rise through the remains of an old fire.",
+      "choices": [
+        {
+          "label": "Read the recovery",
+          "result": "classAbility",
+          "ability": "WIS",
+          "difficulty": "Normal",
+          "xp": 3
+        },
+        {
+          "label": "Leave it",
+          "result": "left"
+        }
+      ]
+    },
+    {
+      "id": "ELF-031",
+      "type": "Quiet",
+      "title": "Green Canopy",
+      "text": "Sunlight filters peacefully through the leaves.",
+      "choices": []
+    },
+    {
+      "id": "ELF-032",
+      "type": "Quiet",
+      "title": "Forest Pool",
+      "text": "A still pool reflects the branches above.",
+      "choices": []
+    },
+    {
+      "id": "ELF-033",
+      "type": "Quiet",
+      "title": "Mossy Hollow",
+      "text": "Soft moss covers a sheltered hollow between roots.",
+      "choices": []
+    },
+    {
+      "id": "ELF-034",
+      "type": "Quiet",
+      "title": "Old Oak",
+      "text": "An immense oak offers shade and a dry place to rest.",
+      "choices": []
+    },
+    {
+      "id": "ELF-035",
+      "type": "Quiet",
+      "title": "Fern Clearing",
+      "text": "Nothing stirs beyond insects among the ferns.",
+      "choices": []
+    },
+    {
+      "id": "ELF-036",
+      "type": "Quiet",
+      "title": "Willow Bank",
+      "text": "Willows hang over a slow, quiet stream.",
+      "choices": []
+    },
+    {
+      "id": "ELF-037",
+      "type": "Quiet",
+      "title": "Pine Ridge",
+      "text": "Wind moves softly through high pine branches.",
+      "choices": []
+    },
+    {
+      "id": "ELF-038",
+      "type": "Quiet",
+      "title": "Deer Meadow",
+      "text": "A small meadow lies undisturbed between the woods.",
+      "choices": []
+    },
+    {
+      "id": "ELF-039",
+      "type": "Quiet",
+      "title": "Rain Shelter",
+      "text": "Dense branches keep the forest floor almost dry.",
+      "choices": []
+    },
+    {
+      "id": "ELF-040",
+      "type": "Quiet",
+      "title": "Dawn Grove",
+      "text": "Morning light slowly reaches the floor of an ancient grove.",
+      "choices": []
+    }
+  ]
+}
