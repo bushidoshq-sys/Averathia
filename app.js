@@ -363,7 +363,7 @@ function clog(s){
  let box=$("#combatLog");if(box){box.insertAdjacentHTML("beforeend",`<div>${s}</div>`);box.scrollTop=box.scrollHeight}
  adventureLog(s,"Combat")
 }
-function living(){return h.combat.enemies.filter(e=>e.hp>0)}
+function living(){return h?.combat?.enemies?.filter(e=>e.hp>0)||[]}
 // RC Rules Cyclopedia, Balancing Encounters (pp.100-101): TPL -> IAHD -> challenge %.
 function rcTPL(){
  let level=Math.max(1,h.level||1),maxhp=Math.max(1,h.maxhp||combatStats().maxhp||1),hp=Math.max(0,h.hp??maxhp);
@@ -549,6 +549,13 @@ function monsterRangeStep(e){
  if(e.rangedDamage&&!e.meleeDamage&&i<3){setCombatBand(i+1);clog(`${e.n} opens the distance to ${h.combat.range} (${combatDistance()}').`);return true}
  return false
 }
+function combatDeath(reason=""){
+ if(reason)clog(reason);
+ clog(`You are DEAD. Resurrection in ${h.level*5} minutes.`);
+ h.lastAdventure=`FAILED — ${h.name} died. Adventure progress reset to zero.`;
+ recoverThrownWeapons();h.trip=null;h.pendingEvent=null;h.combat=null;h.deadUntil=Date.now()+h.level*5*60000;h.hp=0;
+ localStorage.setItem("averathia-v041",JSON.stringify(h));renderDeathPage();return false
+}
 function enemyStrike(){
  for(const e of living()){
   if(e.disabledRounds>0)continue;
@@ -576,9 +583,7 @@ function enemyStrike(){
     if(!s.success){h.conditions=h.conditions||[];if(!h.conditions.includes("Diseased"))h.conditions.push("Diseased");clog("Disease contracted.")}
    }
   }else clog(`${e.n} misses.`);
-  if(h.hp<=0){
-   clog(`You are DEAD. Resurrection in ${h.level*5} minutes.`); let deathLog=h.trip?.adventureLog||[]; h.lastAdventure=`FAILED — ${h.name} died. Adventure progress reset to zero.`; recoverThrownWeapons();h.trip=null;h.pendingEvent=null;h.combat=null;h.deadUntil=Date.now()+h.level*5*60000;h.hp=0;localStorage.setItem("averathia-v041",JSON.stringify(h));renderDeathPage();return false
-  }
+  if(h.hp<=0)return combatDeath()
  }
  for(const e of living())if(e.special==="regeneration"){
   let heal=Math.min(3,e.maxhp-e.hp);if(heal>0){e.hp+=heal;clog(`${e.n} regenerates ${heal} HP.`)}
@@ -684,17 +689,24 @@ function monsterSpellSave(m,category="Spells"){
  let p=parseSaveAs(m),roll=d(20)+(m?.blindRounds>0?-4:0),target=rcSaveTarget(p.cls,p.level,category);
  return{roll,target,success:roll>=target,level:p.level,saveAs:p.label}
 }
+function gridlessLane(x){return Number.isFinite(x?.lane)?x.lane:(x?.id||0)%3}
+function gridlessLaneOffset(x){return (gridlessLane(x)-1)*10}
 function gridlessLineTargets(primary){
  let alive=living();if(!alive.length)return[];
- let p=primary&&primary.hp>0?primary:alive[0],lane=Number.isFinite(p.lane)?p.lane:(p.id||0)%3;
- return alive.filter(x=>(Number.isFinite(x.lane)?x.lane:(x.id||0)%3)===lane)
+ let p=primary&&primary.hp>0?primary:alive[0],lane=gridlessLane(p);
+ return alive.filter(x=>gridlessLane(x)===lane)
+}
+function gridlessAreaTargets(primary,diameterFeet=40){
+ let alive=living();if(!alive.length)return[];
+ let p=primary&&primary.hp>0?primary:alive[0],center=gridlessLaneOffset(p),radius=Math.max(5,diameterFeet/2);
+ return alive.filter(x=>Math.abs(gridlessLaneOffset(x)-center)<=radius)
 }
 function resolveSpellEffect(s,t=null,autonomous=false,holdMode=null){
  ensureSpellState();let targets=[];
  if(s.kind==="damage"||s.kind==="area"||s.kind==="line"){
-  targets=s.kind==="area"?living():s.kind==="line"?gridlessLineTargets(t):[t||living()[0]];
+  targets=s.kind==="area"?gridlessAreaTargets(t,s.areaFeet||40):s.kind==="line"?gridlessLineTargets(t):[t||living()[0]];
   if(s.missilesByLevel){let q=t||living()[0],n=magicMissileCount();if(q){let dmg=0;for(let i=0;i<n;i++)dmg+=rollExpr(s.damage);q.hp=Math.max(0,q.hp-dmg);clog(`${s.name} launches ${n} dart${n===1?"":"s"} and automatically hits ${q.n} for ${dmg} damage.`);if(q.hp<=0){h.xp+=q.xp;clog(`${q.n} defeated. +${q.xp} XP.`);checkLevelUps()}}return}
-  for(const q of targets.filter(Boolean)){let dmg=rollSpellDamage(s);if(s.save){let sv=monsterSpellSave(q,s.save||"Spells");clog(`${q.n} save ${sv.roll} vs ${sv.target}: ${sv.success?"success":"FAIL"}.`);if(sv.success&&s.half)dmg=Math.floor(dmg/2)}q.hp=Math.max(0,q.hp-dmg);clog(`${autonomous?"Autonomous: ":""}${s.name} strikes ${q.n} for ${dmg} damage.`);if(s.damageType==="fire"&&q.webbed&&q.hp>0){let burn=d(6);q.hp=Math.max(0,q.hp-burn);q.disabledRounds=0;q.webbed=false;clog(`The web burns away around ${q.n}; ${q.n} takes ${burn} fire damage.`)}if(q.hp<=0){h.xp+=q.xp;clog(`${q.n} defeated. +${q.xp} XP.`);checkLevelUps()}}
+  let sharedDamage=(s.kind==="area"||s.kind==="line")?rollSpellDamage(s):null;for(const q of targets.filter(Boolean)){let dmg=sharedDamage??rollSpellDamage(s);if(s.save){let sv=monsterSpellSave(q,s.save||"Spells");clog(`${q.n} save ${sv.roll} vs ${sv.target}: ${sv.success?"success":"FAIL"}.`);if(sv.success&&s.half)dmg=Math.floor(dmg/2)}q.hp=Math.max(0,q.hp-dmg);clog(`${autonomous?"Autonomous: ":""}${s.name} strikes ${q.n} for ${dmg} damage.`);if(s.damageType==="fire"&&q.webbed&&q.hp>0){let burn=d(6);q.hp=Math.max(0,q.hp-burn);q.disabledRounds=0;q.webbed=false;clog(`The web burns away around ${q.n}; ${q.n} takes ${burn} fire damage.`)}if(q.hp<=0){h.xp+=q.xp;clog(`${q.n} defeated. +${q.xp} XP.`);checkLevelUps()}}if(s.kind==="area"&&s.damageType==="fire"&&combatDistance()<=((s.areaFeet||40)/2)&&h.combat){let base=sharedDamage??rollSpellDamage(s),sv=savingThrow("Spells",0,"fire"),dmg=sv.success?Math.floor(base/2):base;dmg=applyElementalResistance(dmg,Math.max(1,Math.min(h.level,10))+"d6","fire",true);h.hp=Math.max(0,h.hp-dmg);clog(`You are caught in the blast: save ${sv.roll} vs ${sv.target} — ${sv.success?"success":"FAIL"}; ${dmg} fire damage.`);if(h.hp<=0)return combatDeath("Your own fireball engulfs you.")}
  }else if(s.kind==="heal"){let heal=rollExpr(s.heal),before=h.hp;h.hp=Math.min(h.maxhp,h.hp+heal);clog(`${autonomous?"Autonomous: ":""}${s.name} restores ${h.hp-before} HP.`)}
  else if(s.kind==="buff"){
   if(s.rc==="Bless"&&h.combat?.range==="Hand-to-Hand"){clog(`${s.name} cannot affect you once you are already in melee.`)}
@@ -702,10 +714,10 @@ function resolveSpellEffect(s,t=null,autonomous=false,holdMode=null){
  }
  else if(s.kind==="cleanse"){h.conditions=h.conditions||[];let before=h.conditions.length;h.conditions=h.conditions.filter(x=>x!==s.condition);clog(before!==h.conditions.length?`${s.name} removes ${s.condition}.`:`${s.name} finds nothing to remove.`)}
  else if(s.kind==="images"){let n=rollExpr(s.images);h.spells.buffs.push({...s,images:n,rounds:spellDuration(s)});clog(`${s.name} creates ${n} illusory images.`)}
- else if(s.kind==="sleep"){let eligible=living().filter(q=>!q.undead&&(Number(q.hdDice)||1)<=4.5).sort((a,b)=>(Number(a.hdDice)||1)-(Number(b.hdDice)||1)),hdBudget=d(8)+d(8),rounds=spellDuration(s),affected=0;for(const q of eligible){let hd=Math.max(1,Number(q.hdDice)||1);if(hd>hdBudget)continue;hdBudget-=hd;q.disabledRounds=Math.max(q.disabledRounds||0,rounds);q.sleeping=true;affected++;clog(`${q.n} falls asleep for ${Math.ceil(rounds/RC_ROUNDS_PER_TURN)} turn(s).`)}if(!affected)clog(`${s.name} finds no eligible living creature of 4+1 HD or less.`)}
- else if(s.kind==="web"){for(const q of living()){let hd=Number(q.hdDice)||1,strong=q.webStrength==="great"||hd>=8,rounds=strong?2:(d(4)+d(4))*RC_ROUNDS_PER_TURN;q.disabledRounds=Math.min(rounds,spellDuration(s));q.webbed=true;clog(`${q.n} is caught in the web${strong?" and can tear free in 2 rounds":` for ${Math.ceil(rounds/RC_ROUNDS_PER_TURN)} turn(s)`}.`)}}
+ else if(s.kind==="sleep"){let eligible=gridlessAreaTargets(t,s.areaFeet||40).filter(q=>!q.undead&&(Number(q.hdDice)||1)<=4.5).sort((a,b)=>(Number(a.hdDice)||1)-(Number(b.hdDice)||1)),hdBudget=d(8)+d(8),rounds=spellDuration(s),affected=0;for(const q of eligible){let hd=Math.max(1,Number(q.hdDice)||1);if(hd>hdBudget)continue;hdBudget-=hd;q.disabledRounds=Math.max(q.disabledRounds||0,rounds);q.sleeping=true;affected++;clog(`${q.n} falls asleep for ${Math.ceil(rounds/RC_ROUNDS_PER_TURN)} turn(s).`)}if(!affected)clog(`${s.name} finds no eligible living creature of 4+1 HD or less.`)}
+ else if(s.kind==="web"){for(const q of gridlessAreaTargets(t,s.areaFeet||10)){let hd=Number(q.hdDice)||1,strong=q.webStrength==="great"||hd>=8,rounds=strong?2:(d(4)+d(4))*RC_ROUNDS_PER_TURN;q.disabledRounds=Math.min(rounds,spellDuration(s));q.webbed=true;clog(`${q.n} is caught in the web${strong?" and can tear free in 2 rounds":` for ${Math.ceil(rounds/RC_ROUNDS_PER_TURN)} turn(s)`}.`)}}
  else if(s.kind==="hold"){let valid=living().filter(q=>!s.humanoidOnly||q.humanoid===true),single=holdMode==="single",count=single?1:(s.maxTargets||4),qs=single?(t&&valid.includes(t)?[t]:[]):valid.slice(0,count),penalty=single?2:0;for(const q of qs){let sv=monsterSpellSave(q,s.save||"Spells");if(penalty)sv.roll-=penalty;sv.success=sv.roll>=sv.target;clog(`${q.n} save ${sv.roll} vs ${sv.target}${penalty?" (-2 single-target penalty)":""}: ${sv.success?"success":"FAIL"}.`);if(!sv.success){q.disabledRounds=Math.max(q.disabledRounds||0,spellDuration(s));q.held=true;clog(`${q.n} is held.`)}else clog(`${q.n} resists ${s.name}.`)}if(!qs.length)clog(`${s.name} has no valid humanoid target.`)}
- else if(s.kind==="debuff"){let qs=s.rc==="Slow"?living().slice(0,24):[t||living()[0]];for(const q of qs.filter(Boolean)){let sv=monsterSpellSave(q,s.save||"Spells");clog(`${q.n} save ${sv.roll} vs ${sv.target}: ${sv.success?"success":"FAIL"}.`);if(!sv.success){q.slowRounds=spellDuration(s);clog(`${q.n} is slowed.`)}else clog(`${q.n} resists ${s.name}.`)}}
+ else if(s.kind==="debuff"){let qs=s.rc==="Slow"?gridlessAreaTargets(t,s.areaFeet||60).slice(0,s.maxTargets||24):[t||living()[0]];for(const q of qs.filter(Boolean)){let sv=monsterSpellSave(q,s.save||"Spells");clog(`${q.n} save ${sv.roll} vs ${sv.target}: ${sv.success?"success":"FAIL"}.`);if(!sv.success){q.slowRounds=spellDuration(s);clog(`${q.n} is slowed.`)}else clog(`${q.n} resists ${s.name}.`)}}
  else if(s.kind==="blind"){let q=t||living()[0];if(q){let sv=monsterSpellSave(q,s.save||"Spells");clog(`${q.n} save ${sv.roll} vs ${sv.target}: ${sv.success?"success":"FAIL"}.`);if(!sv.success){q.blindRounds=spellDuration(s);clog(`${q.n} is blinded by ${s.name}.`)}else clog(`${s.name} fails to blind ${q.n}.`)}}
  else if(s.kind==="utility"){clog(`${s.name} is active; no current combat target effect.`)}
 }
@@ -720,7 +732,7 @@ function castCombatSpell(id,holdMode=null){
    if(h.hp<hpBefore||(h.conditions||[]).length>conditionsBefore){clog(`${s.name} is disrupted and lost.`);tickSpellBuffs();tickEnemySpellEffects();tickPlayerConditions();c.round++;save();renderCombat();return}
  }
  let t=c.enemies[c.target];if(!t||t.hp<=0)t=living()[0];resolveSpellEffect(s,t,false,holdMode);
- if(!living().length)return finishCombat();
+ if(!h.combat)return;if(!living().length)return finishCombat();
  if(pr>er)enemyStrike();
  if(h.combat){tickSpellBuffs();tickEnemySpellEffects();tickPlayerConditions();h.combat.round++;save();renderCombat()}
 }
