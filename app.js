@@ -116,10 +116,21 @@ const WEAPON_RANGES={
  "Spear":[20,40,60],"Trident":[10,20,30],"Sling":[40,80,160]
 };
 function weaponRangeText(name){let r=WEAPON_RANGES[name];return r?`${r[0]}/${r[1]}/${r[2]}'`:"—"}
-function attackModeFor(name,range=h.combat?.range||"Close"){
- if(range==="Hand-to-Hand")return RANGED_WEAPONS.has(name)?"missile":"melee";
- if(RANGED_WEAPONS.has(name))return "missile";
- if(THROWN_WEAPONS.has(name))return "thrown";
+const RANGE_BANDS=[{name:"Hand-to-Hand",feet:5},{name:"Close",feet:20},{name:"Medium",feet:80},{name:"Long",feet:150}];
+function combatDistance(){
+ if(!h?.combat)return 0;
+ if(!Number.isFinite(h.combat.distanceFeet)){let b=RANGE_BANDS.find(x=>x.name===(h.combat.range||"Close"))||RANGE_BANDS[1];h.combat.distanceFeet=b.feet}
+ return h.combat.distanceFeet
+}
+function combatBandIndex(){let d=combatDistance();if(d<=5)return 0;if(d<=30)return 1;if(d<=120)return 2;return 3}
+function syncCombatRange(){if(h?.combat)h.combat.range=RANGE_BANDS[combatBandIndex()].name}
+function setCombatBand(i){if(!h?.combat)return;let b=RANGE_BANDS[Math.max(0,Math.min(RANGE_BANDS.length-1,i))];h.combat.distanceFeet=b.feet;h.combat.range=b.name}
+function weaponCanReach(name,distance=combatDistance()){let r=WEAPON_RANGES[name];return !!r&&distance<=r[2]}
+function attackModeFor(name){
+ let distance=combatDistance();
+ if(distance<=5)return RANGED_WEAPONS.has(name)?"missile":"melee";
+ if(RANGED_WEAPONS.has(name))return weaponCanReach(name,distance)?"missile":"out-of-range";
+ if(THROWN_WEAPONS.has(name))return weaponCanReach(name,distance)?"thrown":"out-of-range";
  return "out-of-range"
 }
 function throwWeaponItem(item){
@@ -423,7 +434,7 @@ function makeCombat(isBoss=false){
    en.push({...b,id:i,hp,maxhp:hp,damage:b.damage[0],ammo:b.rangedDamage?d(6):0,boss:isBoss,iahd:rcAdjustedHD(b)})
  }
  let total=+en.reduce((a,e)=>a+e.iahd,0).toFixed(2),tpl=rcTPL(),pct=rcChallengePct(total,tpl);
- h.combat={round:1,enemies:en,target:0,log:[],skipNext:false,isBoss,range:["Close","Medium","Long"][d(3)-1],rcTPL:tpl,rcIAHD:total,rcChallengePct:pct,rcChallenge:rcChallengeName(pct)};
+ let startBand=d(3);h.combat={round:1,enemies:en,target:0,log:[],skipNext:false,isBoss,range:RANGE_BANDS[startBand].name,distanceFeet:RANGE_BANDS[startBand].feet,rcTPL:tpl,rcIAHD:total,rcChallengePct:pct,rcChallenge:rcChallengeName(pct)};
  let names=en.map(x=>x.n).join(", ");
  clog((isBoss?`BOSS BATTLE — ${names}. `:`Encounter — ${names}. `)+`RC challenge: ${rcChallengeName(pct)} (${pct}%).`);
  save();renderCombat()
@@ -450,7 +461,7 @@ function makeUndeadGroup(){
 function startUndeadCombat(en,opening){
  if(!en.length){addlog("No undead remain to fight.");save();page("depart");refresh();return}
  en.forEach((e,i)=>e.id=i);
- h.combat={round:1,enemies:en,target:0,log:[],skipNext:false,isBoss:false,range:"Close"};
+ h.combat={round:1,enemies:en,target:0,log:[],skipNext:false,isBoss:false,range:"Close",distanceFeet:RANGE_BANDS[1].feet};
  clog(opening||`${en.length} undead remain and attack.`);save();renderCombat()
 }
 function resolveTurnUndead(ev){
@@ -507,7 +518,7 @@ function playerStrike(){
 }
 function playerStrikeSingle(){
  let c=h.combat,t=c.enemies[c.target];if(!t||t.hp<=0){t=living()[0];if(!t)return;c.target=t.id}
- let cs=combatStats(),w=cs.weapon,item=cs.weaponItem,mode=attackModeFor(w,c.range);
+ let cs=combatStats(),w=cs.weapon,item=cs.weaponItem,mode=attackModeFor(w);
  if(c.skipNext){clog("Critical fumble: you lose this initiative.");c.skipNext=false;return}
  if(mode==="melee"&&t.enchanted&&protectionFromEvilActive()&&!c.protEvilBarrierBroken){c.protEvilBarrierBroken=true;clog("You attack an enchanted creature in melee; Sacred Guard no longer bars its touch, though its attack/save modifiers remain.")}
  if(t.sleeping&&c.range==="Hand-to-Hand"&&EDGED_WEAPONS.has(w)){let dmg=t.hp;t.hp=0;t.sleeping=false;t.disabledRounds=0;clog(`Sleeping ${t.n} is slain with a single edged-weapon blow (${dmg} HP).`);h.xp+=t.xp;clog(`${t.n} defeated. +${t.xp} XP.`);checkLevelUps();return}
@@ -519,7 +530,7 @@ function playerStrikeSingle(){
  if(w==="Heavy Crossbow"&&h.stats.STR<18)c.heavyCrossbowNextRound=c.round+2;
  let r=d(20),isMissile=mode==="missile",isThrown=mode==="thrown",atkMod=(isMissile||isThrown)?mod(h.stats.DEX):mod(h.stats.STR),dmgMod=isMissile?0:mod(h.stats.STR);
  if(r===1){clog("Natural 1 — critical fumble. Next initiative is lost.");c.skipNext=true}
- else if(r===20||r+atkMod+spellAttackBonus()+((isMissile||isThrown)?rangeAttackMod():0)>=characterNeed(t.ac+(t.blindRounds>0?4:0))){
+ else if(r===20||r+atkMod+spellAttackBonus()+((isMissile||isThrown)?rangeAttackMod(w):0)>=characterNeed(t.ac+(t.blindRounds>0?4:0))){
   let extra=h.spells?.buffs?.filter(b=>b.damageBonus&&(!b.boundWeapon||b.boundWeapon===w)).reduce((n,b)=>n+rollExpr(b.damageBonus),0)||0,flat=h.spells?.buffs?.reduce((n,b)=>n+(b.flatDamageBonus||0),0)||0;
   let dmg=Math.max(1,rollExpr(cs.damage)+dmgMod+extra+flat);if(r===20)dmg*=2;t.hp=Math.max(0,t.hp-dmg);
   clog(`${r===20?"Critical hit! ":""}You ${isThrown?"throw "+w+" and ":""}hit ${t.n} for ${dmg}.`);
