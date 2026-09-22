@@ -699,7 +699,7 @@ function spellDuration(s){
  if(s.durationPerLevel)return Math.max(1,h.level*s.durationPerLevel);
  return s.duration||3
 }
-function magicMissileCount(){return 1+Math.floor(Math.max(0,h.level-1)/5)}
+function magicMissileCount(){return 1+2*Math.floor(Math.max(0,h.level-1)/5)}
 const RC_SAVE_ROWS={
  Fighter:[{min:0,max:0,v:[14,15,16,17,17]},{min:1,max:3,v:[12,13,14,15,16]},{min:4,max:6,v:[10,11,12,13,14]},{min:7,max:9,v:[8,9,10,11,12]},{min:10,max:12,v:[6,7,8,9,10]},{min:13,max:15,v:[6,6,7,8,9]},{min:16,max:18,v:[5,6,6,7,8]},{min:19,max:21,v:[5,5,6,6,7]},{min:22,max:24,v:[4,5,5,5,6]},{min:25,max:27,v:[4,5,5,4,5]},{min:28,max:30,v:[3,4,5,3,4]},{min:31,max:33,v:[3,4,4,2,3]},{min:34,max:36,v:[2,3,3,2,2]}],
  Cleric:[{min:1,max:4,v:[11,12,14,16,15]},{min:5,max:8,v:[9,10,12,14,13]},{min:9,max:12,v:[7,8,10,12,11]},{min:13,max:16,v:[6,7,8,10,9]},{min:17,max:20,v:[5,6,6,8,7]},{min:21,max:24,v:[4,5,5,6,5]},{min:25,max:28,v:[3,4,4,4,4]},{min:29,max:32,v:[2,3,3,3,3]},{min:33,max:36,v:[2,2,2,2,2]}],
