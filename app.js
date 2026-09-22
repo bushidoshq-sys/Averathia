@@ -613,7 +613,7 @@ function resolveSpellEffect(s,t=null,autonomous=false){
  else if(s.kind==="cleanse"){h.conditions=h.conditions||[];let before=h.conditions.length;h.conditions=h.conditions.filter(x=>x!==s.condition);clog(before!==h.conditions.length?`${s.name} removes ${s.condition}.`:`${s.name} finds nothing to remove.`)}
  else if(s.kind==="images"){let n=rollExpr(s.images);h.spells.buffs.push({...s,images:n,rounds:spellDuration(s)});clog(`${s.name} creates ${n} illusory images.`)}
  else if(s.kind==="sleep"){let eligible=living().filter(q=>(Number(q.hdDice)||1)<=4.5),hdBudget=d(8)+d(8);for(const q of eligible.sort((a,b)=>(a.hdDice||1)-(b.hdDice||1))){let hd=Number(q.hdDice)||1;if(hd>hdBudget)continue;hdBudget-=hd;q.disabledRounds=spellDuration(s);clog(`${q.n} falls asleep.`)}}
- else if(s.kind==="web"){for(const q of living()){let hd=Number(q.hdDice)||1;q.disabledRounds=hd>=8?2:Math.max(2,(d(4)+d(4))*10);clog(`${q.n} is caught in the web.`)}}
+ else if(s.kind==="web"){for(const q of living()){let hd=Number(q.hdDice)||1,strong=q.webStrength==="great"||hd>=8,rounds=strong?2:(d(4)+d(4))*10;q.disabledRounds=Math.min(rounds,spellDuration(s));q.webbed=true;clog(`${q.n} is caught in the web${strong?" and can tear free in 2 rounds":` for ${rounds} rounds`}.`)}}
  else if(s.kind==="hold"){let qs=living().filter(q=>!s.humanoidOnly||q.humanoid===true).slice(0,s.maxTargets||1),penalty=qs.length===1?3:qs.length===2?1:0;for(const q of qs){let sv=monsterSpellSave(q,s.save||"Spells");sv.roll-=penalty;clog(`${q.n} save ${sv.roll} vs ${sv.target}${penalty?` (${penalty} hold penalty)`:""}: ${sv.success=sv.roll>=sv.target?"success":"FAIL"}.`);if(!sv.success){q.disabledRounds=spellDuration(s);clog(`${q.n} is held.`)}else clog(`${q.n} resists ${s.name}.`)}if(!qs.length)clog(`${s.name} has no valid humanoid target.`)}
  else if(s.kind==="debuff"){let qs=s.rc==="Slow"?living().slice(0,24):[t||living()[0]];for(const q of qs.filter(Boolean)){let sv=monsterSpellSave(q,s.save||"Spells");clog(`${q.n} save ${sv.roll} vs ${sv.target}: ${sv.success?"success":"FAIL"}.`);if(!sv.success){q.slowRounds=spellDuration(s);clog(`${q.n} is slowed.`)}else clog(`${q.n} resists ${s.name}.`)}}
  else if(s.kind==="utility"){clog(`${s.name} is active; no current combat target effect.`)}
@@ -633,7 +633,7 @@ function castCombatSpell(id){
  if(pr>er)enemyStrike();
  if(h.combat){tickSpellBuffs();tickEnemySpellEffects();h.combat.round++;save();renderCombat()}
 }
-function tickEnemySpellEffects(){if(!h.combat)return;for(const e of living()){if(e.disabledRounds>0)e.disabledRounds--;if(e.slowRounds>0)e.slowRounds--}}
+function tickEnemySpellEffects(){if(!h.combat)return;for(const e of living()){if(e.disabledRounds>0)e.disabledRounds--;if(e.disabledRounds<=0&&e.webbed){e.webbed=false;clog(`${e.n} breaks free of the web.`)}if(e.slowRounds>0)e.slowRounds--}}
 function spellAttackBonus(){ensureSpellState();return h.spells.buffs.reduce((a,b)=>a+(b.attack||0),0)}
 function spellACBonus(){ensureSpellState();let ranged=h.combat?.range&&h.combat.range!=="Hand-to-Hand";return h.spells.buffs.reduce((a,b)=>a+(ranged&&b.missileAC!=null?b.missileAC:(b.ac||0)),0)}
 function tickSpellBuffs(){ensureSpellState();h.spells.buffs.forEach(b=>b.rounds--);h.spells.buffs=h.spells.buffs.filter(b=>b.rounds>0)}
