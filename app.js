@@ -545,7 +545,7 @@ function resetDailySpells(){ensureSpellState();h.spells.used={};h.spells.spentMe
 function renderSpellButton(){
  let b=$("#spellBtn");if(!b||!h?.combat)return;let spells=availableCombatSpells();
  b.classList.toggle("hide",!spells.length);b.textContent=spells.length?`✨ Spell (${spells.length})`:"✨ Spell";
- b.onclick=()=>{let names=spells.map((s,i)=>`${i+1}. ${s.name} [L${s.sl}]`).join("\\n"),pick=prompt(`Choose spell:\\n${names}`);let s=spells[(+pick)-1];if(s)castCombatSpell(s.id)}
+ b.onclick=()=>{let menu=$("#spellMenu");if(!menu)return;menu.innerHTML=spells.map(s=>`<button class="spellChoice" data-cast-spell="${s.id}"><b>${s.name}</b> <span class="small">L${s.sl}</span></button>`).join("");menu.classList.toggle("hide");$("[data-cast-spell]").forEach(x=>x.onclick=()=>{menu.classList.add("hide");castCombatSpell(x.dataset.castSpell)})}
 }
 function resolveAttack(){let c=h.combat,pr=d(6),er=d(6);while(pr===er){pr=d(6);er=d(6)}clog(`Initiative: you ${pr}, enemies ${er}.`);if(pr>er){playerStrike();if(living().length)enemyStrike()}else{enemyStrike();if(h.combat&&h.hp>0&&living().length)playerStrike()}if(!h.combat)return;if(!living().length)return finishCombat();tickSpellBuffs();tickEnemySpellEffects();c.round++;save();renderCombat()}
 function finishCombat(){
