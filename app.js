@@ -495,18 +495,19 @@ function autoSpellScore(s){
 function autonomousCombat(isBoss=false){
  makeCombat(isBoss);let guard=0;
  while(h.combat&&living().length&&h.hp>0&&guard++<100){
-   let ratio=h.hp/h.maxhp;
-   if(ratio<=autoPotionThreshold()){
-     let pi=h.inv.findIndex(x=>x.n==="Healing Potion");
-     if(pi>=0){h.inv.splice(pi,1);if(mummyDiseaseActive()){clog("Autonomous: Healing Potion is consumed, but Mummy disease prevents it from restoring HP.")}else{let heal=d(6)+1;h.hp=Math.min(h.maxhp,h.hp+heal);clog(`Autonomous: potion restores ${heal} HP.`)}}
+   if(h.combat.paralyzed){
+     clog(`Autonomous: ${h.name} is paralyzed and loses the round.`);
+     if(enemyStrike()===false)break;
+     if(h.combat){tickSpellBuffs();tickEnemySpellEffects();tickPlayerConditions();h.combat.round++;save()}
+     continue
    }
-   let spells=availableCombatSpells().sort((a,b)=>autoSpellScore(b)-autoSpellScore(a));
-   if(spells.length&&autoSpellScore(spells[0])>=45){
-     let s=spells[0],t=living()[0];consumeSpell(s);resolveSpellEffect(s,t,true);
-   }else playerStrike();
-   if(!living().length)break;
-   if(enemyStrike()===false)break;
-   tickSpellBuffs();tickEnemySpellEffects();tickPlayerConditions();if(h.combat)h.combat.round++;
+   let ratio=h.hp/h.maxhp,pi=h.inv.findIndex(x=>x.n==="Healing Potion");
+   if(ratio<=autoPotionThreshold()&&pi>=0){usePotionCombat();continue}
+   let spells=availableCombatSpells()
+     .filter(s=>!s.enemyTarget||!Number.isFinite(s.rangeFeet)||combatDistance()<=s.rangeFeet)
+     .sort((a,b)=>autoSpellScore(b)-autoSpellScore(a));
+   if(spells.length&&autoSpellScore(spells[0])>=45){castCombatSpell(spells[0].id);continue}
+   resolveAttack()
  }
  if(h.combat&&h.hp>0&&!living().length)finishCombat();
  return h.hp>0;
