@@ -593,17 +593,17 @@ const SPELL_PROGRESS={
  Cleric:{1:[],2:[1],3:[2],4:[2,1],5:[2,2],6:[2,2,1],7:[2,2,2],8:[3,2,2,1],9:[3,3,2,2],10:[3,3,3,2,1]}
 };
 const ARCANE_NOW=[
- {id:"magic_missile",name:"Arcane Dart",rc:"Magic Missile",sl:1,kind:"damage",damage:"1d6+1",autoHit:true,missilesByLevel:true},
+ {id:"magic_missile",name:"Arcane Dart",rc:"Magic Missile",sl:1,kind:"damage",damage:"1d6+1",autoHit:true,missilesByLevel:true,enemyTarget:true,rangeFeet:150},
  {id:"shield",name:"Arcane Ward",rc:"Shield",sl:1,kind:"buff",fixedAC:4,fixedMissileAC:2,magicMissileSave:true,durationTurns:2},
- {id:"sleep",name:"Dreamfall",rc:"Sleep",sl:1,kind:"sleep",save:null,durationTurnsDice:"4d4"},
- {id:"light",name:"Mage Light",rc:"Light",sl:1,kind:"blind",save:"Spells",rangeFeet:120,durationTurnsBase:6,durationTurnsPerLevel:1},
+ {id:"sleep",name:"Dreamfall",rc:"Sleep",sl:1,kind:"sleep",save:null,durationTurnsDice:"4d4",enemyTarget:true,rangeFeet:240,areaFeet:40},
+ {id:"light",name:"Mage Light",rc:"Light",sl:1,kind:"blind",save:"Spells",enemyTarget:true,rangeFeet:120,durationTurnsBase:6,durationTurnsPerLevel:1},
  {id:"mirror_image",name:"Mirror Phantoms",rc:"Mirror Image",sl:2,kind:"images",images:"1d4",durationTurns:6},
- {id:"web",name:"Binding Web",rc:"Web",sl:2,kind:"web",durationTurns:48},
- {id:"fireball",name:"Flameburst",rc:"Fireball",sl:3,kind:"area",perLevel:true,save:"Spells",half:true,damageType:"fire"},
- {id:"lightning_bolt",name:"Storm Lance",rc:"Lightning Bolt",sl:3,kind:"damage",perLevel:true,save:"Spells",half:true},
+ {id:"web",name:"Binding Web",rc:"Web",sl:2,kind:"web",durationTurns:48,enemyTarget:true,rangeFeet:10,areaFeet:10},
+ {id:"fireball",name:"Flameburst",rc:"Fireball",sl:3,kind:"area",perLevel:true,save:"Spells",half:true,damageType:"fire",enemyTarget:true,rangeFeet:240,areaFeet:40},
+ {id:"lightning_bolt",name:"Storm Lance",rc:"Lightning Bolt",sl:3,kind:"line",perLevel:true,save:"Spells",half:true,enemyTarget:true,rangeFeet:180,lineLengthFeet:60,lineWidthFeet:5},
  {id:"haste",name:"Quickening",rc:"Haste",sl:3,kind:"buff",extraAttack:true,durationTurns:3},
- {id:"slow",name:"Time Drag",rc:"Slow",sl:3,kind:"debuff",save:"Spells",durationTurns:3},
- {id:"hold_person",name:"Binding Word",rc:"Hold Person",sl:3,kind:"hold",save:"Spells",durationTurnsPerLevel:1,maxTargets:4,humanoidOnly:true},
+ {id:"slow",name:"Time Drag",rc:"Slow",sl:3,kind:"debuff",save:"Spells",durationTurns:3,enemyTarget:true,rangeFeet:240,areaFeet:60,maxTargets:24},
+ {id:"hold_person",name:"Binding Word",rc:"Hold Person",sl:3,kind:"hold",save:"Spells",durationTurnsPerLevel:1,maxTargets:4,humanoidOnly:true,enemyTarget:true,rangeFeet:120},
  {id:"prot_missiles",name:"Missile Ward",rc:"Protection from Normal Missiles",sl:3,kind:"buff",missileWard:true,durationTurns:12}
 ];
 const CLERIC_NOW=[
@@ -612,7 +612,7 @@ const CLERIC_NOW=[
  {id:"remove_fear",name:"Steady Heart",rc:"Remove Fear",sl:1,kind:"cleanse",condition:"Afraid"},
  {id:"resist_cold",name:"Winter Ward",rc:"Resist Cold",sl:1,kind:"buff",resist:"cold",saveBonusVs:"cold",damagePerDieReduction:1,durationTurns:6},
  {id:"bless",name:"Battle Blessing",rc:"Bless",sl:2,kind:"buff",attack:1,flatDamageBonus:1,morale:1,durationTurns:6},
- {id:"hold_person_c",name:"Sacred Binding",rc:"Hold Person",sl:2,kind:"hold",save:"Spells",durationTurns:9,maxTargets:4,humanoidOnly:true},
+ {id:"hold_person_c",name:"Sacred Binding",rc:"Hold Person",sl:2,kind:"hold",save:"Spells",durationTurns:9,maxTargets:4,humanoidOnly:true,enemyTarget:true,rangeFeet:180},
  {id:"resist_fire",name:"Flame Ward",rc:"Resist Fire",sl:2,kind:"buff",resist:"fire",saveBonusVs:"fire",damagePerDieReduction:1,durationTurns:2},
  {id:"cure_disease",name:"Restoring Grace",rc:"Cure Disease",sl:3,kind:"cleanse",condition:"Diseased"},
  {id:"striking",name:"War Prayer",rc:"Striking",sl:3,kind:"buff",damageBonus:"1d6",durationTurns:1}
