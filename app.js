@@ -576,15 +576,21 @@ function playerStrikeSingle(){
   if(t.hp<=0){let gained=awardXP(t.xp);clog(`${t.n} defeated. +${gained} XP.`)}
  }else clog(`You ${isThrown?"throw "+w+" and ":""}miss ${t.n}.`)
 }
+function blindMovementDelayed(e){
+ if((e.blindRounds||0)<=0)return false;
+ e.blindMoveTicks=(e.blindMoveTicks||0)+1;
+ if(e.blindMoveTicks<3){clog(`${e.n} is blinded and can only move at one-third speed.`);return true}
+ e.blindMoveTicks=0;return false
+}
 function monsterRangeStep(e){
  if(e.disabledRounds>0){clog(`${e.n} cannot change range while immobilized.`);return false}
  let i=combatBandIndex(),dist=combatDistance(),rangedMax=e.rangedWeapon&&WEAPON_RANGES[e.rangedWeapon]?.[2]||Infinity;
  if(e.rangedDamage&&e.meleeDamage){
-  if(((e.ammo||0)<=0||dist>rangedMax)&&i>0){setCombatBand(i-1);clog(`${e.n} closes the distance to ${h.combat.range} (${combatDistance()}').`);return true}
+  if(((e.ammo||0)<=0||dist>rangedMax)&&i>0){if(blindMovementDelayed(e))return true;setCombatBand(i-1);clog(`${e.n} closes the distance to ${h.combat.range} (${combatDistance()}').`);return true}
   return false
  }
- if(!e.rangedDamage&&i>0){setCombatBand(i-1);clog(`${e.n} closes the distance to ${h.combat.range} (${combatDistance()}').`);return true}
- if(e.rangedDamage&&!e.meleeDamage&&i<3){setCombatBand(i+1);clog(`${e.n} opens the distance to ${h.combat.range} (${combatDistance()}').`);return true}
+ if(!e.rangedDamage&&i>0){if(blindMovementDelayed(e))return true;setCombatBand(i-1);clog(`${e.n} closes the distance to ${h.combat.range} (${combatDistance()}').`);return true}
+ if(e.rangedDamage&&!e.meleeDamage&&i<3){if(blindMovementDelayed(e))return true;setCombatBand(i+1);clog(`${e.n} opens the distance to ${h.combat.range} (${combatDistance()}').`);return true}
  return false
 }
 function combatDeath(reason=""){
@@ -799,7 +805,7 @@ function castCombatSpell(id,holdMode=null,missileTargetIds=null){
  if(pr>er)enemyStrike();
  if(h.combat){tickSpellBuffs();tickEnemySpellEffects();tickPlayerConditions();h.combat.round++;save();renderCombat()}
 }
-function tickEnemySpellEffects(){if(!h.combat)return;for(const e of living()){if(e.disabledRounds>0)e.disabledRounds--;if(e.disabledRounds<=0&&e.webbed){e.webbed=false;clog(`${e.n} breaks free of the web.`)}if(e.disabledRounds<=0&&e.sleeping){e.sleeping=false;clog(`${e.n} awakens.`)}if(e.disabledRounds<=0&&e.held){e.held=false;clog(`${e.n} is no longer held.`)}if(e.slowRounds>0)e.slowRounds--;if(e.blindRounds>0){e.blindRounds--;if(e.blindRounds<=0)clog(`${e.n} can see again.`)}}}
+function tickEnemySpellEffects(){if(!h.combat)return;for(const e of living()){if(e.disabledRounds>0)e.disabledRounds--;if(e.disabledRounds<=0&&e.webbed){e.webbed=false;clog(`${e.n} breaks free of the web.`)}if(e.disabledRounds<=0&&e.sleeping){e.sleeping=false;clog(`${e.n} awakens.`)}if(e.disabledRounds<=0&&e.held){e.held=false;clog(`${e.n} is no longer held.`)}if(e.slowRounds>0)e.slowRounds--;if(e.blindRounds>0){e.blindRounds--;if(e.blindRounds<=0){e.blindMoveTicks=0;clog(`${e.n} can see again.`)}}}}
 function tickPlayerConditions(){if(!h?.combat)return;if(h.combat.fearParalyzed&&!living().some(e=>e.mummy)){h.combat.fearParalyzed=false;h.combat.paralyzed=false;h.combat.paralyzedRounds=0;clog(`${h.name} can move again now that the Mummy is out of sight.`)}if(h.combat.paralyzed&&!h.combat.fearParalyzed){if(!Number.isFinite(h.combat.paralyzedRounds))h.combat.paralyzedRounds=1;h.combat.paralyzedRounds--;if(h.combat.paralyzedRounds<=0){h.combat.paralyzed=false;h.combat.paralyzedRounds=0;clog(`${h.name} can move again.`)}}}
 function spellAttackBonus(){ensureSpellState();return h.spells.buffs.reduce((a,b)=>a+(b.attack||0),0)}
 function spellACBonus(){ensureSpellState();return h.spells.buffs.reduce((a,b)=>a+(b.ac||0),0)}
