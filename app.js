@@ -56,7 +56,7 @@ function gainLevel(){
  let r=classLevelData(),old=h.level||1;if(old>=r.cap)return false;
  h.level=old+1;
  if(h.level<=9){let roll=d(r.hd),gain=Math.max(1,roll+conHPBonus());h.maxhp+=gain;h.hp+=gain;h.lastLevelGain={level:h.level,hp:gain,roll,con:conHPBonus()}}
- else{let gain=["Fighter","Dwarf"].includes(h.className)?2:1;h.maxhp+=gain;h.hp+=gain;h.lastLevelGain={level:h.level,hp:gain,roll:null,con:0}}
+ else{let gain={Fighter:2,Thief:2,Cleric:1,Arcanist:1,Dwarf:3,Elf:1}[h.className]??1;h.maxhp+=gain;h.hp+=gain;h.lastLevelGain={level:h.level,hp:gain,roll:null,con:0}}
  if(h.trip?.journal)journal({id:`LEVEL-${h.level}`,type:"Progression",title:`Level ${h.level}`,text:`${h.name} reached level ${h.level}.`,result:"levelUp",xp:0,coins:[0,0,0],hpGain:h.lastLevelGain.hp});
  return true
 }
