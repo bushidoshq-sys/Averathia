@@ -159,7 +159,7 @@ function activeWeapon(){
  if(range==="Hand-to-Hand")return w.melee||w.ranged;
  return w.ranged&&ammoCount(ammoTypeFor(w.ranged.n))>0?w.ranged:(w.melee||w.ranged)
 }
-function combatStats(){let weapon=activeWeapon(),armor=h.inv.find(x=>x.kind==="armor"&&x.eq),shield=h.inv.find(x=>x.kind==="shield"&&x.eq),wd=weapon?itemData(weapon.n):{},ad=armor?itemData(armor.n):{},name=weapon?.n||"Unarmed";return{weapon:name,weaponItem:weapon,damage:wd.damage||"1d2",attackMode:attackModeFor(name),rangeText:weaponRangeText(name),armor:armor?.n||"None",shield:shield?.n||"None",ac:(ad.ac??9)+(shield?-1:0)}}
+function combatStats(){let weapon=activeWeapon(),armor=h.inv.find(x=>x.kind==="armor"&&x.eq),shield=h.inv.find(x=>x.kind==="shield"&&x.eq),wd=weapon?itemData(weapon.n):{},ad=armor?itemData(armor.n):{},name=weapon?.n||"Unarmed",dexAC=mod(h.stats.DEX);return{weapon:name,weaponItem:weapon,damage:wd.damage||"1d2",attackMode:attackModeFor(name),rangeText:weaponRangeText(name),armor:armor?.n||"None",shield:shield?.n||"None",dexAC,ac:(ad.ac??9)+(shield?-1:0)-dexAC}}
 function sheetInventory(){
  let cs=combatStats(),box=$("#sheetInv");
  box.innerHTML=`<div class="combatSummary">Combat: ${cs.weapon} (${cs.damage}) · AC ${cs.ac}${cs.shield!=="None"?" · Shield":""}</div>`+
