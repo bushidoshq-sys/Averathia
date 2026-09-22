@@ -20,7 +20,7 @@ function candidate(){
  let r=Array.from({length:6},()=>d(10)+8).sort((a,b)=>b-a);
  let order=CREATION_ABILITY_PRIORITY[chosenClass]||CREATION_ABILITY_PRIORITY.Fighter,s={};
  order.forEach((ability,i)=>s[ability]=r[i]);
- let hd=({Fighter:8,Cleric:6,Thief:4,Arcanist:4,Dwarf:8,Elf:6}[chosenClass]||8),gold=(d(6)+d(6)+d(6))*10;return{stats:s,hp:hd+mod(s.CON),gold}
+ let hd=({Fighter:8,Cleric:6,Thief:4,Arcanist:4,Dwarf:8,Elf:6}[chosenClass]||8);return{stats:s,hp:hd+mod(s.CON),gold:180}
 }
 function fullName(){return FN[sex][d(FN[sex].length)-1]+" "+LN[d(LN.length)-1]}
 function chibiHTML(sx,i,big=false){return `<img src="${artPath(chosenClass,sx,i,"full")}" alt="${sx} ${chosenClass} ${i+1}">`}
