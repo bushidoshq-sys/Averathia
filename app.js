@@ -599,7 +599,7 @@ function resolveSpellEffect(s,t=null,autonomous=false){
  else if(s.kind==="sleep"){let eligible=living().filter(q=>(Number(q.hdDice)||1)<=4.5),hdBudget=d(8)+d(8);for(const q of eligible.sort((a,b)=>(a.hdDice||1)-(b.hdDice||1))){let hd=Number(q.hdDice)||1;if(hd>hdBudget)continue;hdBudget-=hd;q.disabledRounds=spellDuration(s);clog(`${q.n} falls asleep.`)}}
  else if(s.kind==="web"){for(const q of living()){let hd=Number(q.hdDice)||1;q.disabledRounds=hd>=8?2:Math.max(2,(d(4)+d(4))*10);clog(`${q.n} is caught in the web.`)}}
  else if(s.kind==="hold"){let qs=living().filter(q=>!s.humanoidOnly||q.humanoid!==false).slice(0,s.maxTargets||1);for(const q of qs){let sv=monsterSpellSave(q,s.save||"Spells");clog(`${q.n} save ${sv.roll} vs ${sv.target}: ${sv.success?"success":"FAIL"}.`);if(!sv.success){q.disabledRounds=spellDuration(s);clog(`${q.n} is held.`)}else clog(`${q.n} resists ${s.name}.`)}}
- else if(s.kind==="debuff"){let q=t||living()[0];if(!q)return;let sv=monsterSpellSave(q,s.save||"Spells");clog(`${q.n} save ${sv.roll} vs ${sv.target}: ${sv.success?"success":"FAIL"}.`);if(!sv.success){q.slowRounds=spellDuration(s);clog(`${q.n} is slowed.`)}else clog(`${q.n} resists ${s.name}.`)}
+ else if(s.kind==="debuff"){let qs=s.rc==="Slow"?living().slice(0,24):[t||living()[0]];for(const q of qs.filter(Boolean)){let sv=monsterSpellSave(q,s.save||"Spells");clog(`${q.n} save ${sv.roll} vs ${sv.target}: ${sv.success?"success":"FAIL"}.`);if(!sv.success){q.slowRounds=spellDuration(s);clog(`${q.n} is slowed.`)}else clog(`${q.n} resists ${s.name}.`)}}
  else if(s.kind==="utility"){clog(`${s.name} is active; no current combat target effect.`)}
 }
 function castCombatSpell(id){
