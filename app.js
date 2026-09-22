@@ -270,8 +270,8 @@ function attackBase(cls=h.className,level=h.level){
  for(const [lv,b] of rows)if(level>=lv)base=b;
  return base
 }
-function characterNeed(ac){return attackBase()+ac-9}
-function monsterNeed(e){return Math.max(2,(19-Math.floor(Math.max(0,e.hdDice-1)/2))+(combatStats().ac+spellACBonus())-9)}
+function characterNeed(ac){return attackBase()-ac}
+function monsterNeed(e){return Math.max(2,(19-Math.floor(Math.max(0,e.hdDice-1)/2))-(combatStats().ac+spellACBonus()))}
 function clog(s){h.combat.log.push(s);if(h.combat.log.length>40)h.combat.log.shift();adventureLog(s,"Combat")}
 function living(){return h.combat.enemies.filter(e=>e.hp>0)}
 // RC Rules Cyclopedia, Balancing Encounters (pp.100-101): TPL -> IAHD -> challenge %.
