@@ -189,11 +189,13 @@ function enableInventoryDrag(box){
 let shopMode="buy";
 
 function shopData(name){for(const cat of Object.keys(SHOP)){let x=SHOP[cat].find(v=>v[0]===name);if(x)return x}return null}
-function chaSellBonus(){return h.stats.CHA>=16?0.10:h.stats.CHA>=13?0.05:0}
+function chaBuyDiscount(){return h.stats.CHA>=18?0.10:h.stats.CHA>=16?0.05:0}
+function chaSellBonus(){return h.stats.CHA>=18?0.15:h.stats.CHA>=16?0.10:h.stats.CHA>=13?0.05:0}
 function gpToCP(gp){return Math.round(gp*100)}
+function buyPriceCP(item){return Math.round(gpToCP(item[1])*(1-chaBuyDiscount()))}
 function coinTextCP(cp){cp=Math.max(0,Math.round(cp));let gp=Math.floor(cp/100),sp=Math.floor((cp%100)/10),c=cp%10;return `${gp} GP · ${sp} SP · ${c} CP`}
-function walletCP(){return Math.round((h.gold||0)*100)+Math.trunc(h.sp||0)*10+Math.trunc(h.cp||0)}
-function setWalletCP(cp){cp=Math.max(0,Math.round(cp));h.gold=Math.floor(cp/100);h.gp=h.gold;h.sp=Math.floor((cp%100)/10);h.cp=cp%10}
+function walletCP(){return Math.round((h.gp??h.gold??0)*100)+Math.trunc(h.sp||0)*10+Math.trunc(h.cp||0)}
+function setWalletCP(cp){cp=Math.max(0,Math.round(cp));h.gp=Math.floor(cp/100);h.gold=h.gp;h.sp=Math.floor((cp%100)/10);h.cp=cp%10}
 function sellPriceCP(item){let d=shopData(item.n);if(!d)return 0;return Math.round(gpToCP(d[1])*.5*(1+chaSellBonus()))}
 function canSellResource(n){
  if(n==="Rations — 7 days")return h.rations>=7;
@@ -251,7 +253,7 @@ function renderShop(){
  (shopMode==="sell"
  ? `<div class="small">Resale value: 50% of shop value${bonus?` + ${bonus}% CHA sell bonus`:""}. Prices shown are the amount you receive.</div>`+
    (h.inv.map((x,i)=>{let price=sellPriceCP(x),ok=!x.noSell&&!x.bound&&price>0&&canSellResource(x.n);return `<div class=item><span><b>${x.n}</b><div class=small>${x.eq?"Equipped · ":""}Sell price</div></span><span>${coinTextCP(price)}</span><button data-sell="${i}" ${ok?"":"disabled"}>Sell</button></div>`}).join("")||"<p>Inventory is empty.</p>")
- : SHOP[tab].map((x,i)=>{let kind=shopKind(x[0]),allowed=classCanUse(x[0],kind);return `<div class=item><span><b>${x[0]}</b><div class=small>${x[2]}${allowed?"":" · Restricted for "+h.className}</div></span><span>${coinTextCP(gpToCP(x[1]))}</span><button data-buy="${i}" ${walletCP()<gpToCP(x[1])||!allowed?"disabled":""}>Buy</button></div>`}).join(""));
+ : SHOP[tab].map((x,i)=>{let kind=shopKind(x[0]),allowed=classCanUse(x[0],kind),price=buyPriceCP(x),disc=Math.round(chaBuyDiscount()*100);return `<div class=item><span><b>${x[0]}</b><div class=small>${x[2]}${allowed?"":" · Restricted for "+h.className}${disc?` · CHA -${disc}%`:""}</div></span><span>${coinTextCP(price)}</span><button data-buy="${i}" ${walletCP()<price||!allowed?"disabled":""}>Buy</button></div>`}).join(""));
  $("#buyMode").onclick=()=>{shopMode="buy";renderShop()};
  $("#sellMode").onclick=()=>{shopMode="sell";renderShop()};
  $$("[data-buy]").forEach(b=>b.onclick=()=>buy(SHOP[tab][+b.dataset.buy]));
@@ -259,10 +261,10 @@ function renderShop(){
  $("#owned").innerHTML=h.inv.map((x,i)=>`<div class=item><span>${x.n}</span><span>${x.eq?"✓ Equipped":""}</span>${x.can?`<button data-eq="${i}">${x.eq?"Unequip":"Equip"}</button>`:"<span></span>"}</div>`).join("")||"Nothing purchased.";
 }
 $$("[data-tab]").forEach(b=>b.onclick=()=>{tab=b.dataset.tab;$$("[data-tab]").forEach(x=>x.classList.toggle("on",x===b));renderShop()});
-function buy(x){let kind=shopKind(x[0]);if(!classCanUse(x[0],kind))return;let cost=gpToCP(x[1]);if(walletCP()<cost)return;setWalletCP(walletCP()-cost);if(x[0].startsWith("Rations"))h.rations+=7;else if(x[0]==="Arrows — 20"){h.ammo=h.ammo||{};h.ammo.Arrows=(h.ammo.Arrows||0)+20}else if(x[0]==="Quarrels — 30"){h.ammo=h.ammo||{};h.ammo.Quarrels=(h.ammo.Quarrels||0)+30}else if(x[0]==="Sling Stones — 30"){h.ammo=h.ammo||{};h.ammo["Sling Stones"]=(h.ammo["Sling Stones"]||0)+30}else if(x[0]==="Waterskin"){h.waterCapacity++;h.water++}else if(x[0]==="Torch")h.lightMinutes+=60;else if(x[0]==="6 Torches")h.lightMinutes+=360;else if(x[0]==="Oil Flask")h.lightMinutes+=240;let armor=tab==="Armor",weapon=tab==="Weapons";h.inv.push({n:x[0],kind:armor?(x[0]==="Shield"?"shield":"armor"):(weapon?"weapon":"gear"),can:armor||weapon,eq:false});save()}
+function buy(x){let kind=shopKind(x[0]);if(!classCanUse(x[0],kind))return;let cost=buyPriceCP(x);if(walletCP()<cost)return;setWalletCP(walletCP()-cost);if(x[0].startsWith("Rations"))h.rations+=7;else if(x[0]==="Arrows — 20"){h.ammo=h.ammo||{};h.ammo.Arrows=(h.ammo.Arrows||0)+20}else if(x[0]==="Quarrels — 30"){h.ammo=h.ammo||{};h.ammo.Quarrels=(h.ammo.Quarrels||0)+30}else if(x[0]==="Sling Stones — 30"){h.ammo=h.ammo||{};h.ammo["Sling Stones"]=(h.ammo["Sling Stones"]||0)+30}else if(x[0]==="Waterskin"){h.waterCapacity++;h.water++}else if(x[0]==="Torch")h.lightMinutes+=60;else if(x[0]==="6 Torches")h.lightMinutes+=360;else if(x[0]==="Oil Flask")h.lightMinutes+=240;let armor=tab==="Armor",weapon=tab==="Weapons";h.inv.push({n:x[0],kind:armor?(x[0]==="Shield"?"shield":"armor"):(weapon?"weapon":"gear"),can:armor||weapon,eq:false});save()}
 function equip(i){let q=h.inv[i];if(!q||!q.can)return;if(!classCanUse(q.n,q.kind)){alert(`${h.className} cannot use ${q.n}.`);return}if(q.eq){q.eq=false;save();return}if(q.kind==="armor")h.inv.forEach(z=>{if(z.kind==="armor")z.eq=false});if(q.kind==="weapon"){let ranged=RANGED_WEAPONS.has(q.n);h.inv.forEach(z=>{if(z.kind==="weapon"&&RANGED_WEAPONS.has(z.n)===ranged)z.eq=false});if(itemData(q.n).two)h.inv.forEach(z=>{if(z.kind==="shield")z.eq=false})}if(q.kind==="shield"){let w=h.inv.find(z=>z.kind==="weapon"&&z.eq);if(w&&itemData(w.n).two){alert("A shield cannot be equipped with a two-handed weapon.");return}h.inv.forEach(z=>{if(z.kind==="shield")z.eq=false})}q.eq=true;save()}
 document.addEventListener("click",e=>{if(e.target.dataset.eq!==undefined)equip(+e.target.dataset.eq)});
-$$("[data-heal]").forEach(b=>b.onclick=()=>{let pct=+b.dataset.heal,cost={10:2,50:10,100:20}[pct];if(h.gold<cost){$("#healmsg").textContent="Not enough gold.";return}if(h.hp>=h.maxhp){$("#healmsg").textContent="Already at full health.";return}h.gold-=cost;h.hp=Math.min(h.maxhp,h.hp+Math.ceil(h.maxhp*pct/100));$("#healmsg").textContent="Healing complete.";save()});
+$("[data-heal]").forEach(b=>b.onclick=()=>{let pct=+b.dataset.heal,cost=gpToCP({10:2,50:10,100:20}[pct]);if(walletCP()<cost){$("#healmsg").textContent="Not enough gold.";return}if(h.hp>=h.maxhp){$("#healmsg").textContent="Already at full health.";return}setWalletCP(walletCP()-cost);h.hp=Math.min(h.maxhp,h.hp+Math.ceil(h.maxhp*pct/100));$("#healmsg").textContent="Healing complete.";save()});
 $$("[data-mode]").forEach(b=>b.onclick=()=>{mode=b.dataset.mode;$$("[data-mode]").forEach(x=>x.classList.toggle("on",x===b))});$$("[data-risk]").forEach(b=>b.onclick=()=>{risk=b.dataset.risk;$$("[data-risk]").forEach(x=>x.classList.toggle("on",x===b))});$$("[data-min]").forEach(b=>b.onclick=()=>{mins=+b.dataset.min;$$("[data-min]").forEach(x=>x.classList.toggle("on",x===b));refresh()});
 function clock(t){return new Date(t).toLocaleTimeString([], {hour:"2-digit",minute:"2-digit"})}
 function adventureLog(t,type="Event"){
@@ -964,6 +966,7 @@ $("#attackBtn").onclick=resolveAttack;$("#potionBtn").onclick=usePotionCombat;$(
   const saved=JSON.parse(raw);
   if(!saved||!saved.name||!saved.className)return;
   h=saved;
+  if(h.gp==null)h.gp=Number(h.gold)||0;if(h.sp==null)h.sp=0;if(h.cp==null)h.cp=0;h.gold=h.gp;
   chosenClass=h.className||h.mechanicsClass||"Fighter";
   sex=h.sex||"Male"; avatar=Number.isInteger(h.avatar)?h.avatar:0;
   $("#create").classList.add("hide");
