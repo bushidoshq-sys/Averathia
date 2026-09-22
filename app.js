@@ -96,13 +96,14 @@ function ensureTrophies(){if(h&&!Array.isArray(h.trophies))h.trophies=[]}
 function unlockTrophy(name){ensureTrophies();if(!h||h.trophies.includes(name))return false;let valid=(TROPHY_COLLECTIONS[h.className]||[]).some(x=>x[0]===name);if(!valid)return false;h.trophies.push(name);save();return true}
 function renderTrophies(){let grid=$("#trophyGrid"),intro=$("#trophyIntro");if(!grid||!h)return;ensureTrophies();let list=TROPHY_COLLECTIONS[h.className]||[],got=new Set(h.trophies);intro.textContent=`${TROPHY_TITLES[h.className]||"Collection"} — ${list.filter(x=>got.has(x[0])).length}/${list.length} discovered`;grid.innerHTML=list.map(([name,kind])=>got.has(name)?`<div class="trophyCard unlocked"><div class=trophyIcon>✦</div><b>${name}</b><span>${kind}</span></div>`:`<div class="trophyCard locked"><div class=trophyIcon>?</div><b>???</b><span>Undiscovered</span></div>`).join("")}
 
-function refresh(){renderTrophies();if(h)renderSkills();if($("#lastAdventure")){if(h?.lastAdventure){$("#lastAdventure").classList.remove("hide");$("#lastAdventureText").textContent=h.lastAdventure}else $("#lastAdventure").classList.add("hide")}if(h?.pendingEvent)renderPendingEvent();if(!h)return;updateRest();
- if(h.deadUntil&&Date.now()>=h.deadUntil){h.deadUntil=null;h.hp=Math.max(1,h.maxhp);h.trip=null;save();return}
+function refresh(){if(h?.deadUntil&&Date.now()<h.deadUntil){renderDeathPage();return}renderTrophies();if(h)renderSkills();if($("#lastAdventure")){if(h?.lastAdventure){$("#lastAdventure").classList.remove("hide");$("#lastAdventureText").textContent=h.lastAdventure}else $("#lastAdventure").classList.add("hide")}if(h?.pendingEvent)renderPendingEvent();if(!h)return;updateRest();
+ if(h.deadUntil&&Date.now()>=h.deadUntil){h.deadUntil=null;h.hp=Math.max(1,h.maxhp);h.trip=null;h.combat=null;save();page("town");return}
  if($("#worldClock"))$("#worldClock").textContent=atClockText();
  if($("#longRestBtn")){$("#longRestBtn").disabled=!!h.restUntil||!!h.deadUntil;$("#longRestBtn").onclick=()=>startLongRest()}
  if($("#restStatus"))$("#restStatus").textContent=h.deadUntil?`Recall: ${Math.ceil((h.deadUntil-Date.now())/60000)} min`:h.restUntil?`Resting: ${Math.max(0,Math.ceil((h.restUntil-Date.now())/60000))} min RT remaining`:"";
  $("#top").innerHTML=`<b>${h.name}</b> — Level ${h.level} Human ${h.className} &nbsp; ❤️ ${h.hp}/${h.maxhp} &nbsp; ⭐ ${h.xp} XP${h.level<classLevelData().cap?` / ${classLevelData().xp[h.level]}`:" · MAX"} &nbsp; 🪙 ${Math.trunc(h.gp ?? h.gold ?? 0)} GP · ${Math.trunc(h.sp ?? 0)} SP · ${Math.trunc(h.cp ?? 0)} CP`;let av=chibiHTML(h.sex,h.avatar,true);$("#townAvatar").innerHTML=$("#sheetAvatar").innerHTML=av;let coins=`${Math.trunc(h.gp||0)} GP · ${Math.trunc(h.sp||0)} SP · ${Math.trunc(h.cp||0)} CP`;$("#sheetData").innerHTML=`<b>${h.name}</b> &nbsp; ${h.sex} · ${["Elf","Dwarf"].includes(h.className)?h.className:`Human ${h.className}`}`;let order=["STR","DEX","CON","INT","WIS","CHA"];$("#sheetStats").innerHTML=order.map(k=>`<div class=stat>${k}<br><b>${h.stats[k]}</b></div>`).join("");$("#sheetResources").innerHTML=`Rations: ${h.rations.toFixed(2)} days · Water: ${h.water.toFixed(2)}/${h.waterCapacity} skins · Light: ${(h.lightMinutes/60).toFixed(2)} h`;sheetInventory();renderShop();$("#requirements").innerHTML=`<p>Needed for ${mins} min: food ${(mins/1440).toFixed(3)} days · water ${(4*mins/1440).toFixed(3)} skins · light ${(mins*2/3).toFixed(1)} min.</p>`}
-function page(id){$$(".page").forEach(x=>x.classList.add("hide"));$("#"+id).classList.remove("hide");$$("[data-page]").forEach(x=>x.classList.toggle("on",x.dataset.page===id));refresh()}
+function renderDeathPage(){if(!h?.deadUntil)return;clearTimeout(timer);$(".page").forEach(x=>x.classList.add("hide"));let p=$("#death");if(!p)return;p.classList.remove("hide");let left=Math.max(0,h.deadUntil-Date.now()),m=Math.floor(left/60000),s=Math.floor(left/1000)%60;$("#graveName").textContent=h.name;$("#deathCountdown").textContent=`${m}:${String(s).padStart(2,"0")}`;$("#top").innerHTML=`<b>${h.name}</b> — DEAD`;timer=setTimeout(()=>{if(Date.now()>=h.deadUntil){h.deadUntil=null;h.hp=Math.max(1,h.maxhp);h.trip=null;h.combat=null;save();page("town")}else renderDeathPage()},500)}
+function page(id){if(h?.deadUntil&&Date.now()<h.deadUntil&&id!=="death"){renderDeathPage();return}$$(".page").forEach(x=>x.classList.add("hide"));$("#"+id).classList.remove("hide");$$("[data-page]").forEach(x=>x.classList.toggle("on",x.dataset.page===id));refresh()}
 $$("[data-page]").forEach(b=>b.onclick=()=>page(b.dataset.page));$$("[data-go]").forEach(b=>b.onclick=()=>page(b.dataset.go));
 function home(){if(!h)return;h.water=h.waterCapacity;save()}
 const TWO_HANDED=new Set(["Two-Handed Sword","Short Bow","Long Bow","Light Crossbow","Heavy Crossbow"]);
@@ -446,8 +447,7 @@ function enemyStrike(){
    }
   }else clog(`${e.n} misses.`);
   if(h.hp<=0){
-   clog(`You are DEAD. Recall in ${h.level*5} minutes.`);
-   h.combat=null;h.deadUntil=Date.now()+h.level*5*60000;h.hp=0;save();page("town");refresh();return false
+   clog(`You are DEAD. Resurrection in ${h.level*5} minutes.`); let deathLog=h.trip?.adventureLog||[]; h.lastAdventure=`FAILED — ${h.name} died. Adventure progress reset to zero.`; h.trip=null;h.pendingEvent=null;h.combat=null;h.deadUntil=Date.now()+h.level*5*60000;h.hp=0;localStorage.setItem("averathia-v041",JSON.stringify(h));renderDeathPage();return false
   }
  }
  for(const e of living())if(e.special==="regeneration"){
@@ -640,14 +640,16 @@ function renderSkills(){
   }
  }
  box.innerHTML=out.join("")||`<div class=small>No class skills or special abilities to manage.</div>`;
- $$("[data-mem]").forEach(b=>b.onclick=()=>toggleMemorized(b.dataset.mem,+b.dataset.sl));
+ $("[data-mem-add]").forEach(b=>b.onclick=()=>changeMemorized(b.dataset.memAdd,+b.dataset.sl,1)); $("[data-mem-remove]").forEach(b=>b.onclick=()=>changeMemorized(b.dataset.memRemove,+b.dataset.sl,-1));
 }
-function toggleMemorized(id,sl){
+function changeMemorized(id,sl,delta){
  ensureSpellState();h.spells.memorized=h.spells.memorized||{};let a=h.spells.memorized[sl]||[],cap=spellSlotsFor()[sl-1]||0;
- let count=a.filter(x=>x===id).length;if(a.length<cap)a.push(id);else {let i=a.lastIndexOf(id);if(i>=0)a.splice(i,1)};
- h.spells.memorized[sl]=a;save();renderSkills();
+ if(delta>0&&a.length<cap)a.push(id);
+ if(delta<0){let i=a.lastIndexOf(id);if(i>=0)a.splice(i,1)}
+ h.spells.memorized[sl]=a;
+ h.spells.spentMem=(h.spells.spentMem||[]).filter(k=>!k.startsWith(sl+":"));
+ save();renderSkills();
 }
-
 function pickEvent(){
  let pools={Fighter:FIGHTER_EVENTS,Cleric:CLERIC_EVENTS,Arcanist:ARCANIST_EVENTS,Thief:THIEF_EVENTS,Elf:ELF_EVENTS,Dwarf:DWARF_EVENTS};
  let source=pools[h.className]||FIGHTER_EVENTS,used=new Set((h.trip.journal||[]).map(x=>x.id));
