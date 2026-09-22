@@ -934,17 +934,25 @@ function applyEventChoice(ev,ch){
  if(result==="combat"){h.pendingEvent=null;save();makeCombat();return}
  h.pendingEvent=null;endTripPause();save();renderPendingEvent();tick()
 }
+function autonomousChoice(ev){
+ let choices=ev?.choices||[];if(!choices.length)return null;
+ let target=Math.max(1,Math.min(19,h.stats?.WIS||9)),roll=d(20),success=roll<=target,choice;
+ if(!success)choice=choices[d(choices.length)-1];
+ else if(choices.some(x=>x.result==="clericTurn"))choice=choices.find(x=>x.result==="clericTurn");
+ else if((h.trip?.risk||"Normal")==="Cautious"){
+   let safe=/avoid|withdraw|leave|move on|keep moving|detour|wait|back away|go around|stay high|ignore|extinguish/i;
+   choice=choices.find(x=>["avoid","avoided","safe","left"].includes(x.result)||safe.test(x.label||""));
+   if(!choice&&h.className==="Thief")choice=choices.find(x=>x.result==="thiefSkill");
+   choice=choice||choices[choices.length-1]
+ }else choice=choices[0];
+ addlog(`Autonomous judgment: WIS ${roll}/${target} — ${success?"success":"failure"}; chooses ${choice.label}.`);
+ return choice
+}
 function event(){
  if(!h||!h.trip||h.combat||h.pendingEvent)return;
  let ev=pickEvent();
- if(ev.type==="Encounter"){
-   if(h.trip.mode==="present"){beginTripPause();h.pendingEvent=ev;renderPendingEvent();save();return}
-   journal({id:ev.id,type:ev.type,title:ev.title,text:ev.text,choice:"Autonomous",result:"combat",xp:0,coins:[0,0,0]});addlog(`${ev.title}: autonomous combat begins.`);autonomousCombat(false);save();return
- }
  if(ev.choices.length&&h.trip.mode==="present"){beginTripPause();h.pendingEvent=ev;renderPendingEvent();save();return}
- if(ev.choices.length){
-   let choice=ev.choices[h.trip.risk==="Cautious"?Math.min(1,ev.choices.length-1):0];applyEventChoice(ev,choice);return
- }
+ if(ev.choices.length){applyEventChoice(ev,autonomousChoice(ev));return}
  applyEventChoice(ev,null)
 }
 function renderPendingEvent(){
