@@ -538,7 +538,7 @@ const ARCANE_NOW=[
  {id:"light",name:"Mage Light",rc:"Light",sl:1,kind:"utility"},
  {id:"mirror_image",name:"Mirror Phantoms",rc:"Mirror Image",sl:2,kind:"images",images:"1d4",durationPerLevel:6},
  {id:"web",name:"Binding Web",rc:"Web",sl:2,kind:"web",duration:480},
- {id:"fireball",name:"Flameburst",rc:"Fireball",sl:3,kind:"area",perLevel:true,save:"Spells",half:true},
+ {id:"fireball",name:"Flameburst",rc:"Fireball",sl:3,kind:"area",perLevel:true,save:"Spells",half:true,damageType:"fire"},
  {id:"lightning_bolt",name:"Storm Lance",rc:"Lightning Bolt",sl:3,kind:"damage",perLevel:true,save:"Spells",half:true},
  {id:"haste",name:"Quickening",rc:"Haste",sl:3,kind:"buff",extraAttack:true,duration:30},
  {id:"slow",name:"Time Drag",rc:"Slow",sl:3,kind:"debuff",save:"Spells",duration:30},
@@ -607,7 +607,7 @@ function resolveSpellEffect(s,t=null,autonomous=false){
  if(s.kind==="damage"||s.kind==="area"){
   targets=s.kind==="area"?living():[t||living()[0]];
   if(s.missilesByLevel){let q=t||living()[0],n=magicMissileCount();if(q){let dmg=0;for(let i=0;i<n;i++)dmg+=rollExpr(s.damage);q.hp=Math.max(0,q.hp-dmg);clog(`${s.name} launches ${n} dart${n===1?"":"s"} and automatically hits ${q.n} for ${dmg} damage.`);if(q.hp<=0){h.xp+=q.xp;clog(`${q.n} defeated. +${q.xp} XP.`);checkLevelUps()}}return}
-  for(const q of targets.filter(Boolean)){let dmg=rollSpellDamage(s);if(s.save){let sv=monsterSpellSave(q,s.save||"Spells");clog(`${q.n} save ${sv.roll} vs ${sv.target}: ${sv.success?"success":"FAIL"}.`);if(sv.success&&s.half)dmg=Math.floor(dmg/2)}q.hp=Math.max(0,q.hp-dmg);clog(`${autonomous?"Autonomous: ":""}${s.name} strikes ${q.n} for ${dmg} damage.`);if(s.rc==="Fireball"&&q.webbed&&q.hp>0){let burn=d(6);q.hp=Math.max(0,q.hp-burn);q.disabledRounds=0;q.webbed=false;clog(`The web burns away around ${q.n}; ${q.n} takes ${burn} fire damage.`)}if(q.hp<=0){h.xp+=q.xp;clog(`${q.n} defeated. +${q.xp} XP.`);checkLevelUps()}}
+  for(const q of targets.filter(Boolean)){let dmg=rollSpellDamage(s);if(s.save){let sv=monsterSpellSave(q,s.save||"Spells");clog(`${q.n} save ${sv.roll} vs ${sv.target}: ${sv.success?"success":"FAIL"}.`);if(sv.success&&s.half)dmg=Math.floor(dmg/2)}q.hp=Math.max(0,q.hp-dmg);clog(`${autonomous?"Autonomous: ":""}${s.name} strikes ${q.n} for ${dmg} damage.`);if(s.damageType==="fire"&&q.webbed&&q.hp>0){let burn=d(6);q.hp=Math.max(0,q.hp-burn);q.disabledRounds=0;q.webbed=false;clog(`The web burns away around ${q.n}; ${q.n} takes ${burn} fire damage.`)}if(q.hp<=0){h.xp+=q.xp;clog(`${q.n} defeated. +${q.xp} XP.`);checkLevelUps()}}
  }else if(s.kind==="heal"){let heal=rollExpr(s.heal),before=h.hp;h.hp=Math.min(h.maxhp,h.hp+heal);clog(`${autonomous?"Autonomous: ":""}${s.name} restores ${h.hp-before} HP.`)}
  else if(s.kind==="buff"){h.spells.buffs.push({...s,rounds:spellDuration(s)});clog(`${s.name} takes effect.`)}
  else if(s.kind==="cleanse"){h.conditions=h.conditions||[];let before=h.conditions.length;h.conditions=h.conditions.filter(x=>x!==s.condition);clog(before!==h.conditions.length?`${s.name} removes ${s.condition}.`:`${s.name} finds nothing to remove.`)}
