@@ -506,9 +506,10 @@ function startClericUndeadFight(ev){
 }
 function autoPotionThreshold(){return{Cautious:.65,Normal:.45,Bold:.25}[h.trip?.risk||"Normal"]}
 function autoSpellScore(s){
+ if(s.kind==="cleanse"){let active=(h.conditions||[]).includes(s.condition)||(s.rc==="Cure Disease"&&mummyDiseaseActive());return active?110:0}
  if(s.kind==="heal")return mummyDiseaseActive()?0:(h.hp/h.maxhp<.55?100:0);
- if(s.rc==="Striking"&&living().some(e=>e.mummy))return 95;
- if(s.kind==="buff")return living().length>1?55:30;
+ if(s.rc==="Striking"&&living().some(e=>e.mummy)){let w=combatStats().weapon,dup=h.spells?.buffs?.some(b=>b.rc==="Striking"&&b.boundWeapon===w);return dup?0:95}
+ if(s.kind==="buff"){let dup=h.spells?.buffs?.some(b=>b.rc===s.rc);return dup?0:(living().length>1?55:30)}
  return 40+s.sl*8;
 }
 function autonomousCanHarm(target=living()[0]){
@@ -748,7 +749,12 @@ function resolveSpellEffect(s,t=null,autonomous=false,holdMode=null){
  }else if(s.kind==="heal"){if(mummyDiseaseActive()){clog(`${s.name} cannot heal through Mummy disease.`)}else{let heal=rollExpr(s.heal),before=h.hp;h.hp=Math.min(h.maxhp,h.hp+heal);clog(`${autonomous?"Autonomous: ":""}${s.name} restores ${h.hp-before} HP.`)}}
  else if(s.kind==="buff"){
   if(s.rc==="Bless"&&h.combat?.range==="Hand-to-Hand"){clog(`${s.name} cannot affect you once you are already in melee.`)}
-  else{let buff={...s,rounds:spellDuration(s)};if(s.rc==="Striking")buff.boundWeapon=combatStats().weapon;h.spells.buffs.push(buff);clog(s.rc==="Striking"?`${s.name} empowers ${buff.boundWeapon}.`:`${s.name} takes effect.`)}
+  else{
+   let boundWeapon=s.rc==="Striking"?combatStats().weapon:null;
+   let duplicate=h.spells.buffs.some(b=>b.rc===s.rc&&(s.rc!=="Striking"||b.boundWeapon===boundWeapon));
+   if(duplicate)clog(`${s.name} is already active; a second casting does not combine with the first.`);
+   else{let buff={...s,rounds:spellDuration(s)};if(s.rc==="Striking")buff.boundWeapon=boundWeapon;h.spells.buffs.push(buff);clog(s.rc==="Striking"?`${s.name} empowers ${buff.boundWeapon}.`:`${s.name} takes effect.`)}
+  }
  }
  else if(s.kind==="cleanse"){h.conditions=h.conditions||[];let before=h.conditions.length;h.conditions=h.conditions.filter(x=>x!==s.condition);if(s.rc==="Cure Disease"&&before!==h.conditions.length)h.mummyDisease=false;clog(before!==h.conditions.length?`${s.name} removes ${s.condition}.`:`${s.name} finds nothing to remove.`)}
  else if(s.kind==="images"){let n=rollExpr(s.images);h.spells.buffs.push({...s,images:n,rounds:spellDuration(s)});clog(`${s.name} creates ${n} illusory images.`)}
