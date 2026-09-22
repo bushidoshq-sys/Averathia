@@ -497,7 +497,7 @@ function enemyStrike(){
   if(monsterRangeStep(e))continue;
   let r=d(20);
   if(r===1){clog(`${e.n} rolls a natural 1 — critical fumble. Next initiative is lost.`);e.skipNext=true;continue}
-  let mr=h.combat?.range||"Close";if(e.rangedDamage&&mr!=="Hand-to-Hand"&&(e.ammo||0)>0){e.damage=e.rangedDamage;e.activeWeapon=e.rangedWeapon||"Ranged weapon";e.ammo--}else if(e.meleeDamage){e.damage=e.meleeDamage;e.activeWeapon=e.meleeWeapon||"Melee weapon"}if(r===20||r>=monsterNeed(e)){
+  let mr=h.combat?.range||"Close",useRanged=false;if(e.rangedDamage&&mr!=="Hand-to-Hand"&&(e.ammo||0)>0){e.damage=e.rangedDamage;e.activeWeapon=e.rangedWeapon||"Ranged weapon";e.ammo--;useRanged=true}else if(e.meleeDamage){e.damage=e.meleeDamage;e.activeWeapon=e.meleeWeapon||"Melee weapon"}let need=Math.max(2,(20-monsterHitModifier(e))-effectiveAC(useRanged));if(r===20||r>=need){
    let mirror=h.spells?.buffs?.find(b=>b.kind==="images"&&b.images>0);if(mirror){mirror.images--;clog(`${e.n} destroys a mirror image.`);continue}
    if(h.spells?.buffs?.some(b=>b.missileWard)&&e.activeWeapon===e.rangedWeapon){clog(`${e.n}'s missile is stopped by your ward.`);continue}let dmg=rollExpr(e.damage);if(r===20)dmg*=2;h.hp=Math.max(0,h.hp-dmg);
    clog(`${e.n} hits with ${e.activeWeapon||"its attack"} for ${dmg}${r===20?" — critical":""}.`);
