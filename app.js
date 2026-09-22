@@ -969,10 +969,10 @@ const CLASS_SPECIALS={
 };
 const SKILL_LABELS={openLocks:"Open Locks",findTraps:"Find Traps",removeTraps:"Remove Traps",climbWalls:"Climb Walls",moveSilently:"Move Silently",hideInShadows:"Hide in Shadows",pickPockets:"Pick Pockets",hearNoise:"Hear Noise"};
 const SPELL_BRIEFS={
- "Arcane Dart":"Automatic direct magical damage.","Arcane Ward":"Protective magical ward.","Dreamfall":"Attempts to put a foe to sleep.","Mage Light":"Creates magical light.",
- "Mirror Phantoms":"Creates illusory duplicates that can absorb attacks.","Binding Web":"Attempts to restrain a foe.","Flameburst":"Fire damage to all foes; successful save halves damage.","Storm Lance":"Heavy lightning damage; successful save halves damage.",
- "Quickening":"Combat speed/attack support.","Time Drag":"Attempts to slow a foe.","Binding Word":"Attempts to hold a foe.","Missile Ward":"Protection from ordinary missiles.",
- "Sacred Guard":"Protective divine ward.","Steady Heart":"Removes fear.","Winter Ward":"Protection against cold.","Sacred Binding":"Attempts to hold a foe.","Flame Ward":"Protection against fire.",
+ "Arcane Dart":"Automatic direct magical damage.","Shield":"Protective magical ward.","Sleep":"Attempts to put foes to sleep.","Light":"Creates magical light.",
+ "Mirror Image":"Creates illusory duplicates that can absorb attacks.","Web":"Creates restraining webs.","Fireball":"Fire damage in an area; successful save halves damage.","Lightning Bolt":"Heavy lightning damage in a line; successful save halves damage.",
+ "Haste":"Combat speed and extra-attack support.","Slow":"Attempts to slow foes.","Hold Person":"Attempts to hold humanoid targets.","Protection from Normal Missiles":"Protection from ordinary missiles.",
+ "Cure Light Wounds":"Restores HP.","Protection from Evil":"Protective divine ward.","Remove Fear":"Removes fear.","Resist Cold":"Protection against cold.","Bless":"+1 morale, attack and damage.","Resist Fire":"Protection against fire.","Cure Disease":"Removes disease.","Striking":"Adds magical damage to the affected weapon.",
 
  "Arcane Bolt":"Direct arcane damage.","Ember Lance":"Focused fire damage.","Storm Shard":"Lightning damage.","Flame Sphere":"Area-style fire damage.",
  "Frost Spear":"Cold damage.","Thunder Chain":"Electrical damage.","Violet Ray":"Arcane damage.","Starfall":"Heavy arcane damage.",
