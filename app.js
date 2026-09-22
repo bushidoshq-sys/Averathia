@@ -762,7 +762,7 @@ function renderRangeButton(){
  let b=$("#rangeBtn"),menu=$("#rangeMenu");if(!b||!menu||!h?.combat)return;
  syncCombatRange();let i=combatBandIndex(),haste=h.spells?.buffs?.some(x=>x.extraAttack);
  b.textContent=haste?"📏 Change Range ⚡":"📏 Change Range";
- b.onclick=()=>{i=combatBandIndex();$("#spellMenu")?.classList.add("hide");let choices=[];if(i>0)choices.push('<button data-range-dir="closer">⬅ Closer</button>');if(i<RANGE_BANDS.length-1)choices.push('<button data-range-dir="farther">Farther ➡</button>');if(haste)choices.push('<span class="small">Quickening: move up to 2 range bands</span>');menu.innerHTML=choices.join("");menu.classList.toggle("hide");$("[data-range-dir]").forEach(x=>x.onclick=()=>changeRange(x.dataset.rangeDir))}
+ b.onclick=()=>{i=combatBandIndex();$("#spellMenu")?.classList.add("hide");let choices=[];if(i>0)choices.push('<button data-range-dir="closer">⬅ Closer</button>');if(i<RANGE_BANDS.length-1)choices.push('<button data-range-dir="farther">Farther ➡</button>');if(haste)choices.push('<span class="small">Quickening: move up to 2 range bands</span>');menu.innerHTML=choices.join("");menu.classList.toggle("hide");$$("[data-range-dir]").forEach(x=>x.onclick=()=>changeRange(x.dataset.rangeDir))}
 }
 function changeRange(direction){
  if(!h?.combat)return;if(h.combat.paralyzed){clog("You cannot change range while paralyzed.");return renderCombat()}
