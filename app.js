@@ -637,10 +637,31 @@ function enemyStrike(){
 }
 
 // v1.0.7: usable Averathia spell registry. Mechanics are adapted from the audited RC low-level spell set.
+function spellProgressFromColumns(columns,maxLevel){
+ let out={};
+ for(let level=1;level<=maxLevel;level++){
+  let row=columns.map(col=>col[level-1]||0);
+  while(row.length&&row[row.length-1]===0)row.pop();
+  out[level]=row
+ }
+ return out
+}
+// RC spell-slot progression for the currently implemented spell levels 1-3 only.
+// Higher-level spell slots remain hidden until those spell levels are actually implemented.
+const ARCANE_ACTIVE_SLOT_COLUMNS=[
+ [1,2,2,2,2,2,3,3,3,3,4,4,4,4,5,5,6,6,6,6,6,6,6,7,7,7,7,8,8,8,8,9,9,9,9,9],
+ [0,0,1,2,2,2,2,3,3,3,3,4,4,4,4,5,5,5,5,5,5,6,6,7,7,7,7,8,8,8,8,8,9,9,9,9],
+ [0,0,0,0,1,2,2,2,3,3,3,4,4,4,4,5,5,5,5,5,5,5,6,6,6,7,7,7,7,8,8,8,9,9,9,9]
+];
+const CLERIC_ACTIVE_SLOT_COLUMNS=[
+ [0,1,2,2,2,2,3,3,3,4,4,4,5,5,6,6,6,6,7,7,7,7,7,8,8,8,8,8,8,8,8,9,9,9,9,9],
+ [0,0,0,1,2,2,2,3,3,4,4,4,5,5,5,5,6,6,6,6,6,6,7,7,7,7,8,8,8,8,8,8,9,9,9,9],
+ [0,0,0,0,0,1,2,2,3,3,3,4,4,5,5,5,5,5,5,5,5,5,6,6,6,7,7,7,7,8,8,8,8,9,9,9]
+];
 const SPELL_PROGRESS={
- Arcanist:{1:[1],2:[2],3:[2,1],4:[2,2],5:[2,2,1],6:[2,2,2],7:[3,2,2,1],8:[3,3,2,2],9:[3,3,3,2,1],10:[3,3,3,3,2]},
- Elf:{1:[1],2:[2],3:[2,1],4:[2,2],5:[2,2,1],6:[2,2,2],7:[3,2,2,1],8:[3,3,2,2],9:[3,3,3,2,1],10:[3,3,3,3,2]},
- Cleric:{1:[],2:[1],3:[2],4:[2,1],5:[2,2],6:[2,2,1],7:[2,2,2],8:[3,2,2,1],9:[3,3,2,2],10:[3,3,3,2,1]}
+ Arcanist:spellProgressFromColumns(ARCANE_ACTIVE_SLOT_COLUMNS,36),
+ Elf:spellProgressFromColumns(ARCANE_ACTIVE_SLOT_COLUMNS,10),
+ Cleric:spellProgressFromColumns(CLERIC_ACTIVE_SLOT_COLUMNS,36)
 };
 const ARCANE_NOW=[
  {id:"magic_missile",name:"Arcane Dart",rc:"Magic Missile",sl:1,kind:"damage",damage:"1d6+1",autoHit:true,missilesByLevel:true,enemyTarget:true,rangeFeet:150},
