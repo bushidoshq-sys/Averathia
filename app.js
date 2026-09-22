@@ -306,7 +306,7 @@ function monsterHitModifier(e){
  if(hd<=35)return 22;
  return 23;
 }
-function monsterNeed(e){return Math.max(2,(20-monsterHitModifier(e))-(combatStats().ac+spellACBonus()))}
+function monsterNeed(e){return Math.max(2,(20-monsterHitModifier(e))-effectiveAC(false))}
 function clog(s){
  h.combat.log.push(s);if(h.combat.log.length>40)h.combat.log.shift();
  let box=$("#combatLog");if(box){box.insertAdjacentHTML("beforeend",`<div>${s}</div>`);box.scrollTop=box.scrollHeight}
@@ -533,7 +533,7 @@ const SPELL_PROGRESS={
 };
 const ARCANE_NOW=[
  {id:"magic_missile",name:"Arcane Dart",rc:"Magic Missile",sl:1,kind:"damage",damage:"1d6+1",autoHit:true,missilesByLevel:true},
- {id:"shield",name:"Arcane Ward",rc:"Shield",sl:1,kind:"buff",ac:-4,missileAC:-2,duration:20},
+ {id:"shield",name:"Arcane Ward",rc:"Shield",sl:1,kind:"buff",fixedAC:4,fixedMissileAC:2,magicMissileSave:true,duration:20},
  {id:"sleep",name:"Dreamfall",rc:"Sleep",sl:1,kind:"sleep",save:null,duration:40},
  {id:"light",name:"Mage Light",rc:"Light",sl:1,kind:"utility"},
  {id:"mirror_image",name:"Mirror Phantoms",rc:"Mirror Image",sl:2,kind:"images",images:"1d4",durationPerLevel:6},
@@ -635,7 +635,8 @@ function castCombatSpell(id){
 }
 function tickEnemySpellEffects(){if(!h.combat)return;for(const e of living()){if(e.disabledRounds>0)e.disabledRounds--;if(e.disabledRounds<=0&&e.webbed){e.webbed=false;clog(`${e.n} breaks free of the web.`)}if(e.slowRounds>0)e.slowRounds--}}
 function spellAttackBonus(){ensureSpellState();return h.spells.buffs.reduce((a,b)=>a+(b.attack||0),0)}
-function spellACBonus(){ensureSpellState();let ranged=h.combat?.range&&h.combat.range!=="Hand-to-Hand";return h.spells.buffs.reduce((a,b)=>a+(ranged&&b.missileAC!=null?b.missileAC:(b.ac||0)),0)}
+function spellACBonus(){ensureSpellState();return h.spells.buffs.reduce((a,b)=>a+(b.ac||0),0)}
+function effectiveAC(isMissile=false){let ac=combatStats().ac+spellACBonus();for(const b of h.spells.buffs){let fixed=isMissile?b.fixedMissileAC:b.fixedAC;if(fixed!=null)ac=Math.min(ac,fixed)}return ac}
 function tickSpellBuffs(){ensureSpellState();h.spells.buffs.forEach(b=>b.rounds--);h.spells.buffs=h.spells.buffs.filter(b=>b.rounds>0)}
 function resetDailySpells(){ensureSpellState();h.spells.used={};h.spells.spentMem=[];h.spells.buffs=[]}
 function renderSpellButton(){
