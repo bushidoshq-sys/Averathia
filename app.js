@@ -510,6 +510,7 @@ function playerStrikeSingle(){
  let c=h.combat,t=c.enemies[c.target];if(!t||t.hp<=0){t=living()[0];if(!t)return;c.target=t.id}
  let cs=combatStats(),w=cs.weapon,item=cs.weaponItem,mode=attackModeFor(w,c.range);
  if(c.skipNext){clog("Critical fumble: you lose this initiative.");c.skipNext=false;return}
+ if(mode==="melee"&&t.enchanted&&protectionFromEvilActive()&&!c.protEvilBarrierBroken){c.protEvilBarrierBroken=true;clog("You attack an enchanted creature in melee; Sacred Guard no longer bars its touch, though its attack/save modifiers remain.")}
  if(t.sleeping&&c.range==="Hand-to-Hand"&&EDGED_WEAPONS.has(w)){let dmg=t.hp;t.hp=0;t.sleeping=false;t.disabledRounds=0;clog(`Sleeping ${t.n} is slain with a single edged-weapon blow (${dmg} HP).`);h.xp+=t.xp;clog(`${t.n} defeated. +${t.xp} XP.`);checkLevelUps();return}
  if(mode==="out-of-range"){clog(`${w} cannot reach a target at ${c.range} range. Close to Hand-to-Hand or use a ranged/thrown weapon.`);return}
  if(mode==="missile"&&c.range==="Hand-to-Hand"&&(t.disabledRounds||0)<=0){clog(`${w} cannot be used effectively at Hand-to-Hand against a mobile target.`);return}
@@ -544,11 +545,12 @@ function enemyStrike(){
   if(e.slowRounds>0&&h.combat.round%2===0){clog(`${e.n} is slowed and cannot act this round.`);continue}
   if(e.skipNext){clog(`${e.n} loses this initiative after its fumble.`);e.skipNext=false;continue}
   if(monsterRangeStep(e))continue;
+  if((h.combat?.range||"Close")==="Hand-to-Hand"&&e.enchanted&&protectionFromEvilActive()&&!h.combat.protEvilBarrierBroken){clog(`${e.n} cannot touch you through Sacred Guard.`);continue}
   let r=d(20);
   if(r===1){clog(`${e.n} rolls a natural 1 — critical fumble. Next initiative is lost.`);e.skipNext=true;continue}
   let mr=h.combat?.range||"Close",useRanged=false;if(e.rangedDamage&&mr!=="Hand-to-Hand"&&(e.ammo||0)>0){e.damage=e.rangedDamage;e.activeWeapon=e.rangedWeapon||"Ranged weapon";e.ammo--;useRanged=true}else if(e.meleeDamage){e.damage=e.meleeDamage;e.activeWeapon=e.meleeWeapon||"Melee weapon"}let need=Math.max(2,(20-monsterHitModifier(e))-effectiveAC(useRanged));if(r===20||r>=need){
    let mirror=h.spells?.buffs?.find(b=>b.kind==="images"&&b.images>0);if(mirror){mirror.images--;clog(`${e.n} destroys a mirror image.`);continue}
-   if(h.spells?.buffs?.some(b=>b.missileWard)&&e.activeWeapon===e.rangedWeapon){clog(`${e.n}'s missile is stopped by your ward.`);continue}let dmg=rollExpr(e.damage);if(r===20)dmg*=2;h.hp=Math.max(0,h.hp-dmg);
+   if(h.spells?.buffs?.some(b=>b.missileWard)&&e.activeWeapon===e.rangedWeapon){clog(`${e.n}'s missile is stopped by your ward.`);continue}let dmg=rollExpr(e.damage);if(r===20)dmg*=2;if(e.damageType)dmg=applyElementalResistance(dmg,e.damage,e.damageType,e.damageNature!=="normal");h.hp=Math.max(0,h.hp-dmg);
    clog(`${e.n} hits with ${e.activeWeapon||"its attack"} for ${dmg}${r===20?" — critical":""}.`);
    if(e.special==="poison"){
     let s=savingThrow("Death/Poison");clog(`Poison save ${s.roll} vs ${s.target}: ${s.success?"success":"FAIL"}.`);
