@@ -196,6 +196,7 @@ function buyPriceCP(item){return Math.round(gpToCP(item[1])*(1-chaBuyDiscount())
 function coinTextCP(cp){cp=Math.max(0,Math.round(cp));let gp=Math.floor(cp/100),sp=Math.floor((cp%100)/10),c=cp%10;return `${gp} GP · ${sp} SP · ${c} CP`}
 function walletCP(){return Math.round((h.gp??h.gold??0)*100)+Math.trunc(h.sp||0)*10+Math.trunc(h.cp||0)}
 function setWalletCP(cp){cp=Math.max(0,Math.round(cp));h.gp=Math.floor(cp/100);h.gold=h.gp;h.sp=Math.floor((cp%100)/10);h.cp=cp%10}
+function addCoins(gp=0,sp=0,cp=0){setWalletCP(walletCP()+Math.trunc(gp||0)*100+Math.trunc(sp||0)*10+Math.trunc(cp||0))}
 function sellPriceCP(item){let d=shopData(item.n);if(!d)return 0;return Math.round(gpToCP(d[1])*.5*(1+chaSellBonus()))}
 function canSellResource(n){
  if(n==="Rations — 7 days")return h.rations>=7;
@@ -781,7 +782,7 @@ function changeRange(direction){
 function resolveAttack(){let c=h.combat,pr=d(6),er=d(6);while(pr===er){pr=d(6);er=d(6)}clog(`Initiative: you ${pr}, enemies ${er}.`);if(pr>er){playerStrike();if(living().length)enemyStrike()}else{enemyStrike();if(h.combat&&h.hp>0&&living().length)playerStrike()}if(!h.combat)return;if(!living().length)return finishCombat();tickSpellBuffs();tickEnemySpellEffects();tickPlayerConditions();c.round++;save();renderCombat()}
 function finishCombat(){
  let boss=!!h.combat?.isBoss,gp=d(3)-1+(boss?d(3):0),sp=d(8)+(boss?d(6):0),cp=d(12)-1;
- h.gp+=gp;h.sp+=sp;h.cp+=cp;
+ addCoins(gp,sp,cp);
  addlog(`${boss?"Boss defeated":"Combat won"}. Treasure: ${gp} GP, ${sp} SP, ${cp} CP.`);
  if(boss)resolveMissionBoss();
  recoverThrownWeapons();h.combat=null;endTripPause();save();page("depart");refresh();tick()
@@ -922,7 +923,7 @@ function applyEventChoice(ev,ch){
    h.pendingEvent=null;endTripPause();save();renderPendingEvent();tick();return
  }
  let xp=ch?.xp??ev.xp??0,coin=ch?.coins??ev.coins??[0,0,0];
- if(xp)h.xp=(h.xp||0)+xp;if(coin){h.gp=(h.gp||0)+(coin[0]||0);h.sp=(h.sp||0)+(coin[1]||0);h.cp=(h.cp||0)+(coin[2]||0)}
+ if(xp)h.xp=(h.xp||0)+xp;if(coin)addCoins(coin[0]||0,coin[1]||0,coin[2]||0)
  let result=ch?.result||"observed";
  journal({id:ev.id,type:ev.type,title:ev.title,text:ev.text,choice:ch?.label||null,result,xp,coins:coin});
  addlog(`${ev.title}: ${ch?.label?ch.label+". ":""}${xp?`+${xp} XP. `:""}${coin&&(coin[0]||coin[1]||coin[2])?`${coin[0]||0} GP, ${coin[1]||0} SP, ${coin[2]||0} CP.`:""}`);
@@ -973,7 +974,7 @@ $("#attackBtn").onclick=resolveAttack;$("#potionBtn").onclick=usePotionCombat;$(
   const saved=JSON.parse(raw);
   if(!saved||!saved.name||!saved.className)return;
   h=saved;
-  if(h.gp==null)h.gp=Number(h.gold)||0;if(h.sp==null)h.sp=0;if(h.cp==null)h.cp=0;h.gold=h.gp;
+  if(h.gp==null)h.gp=Number(h.gold)||0;if(h.sp==null)h.sp=0;if(h.cp==null)h.cp=0;setWalletCP(walletCP());
   chosenClass=h.className||h.mechanicsClass||"Fighter";
   sex=h.sex||"Male"; avatar=Number.isInteger(h.avatar)?h.avatar:0;
   $("#create").classList.add("hide");
