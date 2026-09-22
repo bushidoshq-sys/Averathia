@@ -6,7 +6,7 @@ function artPath(cls,sx,i,kind="full"){return `${classSlug(cls)}_${sx.toLowerCas
 const CLASSES=[["Fighter","⚔️","Human"],["Cleric","✦","Human"],["Arcanist","✧","Human"],["Thief","🗝️","Human"],["Elf","🏹","Race-as-class"],["Dwarf","⛏️","Race-as-class"]];
 const FN={Male:["Aldric","Edric","Garran","Leofric","Oswin","Roderic","Wulfric","Cedric","Beren","Tobran"],Female:["Alda","Elowen","Mara","Rowena","Isolde","Aveline","Seren","Edith","Brynja","Tamsin"]};
 const LN=["Stonefield","Ashford","Blackwood","Thorne","Vale","Ironwood","Hawke","Westmere","Oakheart","Ravenbrook","Greyward","Redfern"];
-const SHOP={Weapons:[["Battle Axe",7,"1d8"],["Hand Axe",4,"1d6"],["Short Bow",25,"1d6"],["Long Bow",40,"1d6"],["Light Crossbow",30,"1d6"],["Heavy Crossbow",50,"2d4"],["Blackjack",5,"1d2"],["Club",3,"1d4"],["Throwing Hammer",4,"1d4"],["War Hammer",5,"1d6"],["Mace",5,"1d6"],["Staff",5,"1d6"],["Dagger",3,"1d4"],["Silver Dagger",30,"1d4"],["Halberd",7,"1d10"],["Javelin",1,"1d6"],["Lance",10,"1d10"],["Pike",3,"1d10"],["Polearm",7,"1d10"],["Poleaxe",5,"1d10"],["Spear",3,"1d6"],["Trident",5,"1d6"],["Short Sword",7,"1d6"],["Sword",10,"1d8"],["Bastard Sword (1H)",15,"1d6+1"],["Bastard Sword (2H)",15,"1d8+1"],["Two-Handed Sword",15,"1d10"],["Blowgun",6,"1"],["Bola",5,"1d2"],["Cestus",5,"1d3"],["Net",5,"0"],["Sling",2,"1d4"],["Whip",1,"1d2"]],Armor:[["Shield",10,"AC -1"],["Leather Armor",20,"AC 7"],["Scale Mail",30,"AC 6"],["Chain Mail",40,"AC 5"],["Banded Mail",50,"AC 4"],["Plate Mail",60,"AC 3"],["Suit Armor",250,"AC 0"]],Gear:[["Rations — 7 days",5,"7 days food"],["Waterskin",1,"1 quart; reusable"],["Torch",0.17,"1 hour light"],["6 Torches",1,"6 hours light"],["Lantern",10,""],["Oil Flask",2,"4 hours lantern fuel"],["Backpack",5,""],["50-foot Rope",1,""],["Tinder Box",3,""],["Grappling Hook",25,""],["Healing Potion",10,"1D6+1 HP"]]};
+const SHOP={Weapons:[["Battle Axe",7,"1d8"],["Hand Axe",4,"1d6"],["Short Bow",25,"1d6"],["Long Bow",40,"1d6"],["Light Crossbow",30,"1d6"],["Heavy Crossbow",50,"2d4"],["Club",3,"1d4"],["Throwing Hammer",4,"1d4"],["War Hammer",5,"1d6"],["Mace",5,"1d6"],["Staff",5,"1d6"],["Dagger",3,"1d4"],["Silver Dagger",30,"1d4"],["Halberd",7,"1d10"],["Javelin",1,"1d6"],["Lance",10,"1d10"],["Pike",3,"1d10"],["Polearm",7,"1d10"],["Poleaxe",5,"1d10"],["Spear",3,"1d6"],["Trident",5,"1d6"],["Short Sword",7,"1d6"],["Sword",10,"1d8"],["Bastard Sword (1H)",15,"1d6+1"],["Bastard Sword (2H)",15,"1d8+1"],["Two-Handed Sword",15,"1d10"],["Cestus",5,"1d3"],["Sling",2,"1d4"],],Armor:[["Shield",10,"AC -1"],["Leather Armor",20,"AC 7"],["Scale Mail",30,"AC 6"],["Chain Mail",40,"AC 5"],["Banded Mail",50,"AC 4"],["Plate Mail",60,"AC 3"],["Suit Armor",250,"AC 0"]],Gear:[["Rations — 7 days",5,"7 days food"],["Waterskin",1,"1 quart; reusable"],["Torch",0.17,"1 hour light"],["6 Torches",1,"6 hours light"],["Lantern",10,""],["Oil Flask",2,"4 hours lantern fuel"],["Backpack",5,""],["50-foot Rope",1,""],["Tinder Box",3,""],["Grappling Hook",25,""],["Arrows — 20",5,"20 arrows"],["Quarrels — 30",10,"30 crossbow bolts"],["Sling Stones — 30",1,"30 sling stones"],["Healing Potion",10,"1D6+1 HP"]]};
 function mod(v){return v===18?3:v>=16?2:v>=13?1:0}
 const CREATION_ABILITY_PRIORITY={
  Fighter:["STR","CON","DEX","CHA","WIS","INT"],
@@ -108,6 +108,9 @@ $$("[data-page]").forEach(b=>b.onclick=()=>page(b.dataset.page));$$("[data-go]")
 function home(){if(!h)return;h.water=h.waterCapacity;save()}
 const TWO_HANDED=new Set(["Staff","Halberd","Pike","Polearm","Poleaxe","Bastard Sword (2H)","Two-Handed Sword","Short Bow","Long Bow","Light Crossbow","Heavy Crossbow"]);
 function itemData(name){for(const x of SHOP.Weapons)if(x[0]===name)return{damage:x[2],two:TWO_HANDED.has(name)};for(const x of SHOP.Armor)if(x[0]===name)return name==="Shield"?{shield:true,acBonus:-1}:{armor:true,ac:+x[2].match(/\d+/)[0]};return{}}
+function ammoTypeFor(name){if(name==="Short Bow"||name==="Long Bow")return "Arrows";if(name==="Light Crossbow"||name==="Heavy Crossbow")return "Quarrels";if(name==="Sling")return "Sling Stones";return null}
+function ammoCount(type){return (h.ammo&&h.ammo[type])||0}
+function spendAmmoFor(name){let type=ammoTypeFor(name);if(!type)return true;h.ammo=h.ammo||{};if(ammoCount(type)<1)return false;h.ammo[type]--;return true}
 function combatStats(){let weapon=h.inv.find(x=>x.kind==="weapon"&&x.eq),armor=h.inv.find(x=>x.kind==="armor"&&x.eq),shield=h.inv.find(x=>x.kind==="shield"&&x.eq),wd=weapon?itemData(weapon.n):{},ad=armor?itemData(armor.n):{};return{weapon:weapon?.n||"Unarmed",damage:wd.damage||"1d2",armor:armor?.n||"None",shield:shield?.n||"None",ac:(ad.ac??9)+(shield?-1:0)}}
 function sheetInventory(){
  let cs=combatStats(),box=$("#sheetInv");
@@ -150,6 +153,9 @@ function canSellResource(n){
  if(n==="Torch")return h.lightMinutes>=60;
  if(n==="6 Torches")return h.lightMinutes>=360;
  if(n==="Oil Flask")return h.lightMinutes>=240;
+ if(n==="Arrows — 20")return ammoCount("Arrows")>=20;
+ if(n==="Quarrels — 30")return ammoCount("Quarrels")>=30;
+ if(n==="Sling Stones — 30")return ammoCount("Sling Stones")>=30;
  return true
 }
 function removeSoldResource(n){
@@ -158,6 +164,9 @@ function removeSoldResource(n){
  else if(n==="Torch")h.lightMinutes-=60;
  else if(n==="6 Torches")h.lightMinutes-=360;
  else if(n==="Oil Flask")h.lightMinutes-=240;
+ else if(n==="Arrows — 20")h.ammo.Arrows-=20;
+ else if(n==="Quarrels — 30")h.ammo.Quarrels-=30;
+ else if(n==="Sling Stones — 30")h.ammo["Sling Stones"]-=30;
 }
 function sell(i){
  let q=h.inv[i];if(!q||q.noSell||q.bound)return;
@@ -202,7 +211,7 @@ function renderShop(){
  $("#owned").innerHTML=h.inv.map((x,i)=>`<div class=item><span>${x.n}</span><span>${x.eq?"✓ Equipped":""}</span>${x.can?`<button data-eq="${i}">${x.eq?"Unequip":"Equip"}</button>`:"<span></span>"}</div>`).join("")||"Nothing purchased.";
 }
 $$("[data-tab]").forEach(b=>b.onclick=()=>{tab=b.dataset.tab;$$("[data-tab]").forEach(x=>x.classList.toggle("on",x===b));renderShop()});
-function buy(x){let kind=shopKind(x[0]);if(!classCanUse(x[0],kind))return;let cost=gpToCP(x[1]);if(walletCP()<cost)return;setWalletCP(walletCP()-cost);if(x[0].startsWith("Rations"))h.rations+=7;else if(x[0]==="Waterskin"){h.waterCapacity++;h.water++}else if(x[0]==="Torch")h.lightMinutes+=60;else if(x[0]==="6 Torches")h.lightMinutes+=360;else if(x[0]==="Oil Flask")h.lightMinutes+=240;let armor=tab==="Armor",weapon=tab==="Weapons";h.inv.push({n:x[0],kind:armor?(x[0]==="Shield"?"shield":"armor"):(weapon?"weapon":"gear"),can:armor||weapon,eq:false});save()}
+function buy(x){let kind=shopKind(x[0]);if(!classCanUse(x[0],kind))return;let cost=gpToCP(x[1]);if(walletCP()<cost)return;setWalletCP(walletCP()-cost);if(x[0].startsWith("Rations"))h.rations+=7;else if(x[0]==="Arrows — 20"){h.ammo=h.ammo||{};h.ammo.Arrows=(h.ammo.Arrows||0)+20}else if(x[0]==="Quarrels — 30"){h.ammo=h.ammo||{};h.ammo.Quarrels=(h.ammo.Quarrels||0)+30}else if(x[0]==="Sling Stones — 30"){h.ammo=h.ammo||{};h.ammo["Sling Stones"]=(h.ammo["Sling Stones"]||0)+30}else if(x[0]==="Waterskin"){h.waterCapacity++;h.water++}else if(x[0]==="Torch")h.lightMinutes+=60;else if(x[0]==="6 Torches")h.lightMinutes+=360;else if(x[0]==="Oil Flask")h.lightMinutes+=240;let armor=tab==="Armor",weapon=tab==="Weapons";h.inv.push({n:x[0],kind:armor?(x[0]==="Shield"?"shield":"armor"):(weapon?"weapon":"gear"),can:armor||weapon,eq:false});save()}
 function equip(i){let q=h.inv[i];if(!q||!q.can)return;if(!classCanUse(q.n,q.kind)){alert(`${h.className} cannot use ${q.n}.`);return}if(q.eq){q.eq=false;save();return}if(q.kind==="armor")h.inv.forEach(z=>{if(z.kind==="armor")z.eq=false});if(q.kind==="weapon"){h.inv.forEach(z=>{if(z.kind==="weapon")z.eq=false});if(itemData(q.n).two)h.inv.forEach(z=>{if(z.kind==="shield")z.eq=false})}if(q.kind==="shield"){let w=h.inv.find(z=>z.kind==="weapon"&&z.eq);if(w&&itemData(w.n).two){alert("A shield cannot be equipped with a two-handed weapon.");return}h.inv.forEach(z=>{if(z.kind==="shield")z.eq=false})}q.eq=true;save()}
 document.addEventListener("click",e=>{if(e.target.dataset.eq!==undefined)equip(+e.target.dataset.eq)});
 $$("[data-heal]").forEach(b=>b.onclick=()=>{let pct=+b.dataset.heal,cost={10:2,50:10,100:20}[pct];if(h.gold<cost){$("#healmsg").textContent="Not enough gold.";return}if(h.hp>=h.maxhp){$("#healmsg").textContent="Already at full health.";return}h.gold-=cost;h.hp=Math.min(h.maxhp,h.hp+Math.ceil(h.maxhp*pct/100));$("#healmsg").textContent="Healing complete.";save()});
@@ -440,7 +449,7 @@ function autonomousCombat(isBoss=false){
 }
 function playerStrike(){
  if(h.combat?.paralyzed){clog(`${h.name} is paralyzed and cannot act.`);return}
-let c=h.combat,t=c.enemies[c.target];if(!t||t.hp<=0){t=living()[0];c.target=t.id}if(c.skipNext){clog("Critical fumble: you lose this initiative.");c.skipNext=false;return}let r=d(20),str=mod(h.stats.STR);if(r===1){clog("Natural 1 — critical fumble. Next initiative is lost.");c.skipNext=true}else if(r===20||r+str+spellAttackBonus()>=characterNeed(t.ac)){let extra=h.spells?.buffs?.filter(b=>b.damageBonus).reduce((n,b)=>n+rollExpr(b.damageBonus),0)||0;let dmg=Math.max(1,rollExpr(combatStats().damage)+str+extra);if(r===20)dmg*=2;t.hp=Math.max(0,t.hp-dmg);clog(`${r===20?"Critical hit! ":""}You hit ${t.n} for ${dmg}.`);if(t.hp<=0){h.xp+=t.xp;clog(`${t.n} defeated. +${t.xp} XP.`)}}else clog(`You miss ${t.n}.`)}
+let c=h.combat,t=c.enemies[c.target];if(!t||t.hp<=0){t=living()[0];c.target=t.id}let w=combatStats().weapon,at=ammoTypeFor(w);if(at&&!spendAmmoFor(w)){clog(`No ${at.toLowerCase()} left for ${w}.`);return}if(c.skipNext){clog("Critical fumble: you lose this initiative.");c.skipNext=false;return}let r=d(20),str=mod(h.stats.STR);if(r===1){clog("Natural 1 — critical fumble. Next initiative is lost.");c.skipNext=true}else if(r===20||r+str+spellAttackBonus()>=characterNeed(t.ac)){let extra=h.spells?.buffs?.filter(b=>b.damageBonus).reduce((n,b)=>n+rollExpr(b.damageBonus),0)||0;let dmg=Math.max(1,rollExpr(combatStats().damage)+str+extra);if(r===20)dmg*=2;t.hp=Math.max(0,t.hp-dmg);clog(`${r===20?"Critical hit! ":""}You hit ${t.n} for ${dmg}.`);if(t.hp<=0){h.xp+=t.xp;clog(`${t.n} defeated. +${t.xp} XP.`)}}else clog(`You miss ${t.n}.`)}
 function enemyStrike(){
  for(const e of living()){
   if(e.disabledRounds>0)continue;
