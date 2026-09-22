@@ -506,7 +506,7 @@ function startClericUndeadFight(ev){
 }
 function autoPotionThreshold(){return{Cautious:.65,Normal:.45,Bold:.25}[h.trip?.risk||"Normal"]}
 function autoSpellScore(s){
- if(s.kind==="heal")return h.hp/h.maxhp<.55?100:0;
+ if(s.kind==="heal")return mummyDiseaseActive()?0:(h.hp/h.maxhp<.55?100:0);
  if(s.rc==="Striking"&&living().some(e=>e.mummy))return 95;
  if(s.kind==="buff")return living().length>1?55:30;
  return 40+s.sl*8;
