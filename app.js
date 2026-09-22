@@ -65,9 +65,16 @@ function checkLevelUps(){
  while(h.level<target){gainLevel();changed=true}
  return changed
 }
+function primeRequisiteXPBonus(){
+ let s=h?.stats||{};
+ if(h?.className==="Elf"){if((s.STR||0)>=13&&(s.INT||0)>=16)return .10;if((s.STR||0)>=13&&(s.INT||0)>=13)return .05;return 0}
+ let key={Fighter:"STR",Dwarf:"STR",Cleric:"WIS",Arcanist:"INT",Thief:"DEX"}[h?.className],v=key?(s[key]||0):0;
+ return v>=16?.10:v>=13?.05:0
+}
 function awardXP(amount){
- amount=Math.max(0,Math.floor(amount||0));if(!amount)return 0;
- h.xp=(h.xp||0)+amount;checkLevelUps();return amount
+ let base=Math.max(0,Math.floor(amount||0));if(!base)return 0;
+ let gained=Math.floor(base*(1+primeRequisiteXPBonus())+.5);
+ h.xp=(h.xp||0)+gained;checkLevelUps();return gained
 }
 const AT_RATE=24;
 function ensureWorldClock(){
@@ -534,7 +541,7 @@ function playerStrikeSingle(){
  let cs=combatStats(),w=cs.weapon,item=cs.weaponItem,mode=attackModeFor(w);
  if(c.skipNext){clog("Critical fumble: you lose this initiative.");c.skipNext=false;return}
  if(mode==="melee"&&t.enchanted&&protectionFromEvilActive()&&!c.protEvilBarrierBroken){c.protEvilBarrierBroken=true;clog("You attack an enchanted creature in melee; Sacred Guard no longer bars its touch, though its attack/save modifiers remain.")}
- if(t.sleeping&&c.range==="Hand-to-Hand"&&EDGED_WEAPONS.has(w)){let dmg=t.hp;t.hp=0;t.sleeping=false;t.disabledRounds=0;clog(`Sleeping ${t.n} is slain with a single edged-weapon blow (${dmg} HP).`);h.xp+=t.xp;clog(`${t.n} defeated. +${t.xp} XP.`);checkLevelUps();return}
+ if(t.sleeping&&c.range==="Hand-to-Hand"&&EDGED_WEAPONS.has(w)){let dmg=t.hp;t.hp=0;t.sleeping=false;t.disabledRounds=0;clog(`Sleeping ${t.n} is slain with a single edged-weapon blow (${dmg} HP).`);let gained=awardXP(t.xp);clog(`${t.n} defeated. +${gained} XP.`);return}
  if(mode==="out-of-range"){clog(`${w} cannot reach a target at ${c.range} range. Close to Hand-to-Hand or use a ranged/thrown weapon.`);return}
  if(mode==="missile"&&c.range==="Hand-to-Hand"&&(t.disabledRounds||0)<=0){clog(`${w} cannot be used effectively at Hand-to-Hand against a mobile target.`);return}
  if(w==="Heavy Crossbow"&&h.stats.STR<18&&c.heavyCrossbowNextRound&&c.round<c.heavyCrossbowNextRound){clog(`Heavy Crossbow is still reloading; it can fire again on round ${c.heavyCrossbowNextRound}.`);return}
@@ -548,7 +555,7 @@ function playerStrikeSingle(){
   let base=Math.max(1,rollExpr(cs.damage)+dmgMod+flat),dmg=base+extra;if(r===20){base*=2;extra*=2;dmg=base+extra}if(t.mummy){let magical=!!item?.magical||Number(item?.magicBonus)>0,fire=item?.damageType==="fire";dmg=magical||fire?Math.floor(dmg/2):Math.floor(extra/2);if(dmg<=0){clog(`${w} cannot harm ${t.n}; only spells, fire, or magical weapons can damage it.`);return}clog(`${t.n} resists the attack; only half qualifying damage gets through.`)}t.hp=Math.max(0,t.hp-dmg);
   clog(`${r===20?"Critical hit! ":""}You ${isThrown?"throw "+w+" and ":""}hit ${t.n} for ${dmg}.`);
   if(t.sleeping&&t.hp>0){t.sleeping=false;t.disabledRounds=0;clog(`${t.n} awakens from the blow.`)}
-  if(t.hp<=0){h.xp+=t.xp;clog(`${t.n} defeated. +${t.xp} XP.`)}
+  if(t.hp<=0){let gained=awardXP(t.xp);clog(`${t.n} defeated. +${gained} XP.`)}
  }else clog(`You ${isThrown?"throw "+w+" and ":""}miss ${t.n}.`)
 }
 function monsterRangeStep(e){
@@ -719,8 +726,8 @@ function resolveSpellEffect(s,t=null,autonomous=false,holdMode=null){
  ensureSpellState();let targets=[];
  if(s.kind==="damage"||s.kind==="area"||s.kind==="line"){
   targets=s.kind==="area"?gridlessAreaTargets(t,s.areaFeet||40):s.kind==="line"?gridlessLineTargets(t):[t||living()[0]];
-  if(s.missilesByLevel){let q=t||living()[0],n=magicMissileCount();if(q){let dmg=0;for(let i=0;i<n;i++)dmg+=rollExpr(s.damage);if(q.mummy)dmg=Math.floor(dmg/2);q.hp=Math.max(0,q.hp-dmg);clog(`${s.name} launches ${n} dart${n===1?"":"s"} and automatically hits ${q.n} for ${dmg} damage.`);if(q.hp<=0){h.xp+=q.xp;clog(`${q.n} defeated. +${q.xp} XP.`);checkLevelUps()}}return}
-  let sharedDamage=(s.kind==="area"||s.kind==="line")?rollSpellDamage(s):null;for(const q of targets.filter(Boolean)){let dmg=sharedDamage??rollSpellDamage(s);if(s.save){let sv=monsterSpellSave(q,s.save||"Spells");clog(`${q.n} save ${sv.roll} vs ${sv.target}${sv.saveAs?` [${sv.saveAs}]`:""}: ${sv.success?"success":"FAIL"}.`);if(sv.success&&s.half)dmg=Math.floor(dmg/2)}if(q.mummy)dmg=Math.floor(dmg/2);q.hp=Math.max(0,q.hp-dmg);clog(`${autonomous?"Autonomous: ":""}${s.name} strikes ${q.n} for ${dmg} damage.`);if(s.damageType==="fire"&&q.webbed&&q.hp>0){let burn=d(6);if(q.mummy)burn=Math.floor(burn/2);q.hp=Math.max(0,q.hp-burn);q.disabledRounds=0;q.webbed=false;clog(`The web burns away around ${q.n}; ${q.n} takes ${burn} fire damage.`)}if(q.hp<=0){h.xp+=q.xp;clog(`${q.n} defeated. +${q.xp} XP.`);checkLevelUps()}}if(s.kind==="area"&&s.damageType==="fire"&&combatDistance()<=((s.areaFeet||40)/2)&&h.combat){let base=sharedDamage??rollSpellDamage(s),sv=savingThrow("Spells",0,"fire"),dmg=sv.success?Math.floor(base/2):base;dmg=applyElementalResistance(dmg,Math.max(1,Math.min(h.level,10))+"d6","fire",true);h.hp=Math.max(0,h.hp-dmg);clog(`You are caught in the blast: save ${sv.roll} vs ${sv.target} — ${sv.success?"success":"FAIL"}; ${dmg} fire damage.`);if(h.hp<=0)return combatDeath("Your own fireball engulfs you.")}
+  if(s.missilesByLevel){let q=t||living()[0],n=magicMissileCount();if(q){let dmg=0;for(let i=0;i<n;i++)dmg+=rollExpr(s.damage);if(q.mummy)dmg=Math.floor(dmg/2);q.hp=Math.max(0,q.hp-dmg);clog(`${s.name} launches ${n} dart${n===1?"":"s"} and automatically hits ${q.n} for ${dmg} damage.`);if(q.hp<=0){let gained=awardXP(q.xp);clog(`${q.n} defeated. +${gained} XP.`)}}return}
+  let sharedDamage=(s.kind==="area"||s.kind==="line")?rollSpellDamage(s):null;for(const q of targets.filter(Boolean)){let dmg=sharedDamage??rollSpellDamage(s);if(s.save){let sv=monsterSpellSave(q,s.save||"Spells");clog(`${q.n} save ${sv.roll} vs ${sv.target}${sv.saveAs?` [${sv.saveAs}]`:""}: ${sv.success?"success":"FAIL"}.`);if(sv.success&&s.half)dmg=Math.floor(dmg/2)}if(q.mummy)dmg=Math.floor(dmg/2);q.hp=Math.max(0,q.hp-dmg);clog(`${autonomous?"Autonomous: ":""}${s.name} strikes ${q.n} for ${dmg} damage.`);if(s.damageType==="fire"&&q.webbed&&q.hp>0){let burn=d(6);if(q.mummy)burn=Math.floor(burn/2);q.hp=Math.max(0,q.hp-burn);q.disabledRounds=0;q.webbed=false;clog(`The web burns away around ${q.n}; ${q.n} takes ${burn} fire damage.`)}if(q.hp<=0){let gained=awardXP(q.xp);clog(`${q.n} defeated. +${gained} XP.`)}}if(s.kind==="area"&&s.damageType==="fire"&&combatDistance()<=((s.areaFeet||40)/2)&&h.combat){let base=sharedDamage??rollSpellDamage(s),sv=savingThrow("Spells",0,"fire"),dmg=sv.success?Math.floor(base/2):base;dmg=applyElementalResistance(dmg,Math.max(1,Math.min(h.level,10))+"d6","fire",true);h.hp=Math.max(0,h.hp-dmg);clog(`You are caught in the blast: save ${sv.roll} vs ${sv.target} — ${sv.success?"success":"FAIL"}; ${dmg} fire damage.`);if(h.hp<=0)return combatDeath("Your own fireball engulfs you.")}
  }else if(s.kind==="heal"){if(mummyDiseaseActive()){clog(`${s.name} cannot heal through Mummy disease.`)}else{let heal=rollExpr(s.heal),before=h.hp;h.hp=Math.min(h.maxhp,h.hp+heal);clog(`${autonomous?"Autonomous: ":""}${s.name} restores ${h.hp-before} HP.`)}}
  else if(s.kind==="buff"){
   if(s.rc==="Bless"&&h.combat?.range==="Hand-to-Hand"){clog(`${s.name} cannot affect you once you are already in melee.`)}
@@ -898,8 +905,7 @@ function applyEventChoice(ev,ch){
  if(ch?.result==="clericTurn"){resolveTurnUndead(ev);return}
  if(ch?.result==="combat"&&ev?.id?.startsWith("CLE-")&&ev.type==="Encounter"){startClericUndeadFight(ev);return}
  if(ch?.result==="clericWis"){
-   let test=clericWisCheck(ch.difficulty||"Normal"),xp=test.success?(ch.xp||0):0;
-   if(xp)h.xp=(h.xp||0)+xp;
+   let test=clericWisCheck(ch.difficulty||"Normal"),baseXP=test.success?(ch.xp||0):0,xp=baseXP?awardXP(baseXP):0;
    let outcome=test.success?"SUCCESS":"FAILURE";
    journal({id:ev.id,type:ev.type,title:ev.title,text:ev.text,choice:ch.label,result:outcome,xp,coins:[0,0,0],ability:"WIS",roll:test.roll,target:test.target});
    addlog(`${ev.title}: ${ch.label} — ${outcome} (WIS ${test.roll} / ${test.target}).${xp?` +${xp} XP.`:""}`);
@@ -907,23 +913,21 @@ function applyEventChoice(ev,ch){
  }
  if(ch?.result==="classAbility"){
    let adj=ch.difficulty==="Easy"?4:ch.difficulty==="Hard"?-4:0,ability=ch.ability||"WIS";
-   let target=Math.max(1,Math.min(19,(h.stats[ability]||9)+adj)),roll=d(20),success=roll<=target,xp=success?(ch.xp||0):0;
-   if(xp)h.xp=(h.xp||0)+xp;
+   let target=Math.max(1,Math.min(19,(h.stats[ability]||9)+adj)),roll=d(20),success=roll<=target,baseXP=success?(ch.xp||0):0,xp=baseXP?awardXP(baseXP):0;
    let outcome=success?"SUCCESS":"FAILURE";
    journal({id:ev.id,type:ev.type,title:ev.title,text:ev.text,choice:ch.label,result:outcome,xp,coins:[0,0,0],ability,roll,target});
    addlog(`${ev.title}: ${ch.label} — ${outcome} (${ability} ${roll} / ${target}).${xp?` +${xp} XP.`:""}`);
    h.pendingEvent=null;endTripPause();save();renderPendingEvent();tick();return
  }
  if(ch?.result==="thiefSkill"){
-   let test=thiefSkillCheck(ch.skill),xp=test.success?(ch.xp||0):0;
-   if(xp)h.xp=(h.xp||0)+xp;
+   let test=thiefSkillCheck(ch.skill),baseXP=test.success?(ch.xp||0):0,xp=baseXP?awardXP(baseXP):0;
    let outcome=test.success?"SUCCESS":"FAILURE";
    journal({id:ev.id,type:ev.type,title:ev.title,text:ev.text,choice:ch.label,result:outcome,xp,coins:[0,0,0],skill:ch.skill,roll:test.roll,chance:test.chance});
    addlog(`${ev.title}: ${ch.label} — ${outcome} (${test.roll} / ${test.chance}%).${xp?` +${xp} XP.`:""}`);
    h.pendingEvent=null;endTripPause();save();renderPendingEvent();tick();return
  }
- let xp=ch?.xp??ev.xp??0,coin=ch?.coins??ev.coins??[0,0,0];
- if(xp)h.xp=(h.xp||0)+xp;if(coin)addCoins(coin[0]||0,coin[1]||0,coin[2]||0)
+ let baseXP=ch?.xp??ev.xp??0,xp=baseXP?awardXP(baseXP):0,coin=ch?.coins??ev.coins??[0,0,0];
+ if(coin)addCoins(coin[0]||0,coin[1]||0,coin[2]||0)
  let result=ch?.result||"observed";
  journal({id:ev.id,type:ev.type,title:ev.title,text:ev.text,choice:ch?.label||null,result,xp,coins:coin});
  addlog(`${ev.title}: ${ch?.label?ch.label+". ":""}${xp?`+${xp} XP. `:""}${coin&&(coin[0]||coin[1]||coin[2])?`${coin[0]||0} GP, ${coin[1]||0} SP, ${coin[2]||0} CP.`:""}`);
