@@ -431,7 +431,7 @@ function makeCombat(isBoss=false){
  let picks=buildEncounter(isBoss),en=[];
  for(let i=0;i<picks.length;i++){
    let b=picks[i],hp=0;for(let k=0;k<b.hdDice;k++)hp+=d(8);hp=Math.max(1,hp+(b.hdAdj||0));
-   en.push({...b,id:i,hp,maxhp:hp,damage:b.damage[0],ammo:b.rangedDamage?d(6):0,boss:isBoss,iahd:rcAdjustedHD(b)})
+   en.push({...b,id:i,lane:i%3,hp,maxhp:hp,damage:b.damage[0],ammo:b.rangedDamage?d(6):0,boss:isBoss,iahd:rcAdjustedHD(b)})
  }
  let total=+en.reduce((a,e)=>a+e.iahd,0).toFixed(2),tpl=rcTPL(),pct=rcChallengePct(total,tpl);
  let startBand=d(3);h.combat={round:1,enemies:en,target:0,log:[],skipNext:false,isBoss,range:RANGE_BANDS[startBand].name,distanceFeet:RANGE_BANDS[startBand].feet,rcTPL:tpl,rcIAHD:total,rcChallengePct:pct,rcChallenge:rcChallengeName(pct)};
@@ -455,7 +455,7 @@ function turnValue(type,level){
 function makeUndeadGroup(){
  let key=h.level>=2&&d(100)<=35?"ghoul":(d(100)<=55?"zombie":"skeleton"),b=UNDEAD[key];
  let count=key==="ghoul"?d(2):d(4),en=[];
- for(let i=0;i<count;i++){let hp=0;for(let k=0;k<b.hdDice;k++)hp+=d(8);hp=Math.max(1,hp);en.push({...b,id:i,hp,maxhp:hp})}
+ for(let i=0;i<count;i++){let hp=0;for(let k=0;k<b.hdDice;k++)hp+=d(8);hp=Math.max(1,hp);en.push({...b,id:i,lane:i%3,hp,maxhp:hp})}
  return en
 }
 function startUndeadCombat(en,opening){
@@ -684,10 +684,15 @@ function monsterSpellSave(m,category="Spells"){
  let p=parseSaveAs(m),roll=d(20)+(m?.blindRounds>0?-4:0),target=rcSaveTarget(p.cls,p.level,category);
  return{roll,target,success:roll>=target,level:p.level,saveAs:p.label}
 }
+function gridlessLineTargets(primary){
+ let alive=living();if(!alive.length)return[];
+ let p=primary&&primary.hp>0?primary:alive[0],lane=Number.isFinite(p.lane)?p.lane:(p.id||0)%3;
+ return alive.filter(x=>(Number.isFinite(x.lane)?x.lane:(x.id||0)%3)===lane)
+}
 function resolveSpellEffect(s,t=null,autonomous=false,holdMode=null){
  ensureSpellState();let targets=[];
- if(s.kind==="damage"||s.kind==="area"){
-  targets=s.kind==="area"?living():[t||living()[0]];
+ if(s.kind==="damage"||s.kind==="area"||s.kind==="line"){
+  targets=s.kind==="area"?living():s.kind==="line"?gridlessLineTargets(t):[t||living()[0]];
   if(s.missilesByLevel){let q=t||living()[0],n=magicMissileCount();if(q){let dmg=0;for(let i=0;i<n;i++)dmg+=rollExpr(s.damage);q.hp=Math.max(0,q.hp-dmg);clog(`${s.name} launches ${n} dart${n===1?"":"s"} and automatically hits ${q.n} for ${dmg} damage.`);if(q.hp<=0){h.xp+=q.xp;clog(`${q.n} defeated. +${q.xp} XP.`);checkLevelUps()}}return}
   for(const q of targets.filter(Boolean)){let dmg=rollSpellDamage(s);if(s.save){let sv=monsterSpellSave(q,s.save||"Spells");clog(`${q.n} save ${sv.roll} vs ${sv.target}: ${sv.success?"success":"FAIL"}.`);if(sv.success&&s.half)dmg=Math.floor(dmg/2)}q.hp=Math.max(0,q.hp-dmg);clog(`${autonomous?"Autonomous: ":""}${s.name} strikes ${q.n} for ${dmg} damage.`);if(s.damageType==="fire"&&q.webbed&&q.hp>0){let burn=d(6);q.hp=Math.max(0,q.hp-burn);q.disabledRounds=0;q.webbed=false;clog(`The web burns away around ${q.n}; ${q.n} takes ${burn} fire damage.`)}if(q.hp<=0){h.xp+=q.xp;clog(`${q.n} defeated. +${q.xp} XP.`);checkLevelUps()}}
  }else if(s.kind==="heal"){let heal=rollExpr(s.heal),before=h.hp;h.hp=Math.min(h.maxhp,h.hp+heal);clog(`${autonomous?"Autonomous: ":""}${s.name} restores ${h.hp-before} HP.`)}
