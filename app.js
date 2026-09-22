@@ -301,9 +301,8 @@ function savingThrow(category,bonus=0,damageType=null){
   bonus+=h.spells.buffs.reduce((n,b)=>n+(b.saveBonus||0),0);
   if(damageType)bonus+=h.spells.buffs.reduce((n,b)=>n+(b.saveBonusVs===damageType?2:0),0)
  }
- let i=typeof category==="number"?category:SAVE_NAMES.indexOf(category),base=(SAVE_BASE[h.className]||SAVE_BASE.Fighter)[Math.max(0,i)];
- let steps=["Fighter","Dwarf","Elf"].includes(h.className)?Math.floor((h.level-1)/3):Math.floor((h.level-1)/4);
- let target=Math.max(2,base-steps),roll=d(20)+bonus;
+ let i=typeof category==="number"?category:SAVE_NAMES.indexOf(category);if(i<0)i=4;
+ let target=rcSaveTarget(h.className,h.level,SAVE_NAMES[i]),roll=d(20)+bonus;
  return{roll,target,success:roll>=target,category:SAVE_NAMES[i]};
 }
 function protectionFromEvilActive(){return !!h?.spells?.buffs?.some(b=>b.rc==="Protection from Evil")}
@@ -653,7 +652,8 @@ const RC_SAVE_ROWS={
  Arcanist:[{min:1,max:5,v:[13,14,13,16,15]},{min:6,max:10,v:[11,12,11,14,12]},{min:11,max:15,v:[9,10,9,12,9]},{min:16,max:20,v:[7,8,7,10,6]},{min:21,max:24,v:[5,6,5,8,4]},{min:25,max:28,v:[4,4,4,6,3]},{min:29,max:32,v:[3,3,3,4,2]},{min:33,max:36,v:[2,2,2,2,2]}],
  Thief:[{min:1,max:4,v:[13,14,13,16,15]},{min:5,max:8,v:[11,12,11,14,13]},{min:9,max:12,v:[9,10,9,12,11]},{min:13,max:16,v:[7,8,7,10,9]},{min:17,max:20,v:[5,6,5,8,7]},{min:21,max:24,v:[4,5,4,6,5]},{min:25,max:28,v:[3,4,3,4,4]},{min:29,max:32,v:[2,3,2,3,3]},{min:33,max:36,v:[2,2,2,2,2]}],
  Dwarf:[{min:1,max:3,v:[8,9,10,13,12]},{min:4,max:6,v:[6,7,8,10,9]},{min:7,max:9,v:[4,5,6,7,6]},{min:10,max:12,v:[2,3,4,4,3]}],
- Elf:[{min:1,max:3,v:[12,13,13,15,15]},{min:4,max:6,v:[8,10,10,11,11]},{min:7,max:9,v:[4,7,7,7,7]},{min:10,max:10,v:[2,4,4,3,3]}]
+ Elf:[{min:1,max:3,v:[12,13,13,15,15]},{min:4,max:6,v:[8,10,10,11,11]},{min:7,max:9,v:[4,7,7,7,7]},{min:10,max:10,v:[2,4,4,3,3]}],
+ Halfling:[{min:1,max:3,v:[8,9,10,13,12]},{min:4,max:6,v:[5,6,7,9,8]},{min:7,max:8,v:[2,3,4,5,4]}]
 };
 function rcSaveTarget(cls,level,category="Spells"){
  let key=cls==="Magic-User"?"Arcanist":cls,i=SAVE_NAMES.indexOf(category);if(i<0)i=4;
