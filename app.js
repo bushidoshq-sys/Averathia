@@ -514,18 +514,18 @@ const SPELL_PROGRESS={
  Cleric:{1:[],2:[1],3:[2],4:[2,1],5:[2,2],6:[2,2,1],7:[2,2,2],8:[3,2,2,1],9:[3,3,2,2],10:[3,3,3,2,1]}
 };
 const ARCANE_NOW=[
- {id:"magic_missile",name:"Arcane Dart",rc:"Magic Missile",sl:1,kind:"damage",damage:"1d6+1",autoHit:true},
- {id:"shield",name:"Arcane Ward",rc:"Shield",sl:1,kind:"buff",ac:-2,duration:6},
- {id:"sleep",name:"Dreamfall",rc:"Sleep",sl:1,kind:"sleep",save:"Spells"},
+ {id:"magic_missile",name:"Arcane Dart",rc:"Magic Missile",sl:1,kind:"damage",damage:"1d6+1",autoHit:true,missilesByLevel:true},
+ {id:"shield",name:"Arcane Ward",rc:"Shield",sl:1,kind:"buff",ac:-4,missileAC:-2,duration:20},
+ {id:"sleep",name:"Dreamfall",rc:"Sleep",sl:1,kind:"sleep",save:null,duration:40},
  {id:"light",name:"Mage Light",rc:"Light",sl:1,kind:"utility"},
- {id:"mirror_image",name:"Mirror Phantoms",rc:"Mirror Image",sl:2,kind:"images",images:"1d4"},
+ {id:"mirror_image",name:"Mirror Phantoms",rc:"Mirror Image",sl:2,kind:"images",images:"1d4",durationPerLevel:6},
  {id:"web",name:"Binding Web",rc:"Web",sl:2,kind:"hold",save:"Spells"},
  {id:"fireball",name:"Flameburst",rc:"Fireball",sl:3,kind:"area",perLevel:true,save:"Spells",half:true},
  {id:"lightning_bolt",name:"Storm Lance",rc:"Lightning Bolt",sl:3,kind:"damage",perLevel:true,save:"Spells",half:true},
- {id:"haste",name:"Quickening",rc:"Haste",sl:3,kind:"buff",attack:1,duration:6},
- {id:"slow",name:"Time Drag",rc:"Slow",sl:3,kind:"debuff",save:"Spells",duration:6},
+ {id:"haste",name:"Quickening",rc:"Haste",sl:3,kind:"buff",extraAttack:true,duration:30},
+ {id:"slow",name:"Time Drag",rc:"Slow",sl:3,kind:"debuff",save:"Spells",duration:30},
  {id:"hold_person",name:"Binding Word",rc:"Hold Person",sl:3,kind:"hold",save:"Spells"},
- {id:"prot_missiles",name:"Missile Ward",rc:"Protection from Normal Missiles",sl:3,kind:"buff",missileWard:true,duration:6}
+ {id:"prot_missiles",name:"Missile Ward",rc:"Protection from Normal Missiles",sl:3,kind:"buff",missileWard:true,duration:120}
 ];
 const CLERIC_NOW=[
  {id:"cure_light",name:"Mending Light",rc:"Cure Light Wounds",sl:1,kind:"heal",heal:"1d6+1"},
@@ -569,6 +569,8 @@ function consumeSpell(s){
  h.spells.used[s.sl]=(h.spells.used[s.sl]||0)+1;return true;
 }
 function rollSpellDamage(s){if(s.perLevel){let n=Math.max(1,Math.min(h.level,10)),v=0;while(n--)v+=d(6);return v}return Math.max(1,rollExpr(s.damage))}
+function spellDuration(s){if(s.durationPerLevel)return Math.max(1,h.level*s.durationPerLevel);return s.duration||3}
+function magicMissileCount(){return 1+Math.floor(Math.max(0,h.level-1)/5)}
 function fighterSaveTarget(level,category="Spells"){
  let base=SAVE_BASE.Fighter[SAVE_NAMES.indexOf(category)>=0?SAVE_NAMES.indexOf(category):4];
  let steps=Math.floor((Math.max(1,level)-1)/3);
@@ -586,13 +588,14 @@ function resolveSpellEffect(s,t=null,autonomous=false){
  ensureSpellState();let targets=[];
  if(s.kind==="damage"||s.kind==="area"){
   targets=s.kind==="area"?living():[t||living()[0]];
+  if(s.missilesByLevel){let q=t||living()[0],n=magicMissileCount();if(q){let dmg=0;for(let i=0;i<n;i++)dmg+=rollExpr(s.damage);q.hp=Math.max(0,q.hp-dmg);clog(`${s.name} launches ${n} dart${n===1?"":"s"} and automatically hits ${q.n} for ${dmg} damage.`);if(q.hp<=0){h.xp+=q.xp;clog(`${q.n} defeated. +${q.xp} XP.`);checkLevelUps()}}return}
   for(const q of targets.filter(Boolean)){let dmg=rollSpellDamage(s);if(s.save){let sv=monsterSpellSave(q,s.save||"Spells");clog(`${q.n} save ${sv.roll} vs ${sv.target}: ${sv.success?"success":"FAIL"}.`);if(sv.success&&s.half)dmg=Math.floor(dmg/2)}q.hp=Math.max(0,q.hp-dmg);clog(`${autonomous?"Autonomous: ":""}${s.name} strikes ${q.n} for ${dmg} damage.`);if(q.hp<=0){h.xp+=q.xp;clog(`${q.n} defeated. +${q.xp} XP.`);checkLevelUps()}}
  }else if(s.kind==="heal"){let heal=rollExpr(s.heal),before=h.hp;h.hp=Math.min(h.maxhp,h.hp+heal);clog(`${autonomous?"Autonomous: ":""}${s.name} restores ${h.hp-before} HP.`)}
- else if(s.kind==="buff"){h.spells.buffs.push({...s,rounds:s.duration||3});clog(`${s.name} takes effect.`)}
+ else if(s.kind==="buff"){h.spells.buffs.push({...s,rounds:spellDuration(s)});clog(`${s.name} takes effect.`)}
  else if(s.kind==="cleanse"){h.conditions=h.conditions||[];let before=h.conditions.length;h.conditions=h.conditions.filter(x=>x!==s.condition);clog(before!==h.conditions.length?`${s.name} removes ${s.condition}.`:`${s.name} finds nothing to remove.`)}
- else if(s.kind==="images"){let n=rollExpr(s.images);h.spells.buffs.push({...s,images:n,rounds:s.duration||6});clog(`${s.name} creates ${n} illusory images.`)}
- else if(s.kind==="sleep"||s.kind==="hold"){let q=t||living()[0];if(!q)return;let sv=monsterSpellSave(q,s.save||"Spells");clog(`${q.n} save ${sv.roll} vs ${sv.target}: ${sv.success?"success":"FAIL"}.`);if(!sv.success){q.disabledRounds=s.duration||6;clog(`${q.n} is ${s.kind==="sleep"?"put to sleep":"held"}.`)}else clog(`${q.n} resists ${s.name}.`)}
- else if(s.kind==="debuff"){let q=t||living()[0];if(!q)return;let sv=monsterSpellSave(q,s.save||"Spells");clog(`${q.n} save ${sv.roll} vs ${sv.target}: ${sv.success?"success":"FAIL"}.`);if(!sv.success){q.slowRounds=s.duration||6;clog(`${q.n} is slowed.`)}else clog(`${q.n} resists ${s.name}.`)}
+ else if(s.kind==="images"){let n=rollExpr(s.images);h.spells.buffs.push({...s,images:n,rounds:spellDuration(s)});clog(`${s.name} creates ${n} illusory images.`)}
+ else if(s.kind==="sleep"||s.kind==="hold"){let q=t||living()[0];if(!q)return;let sv=monsterSpellSave(q,s.save||"Spells");clog(`${q.n} save ${sv.roll} vs ${sv.target}: ${sv.success?"success":"FAIL"}.`);if(!sv.success){q.disabledRounds=spellDuration(s);clog(`${q.n} is ${s.kind==="sleep"?"put to sleep":"held"}.`)}else clog(`${q.n} resists ${s.name}.`)}
+ else if(s.kind==="debuff"){let q=t||living()[0];if(!q)return;let sv=monsterSpellSave(q,s.save||"Spells");clog(`${q.n} save ${sv.roll} vs ${sv.target}: ${sv.success?"success":"FAIL"}.`);if(!sv.success){q.slowRounds=spellDuration(s);clog(`${q.n} is slowed.`)}else clog(`${q.n} resists ${s.name}.`)}
  else if(s.kind==="utility"){clog(`${s.name} is active; no current combat target effect.`)}
 }
 function castCombatSpell(id){
