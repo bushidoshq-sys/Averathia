@@ -519,12 +519,12 @@ const ARCANE_NOW=[
  {id:"sleep",name:"Dreamfall",rc:"Sleep",sl:1,kind:"sleep",save:null,duration:40},
  {id:"light",name:"Mage Light",rc:"Light",sl:1,kind:"utility"},
  {id:"mirror_image",name:"Mirror Phantoms",rc:"Mirror Image",sl:2,kind:"images",images:"1d4",durationPerLevel:6},
- {id:"web",name:"Binding Web",rc:"Web",sl:2,kind:"hold",save:"Spells"},
+ {id:"web",name:"Binding Web",rc:"Web",sl:2,kind:"web",duration:480},
  {id:"fireball",name:"Flameburst",rc:"Fireball",sl:3,kind:"area",perLevel:true,save:"Spells",half:true},
  {id:"lightning_bolt",name:"Storm Lance",rc:"Lightning Bolt",sl:3,kind:"damage",perLevel:true,save:"Spells",half:true},
  {id:"haste",name:"Quickening",rc:"Haste",sl:3,kind:"buff",extraAttack:true,duration:30},
  {id:"slow",name:"Time Drag",rc:"Slow",sl:3,kind:"debuff",save:"Spells",duration:30},
- {id:"hold_person",name:"Binding Word",rc:"Hold Person",sl:3,kind:"hold",save:"Spells"},
+ {id:"hold_person",name:"Binding Word",rc:"Hold Person",sl:3,kind:"hold",save:"Spells",durationPerLevel:10,maxTargets:4,humanoidOnly:true},
  {id:"prot_missiles",name:"Missile Ward",rc:"Protection from Normal Missiles",sl:3,kind:"buff",missileWard:true,duration:120}
 ];
 const CLERIC_NOW=[
@@ -533,7 +533,7 @@ const CLERIC_NOW=[
  {id:"remove_fear",name:"Steady Heart",rc:"Remove Fear",sl:1,kind:"cleanse",condition:"Afraid"},
  {id:"resist_cold",name:"Winter Ward",rc:"Resist Cold",sl:1,kind:"buff",resist:"cold",duration:6},
  {id:"bless",name:"Battle Blessing",rc:"Bless",sl:2,kind:"buff",attack:1,duration:6},
- {id:"hold_person_c",name:"Sacred Binding",rc:"Hold Person",sl:2,kind:"hold",save:"Spells"},
+ {id:"hold_person_c",name:"Sacred Binding",rc:"Hold Person",sl:2,kind:"hold",save:"Spells",durationPerLevel:10,maxTargets:4,humanoidOnly:true},
  {id:"resist_fire",name:"Flame Ward",rc:"Resist Fire",sl:2,kind:"buff",resist:"fire",duration:6},
  {id:"cure_disease",name:"Restoring Grace",rc:"Cure Disease",sl:3,kind:"cleanse",condition:"Diseased"},
  {id:"striking",name:"War Prayer",rc:"Striking",sl:3,kind:"buff",damageBonus:"1d6",duration:6}
@@ -594,7 +594,9 @@ function resolveSpellEffect(s,t=null,autonomous=false){
  else if(s.kind==="buff"){h.spells.buffs.push({...s,rounds:spellDuration(s)});clog(`${s.name} takes effect.`)}
  else if(s.kind==="cleanse"){h.conditions=h.conditions||[];let before=h.conditions.length;h.conditions=h.conditions.filter(x=>x!==s.condition);clog(before!==h.conditions.length?`${s.name} removes ${s.condition}.`:`${s.name} finds nothing to remove.`)}
  else if(s.kind==="images"){let n=rollExpr(s.images);h.spells.buffs.push({...s,images:n,rounds:spellDuration(s)});clog(`${s.name} creates ${n} illusory images.`)}
- else if(s.kind==="sleep"||s.kind==="hold"){let q=t||living()[0];if(!q)return;let sv=monsterSpellSave(q,s.save||"Spells");clog(`${q.n} save ${sv.roll} vs ${sv.target}: ${sv.success?"success":"FAIL"}.`);if(!sv.success){q.disabledRounds=spellDuration(s);clog(`${q.n} is ${s.kind==="sleep"?"put to sleep":"held"}.`)}else clog(`${q.n} resists ${s.name}.`)}
+ else if(s.kind==="sleep"){let eligible=living().filter(q=>(Number(q.hdDice)||1)<=4.5),hdBudget=d(8)+d(8);for(const q of eligible.sort((a,b)=>(a.hdDice||1)-(b.hdDice||1))){let hd=Number(q.hdDice)||1;if(hd>hdBudget)continue;hdBudget-=hd;q.disabledRounds=spellDuration(s);clog(`${q.n} falls asleep.`)}}
+ else if(s.kind==="web"){for(const q of living()){let hd=Number(q.hdDice)||1;q.disabledRounds=hd>=8?2:Math.max(2,(d(4)+d(4))*10);clog(`${q.n} is caught in the web.`)}}
+ else if(s.kind==="hold"){let qs=living().filter(q=>!s.humanoidOnly||q.humanoid!==false).slice(0,s.maxTargets||1);for(const q of qs){let sv=monsterSpellSave(q,s.save||"Spells");clog(`${q.n} save ${sv.roll} vs ${sv.target}: ${sv.success?"success":"FAIL"}.`);if(!sv.success){q.disabledRounds=spellDuration(s);clog(`${q.n} is held.`)}else clog(`${q.n} resists ${s.name}.`)}}
  else if(s.kind==="debuff"){let q=t||living()[0];if(!q)return;let sv=monsterSpellSave(q,s.save||"Spells");clog(`${q.n} save ${sv.roll} vs ${sv.target}: ${sv.success?"success":"FAIL"}.`);if(!sv.success){q.slowRounds=spellDuration(s);clog(`${q.n} is slowed.`)}else clog(`${q.n} resists ${s.name}.`)}
  else if(s.kind==="utility"){clog(`${s.name} is active; no current combat target effect.`)}
 }
