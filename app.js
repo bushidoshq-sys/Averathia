@@ -571,7 +571,7 @@ function rcSpecialTreasureItem(){
  let roll=d(100),row=RC_SPECIAL_TREASURE_TABLE.find(x=>roll<=x.max)||RC_SPECIAL_TREASURE_TABLE.at(-1);
  let value=rcRollScaled(row.value),item={n:row.n,kind:"treasure",rcTreasure:true,rcSpecial:true,gpValue:value,treasureValueCP:gpToCP(value)};
  if(row.perUnit)item.rcValuePer=row.perUnit;
- if(row.perEncumbrance){item.rcValuePer="cn encumbrance";item.needsRcQuantity=true;item.treasureValueCP=null;item.gpValue=null}
+ if(row.perEncumbrance){let enc=d(100),per=rcRollScaled(row.value);item.rcEncumbrance=enc;item.rcValuePer="cn encumbrance";item.gpValue=enc*per;item.treasureValueCP=gpToCP(item.gpValue)}
  return item
 }
 function rcRollMagicSpec(spec){
@@ -627,6 +627,30 @@ function rcRollMonsterLair(m,level=h?.level||1){
 }
 function rcTreasureCoinCP(t){return Object.entries(t?.coins||{}).reduce((sum,[k,v])=>sum+rcCoinValueCP(k,v),0)}
 function rcTreasureItemValueCP(t){return["gems","jewelry","special"].flatMap(k=>t?.[k]||[]).reduce((sum,x)=>sum+(Number.isFinite(x.treasureValueCP)?x.treasureValueCP:0),0)}
+
+function rcUnguardedBracket(level=h?.level||1){return RC_UNGUARDED_TREASURE.find(x=>level>=x.levels[0]&&level<=x.levels[1])||RC_UNGUARDED_TREASURE.at(-1)}
+function rcRollUnguardedTreasure(level=h?.level||1){
+ let row=rcUnguardedBracket(level),out=rcBlankTreasure("unguarded",`Level ${level}`);
+ if(row.sp)out.coins.sp+=rcRollScaled(row.sp);
+ if(row.gp){if(typeof row.gp==="string"||rcChance(row.gp[0]))out.coins.gp+=rcRollScaled(typeof row.gp==="string"?row.gp:row.gp[1])}
+ if(row.gems&&rcChance(row.gems[0])){let n=rcRollScaled(row.gems[1]);while(n--)out.gems.push(rcGemItem(level))}
+ if(row.jewelry&&rcChance(row.jewelry[0])){let n=rcRollScaled(row.jewelry[1]);while(n--)out.jewelry.push(rcJewelryItem(level))}
+ if(row.magic&&rcChance(row.magic[0]))out.magic.push(...rcRollMagicSpec(row.magic[1]));
+ return out
+}
+function rcTreasureAllItems(t){return["gems","jewelry","special","magic"].flatMap(k=>t?.[k]||[])}
+function rcApplyTreasure(t){
+ let credited=rcCreditCoins(t?.coins||{}),items=rcTreasureAllItems(t);
+ h.inv=h.inv||[];for(const item of items)h.inv.push(item);
+ return{creditedCP:credited.cpValue,items:items.length,converted:credited.converted}
+}
+function rcTreasureSummary(t){
+ let c=t?.coins||{},parts=[];
+ for(const [k,label] of [["gp","GP"],["sp","SP"],["cp","CP"],["ep","EP→converted"],["pp","PP→converted"]])if(c[k])parts.push(`${c[k]} ${label}`);
+ let counts=[["gems","gems"],["jewelry","jewelry"],["special","special treasure"],["magic","magic items"]];
+ for(const [k,label] of counts)if(t?.[k]?.length)parts.push(`${t[k].length} ${label}`);
+ return parts.join(", ")||"no treasure"
+}
 
 const RC_UNGUARDED_TREASURE=[
  {levels:[1,1],sp:"1d6x100",gp:[50,"1d6x10"],gems:[5,"1d6"],jewelry:[2,"1d6"],magic:[2,{any:1}]},
