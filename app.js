@@ -334,7 +334,9 @@ function savingThrow(category,bonus=0,damageType=null){
  let target=rcSaveTarget(h.className,h.level,SAVE_NAMES[i]),roll=d(20)+bonus;
  return{roll,target,success:roll>=target,category:SAVE_NAMES[i]};
 }
-function protectionFromEvilActive(){return !!h?.spells?.buffs?.some(b=>b.rc==="Protection from Evil")}
+function protectionFromEvilBuff(){let b=h?.spells?.buffs?.find(b=>b.rc==="Protection from Evil")||null;if(b&&b.barrierBroken==null)b.barrierBroken=!!h?.combat?.protEvilBarrierBroken;return b}
+function protectionFromEvilActive(){return !!protectionFromEvilBuff()}
+function protectionFromEvilBarrierActive(){let b=protectionFromEvilBuff();return !!b&&!b.barrierBroken}
 function elementalResistance(type){return h?.spells?.buffs?.find(b=>b.resist===type)||null}
 function damageDiceCount(expr){let m=/^(\d+)d\d+/i.exec(String(expr||""));return m?Math.max(1,+m[1]):1}
 function applyElementalResistance(dmg,expr,type,magical=true){
@@ -558,7 +560,7 @@ function playerStrikeSingle(){
  let c=h.combat,t=c.enemies[c.target];if(!t||t.hp<=0){t=living()[0];if(!t)return;c.target=t.id}
  let cs=combatStats(),w=cs.weapon,item=cs.weaponItem,mode=attackModeFor(w);
  if(c.skipNext){clog("Critical fumble: you lose this initiative.");c.skipNext=false;return}
- if(t.enchanted&&protectionFromEvilActive()&&!c.protEvilBarrierBroken){c.protEvilBarrierBroken=true;clog("You attack an enchanted creature; Protection from Evil no longer bars its touch, though its attack/save modifiers remain.")}
+ let pfe=protectionFromEvilBuff();if(t.enchanted&&pfe&&!pfe.barrierBroken){pfe.barrierBroken=true;clog("You attack an enchanted creature; Protection from Evil no longer bars its touch, though its attack/save modifiers remain.")}
  if(t.sleeping&&c.range==="Hand-to-Hand"&&EDGED_WEAPONS.has(w)){let dmg=t.hp;t.hp=0;t.sleeping=false;t.disabledRounds=0;clog(`Sleeping ${t.n} is slain with a single edged-weapon blow (${dmg} HP).`);let gained=awardXP(t.xp);clog(`${t.n} defeated. +${gained} XP.`);return}
  if(mode==="out-of-range"){clog(`${w} cannot reach a target at ${c.range} range. Close to Hand-to-Hand or use a ranged/thrown weapon.`);return}
  if(mode==="missile"&&c.range==="Hand-to-Hand"&&(t.disabledRounds||0)<=0){clog(`${w} cannot be used effectively at Hand-to-Hand against a mobile target.`);return}
@@ -606,7 +608,7 @@ function enemyStrike(){
   if(e.slowRounds>0&&h.combat.round%2===0){clog(`${e.n} is slowed and cannot act this round.`);continue}
   if(e.skipNext){clog(`${e.n} loses this initiative after its fumble.`);e.skipNext=false;continue}
   if(monsterRangeStep(e))continue;
-  if((h.combat?.range||"Close")==="Hand-to-Hand"&&e.enchanted&&protectionFromEvilActive()&&!h.combat.protEvilBarrierBroken){clog(`${e.n} cannot touch you through Protection from Evil.`);continue}
+  if((h.combat?.range||"Close")==="Hand-to-Hand"&&e.enchanted&&protectionFromEvilBarrierActive()){clog(`${e.n} cannot touch you through Protection from Evil.`);continue}
   let r=d(20),blindPenalty=e.blindRounds>0?-6:0;
   if(r===1){clog(`${e.n} rolls a natural 1 — critical fumble. Next initiative is lost.`);e.skipNext=true;continue}
   let mr=h.combat?.range||"Close",dist=combatDistance(),maxR=e.rangedWeapon&&WEAPON_RANGES[e.rangedWeapon]?.[2]||Infinity,useRanged=false;if(e.rangedDamage&&mr!=="Hand-to-Hand"&&(e.ammo||0)>0&&dist<=maxR){e.damage=e.rangedDamage;e.activeWeapon=e.rangedWeapon||"Ranged weapon";e.ammo--;useRanged=true}else if(e.meleeDamage){e.damage=e.meleeDamage;e.activeWeapon=e.meleeWeapon||"Melee weapon"}let need=Math.max(2,(20-monsterHitModifier(e))-effectiveAC(useRanged));if(r===20||r+blindPenalty>=need){
@@ -818,7 +820,7 @@ function resolveSpellEffect(s,t=null,autonomous=false,holdMode=null,missileTarge
    let boundWeapon=s.rc==="Striking"?combatStats().weapon:null;
    let duplicate=h.spells.buffs.some(b=>b.rc===s.rc&&(s.rc!=="Striking"||b.boundWeapon===boundWeapon));
    if(duplicate)clog(`${s.name} is already active; a second casting does not combine with the first.`);
-   else{let buff={...s,rounds:spellDuration(s)};if(s.rc==="Striking")buff.boundWeapon=boundWeapon;if(s.rc==="Protection from Evil"&&h.combat)h.combat.protEvilBarrierBroken=false;h.spells.buffs.push(buff);clog(s.rc==="Striking"?`${s.name} empowers ${buff.boundWeapon}.`:`${s.name} takes effect.`)}
+   else{let buff={...s,rounds:spellDuration(s)};if(s.rc==="Striking")buff.boundWeapon=boundWeapon;if(s.rc==="Protection from Evil")buff.barrierBroken=false;h.spells.buffs.push(buff);clog(s.rc==="Striking"?`${s.name} empowers ${buff.boundWeapon}.`:`${s.name} takes effect.`)}
   }
  }
  else if(s.kind==="cleanse"){h.conditions=h.conditions||[];let before=h.conditions.length;h.conditions=h.conditions.filter(x=>x!==s.condition);if(s.rc==="Cure Disease"&&before!==h.conditions.length)h.mummyDisease=false;clog(before!==h.conditions.length?`${s.name} removes ${s.condition}.`:`${s.name} finds nothing to remove.`)}
