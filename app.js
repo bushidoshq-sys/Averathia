@@ -570,22 +570,22 @@ const RC_JEWELRY_TYPES={
  rare:["Amulet","Crown","Diadem","Medallion","Orb","Ring (nonmagical)","Scarab","Scepter","Talisman","Tiara"]
 };
 const RC_SPECIAL_TREASURE_TABLE=[
- {max:10,n:"Rare Book",value:"1d100x10"},
- {max:12,n:"Common Fur Pelt",value:"1d4"},
- {max:17,n:"Common Fur Cape",value:"1d6x100"},
- {max:20,n:"Common Fur Coat",value:"3d4x100"},
- {max:22,n:"Rare Fur Pelt",value:"2d6"},
- {max:27,n:"Rare Fur Cape",value:"4d6x100"},
- {max:30,n:"Rare Fur Coat",value:"1d6x1000"},
- {max:35,n:"Rare Incense",value:"5d6"},
- {max:40,n:"Rare Perfume",value:"1d10+5x10"},
- {max:55,n:"Rug or Tapestry",value:"2d10",perUnit:"square yard"},
- {max:65,n:"Silk",value:"1d8",perUnit:"square yard"},
- {max:75,n:"Animal Skin",value:"1d10"},
- {max:85,n:"Monster Skin",value:"1d10x100"},
- {max:90,n:"Rare Spice",value:"4d4",perEncumbrance:true},
- {max:95,n:"Statuette",value:"1d10x100"},
- {max:100,n:"Rare Wine",value:"1d6",perUnit:"bottle"}
+ {max:10,n:"Rare Book",enc:"2d100",value:"1d100x10"},
+ {max:12,n:"Common Fur Pelt",enc:"1d6x10",value:"1d4"},
+ {max:17,n:"Common Fur Cape",enc:"1d8+4x10",value:"1d6x100"},
+ {max:20,n:"Common Fur Coat",enc:"2d6+8x10",value:"3d4x100"},
+ {max:22,n:"Rare Fur Pelt",enc:"1d6x10",value:"2d6"},
+ {max:27,n:"Rare Fur Cape",enc:"1d8+4x10",value:"4d6x100"},
+ {max:30,n:"Rare Fur Coat",enc:"2d6+8x10",value:"1d6x1000"},
+ {max:35,n:"Rare Incense",enc:"1",value:"5d6",unit:"stick"},
+ {max:40,n:"Rare Perfume",enc:"1",value:"1d10+5x10",unit:"vial"},
+ {max:55,n:"Rug or Tapestry",enc:"1d6x100",value:"2d10",unit:"square yard",quantityUnspecified:true},
+ {max:65,n:"Silk",enc:"1d6x10",value:"1d8",unit:"square yard",quantityUnspecified:true},
+ {max:75,n:"Animal Skin",enc:"5d4x10",value:"1d10"},
+ {max:85,n:"Monster Skin",enc:"1d10x50",value:"1d10x100"},
+ {max:90,n:"Rare Spice",enc:"1d100",value:"4d4",valuePerEnc:true},
+ {max:95,n:"Statuette",enc:"1d100",value:"1d10x100"},
+ {max:100,n:"Rare Wine",encBottles:"1d6+3",value:"1d6",unit:"bottle"}
 ];
 function rcChance(p){return d(100)<=p}
 function rcBlankTreasure(source,type){return{source,type,coins:{cp:0,sp:0,ep:0,gp:0,pp:0},gems:[],jewelry:[],special:[],magic:[]}}
@@ -607,11 +607,19 @@ function rcJewelryItem(level=h?.level||1){
  return{n:`${name} — ${value.toLocaleString()} GP`,kind:"treasure",rcTreasure:true,rcJewelry:true,treasureValueCP:gpToCP(value),gpValue:value}
 }
 function rcSpecialTreasureItem(){
- let roll=d(100),row=RC_SPECIAL_TREASURE_TABLE.find(x=>roll<=x.max)||RC_SPECIAL_TREASURE_TABLE.at(-1);
- let value=rcRollScaled(row.value),item={n:row.n,kind:"treasure",rcTreasure:true,rcSpecial:true,gpValue:value,treasureValueCP:gpToCP(value)};
- if(row.perUnit)item.rcValuePer=row.perUnit;
- if(row.perEncumbrance){let enc=d(100),per=rcRollScaled(row.value);item.rcEncumbrance=enc;item.rcValuePer="cn encumbrance";item.gpValue=enc*per;item.treasureValueCP=gpToCP(item.gpValue)}
- return item
+ let roll=d(100),row=RC_SPECIAL_TREASURE_TABLE.find(x=>roll<=x.max)||RC_SPECIAL_TREASURE_TABLE.at(-1),item={n:row.n,kind:"treasure",rcTreasure:true,rcSpecial:true};
+ if(row.encBottles){
+   let qty=rcRollScaled(row.encBottles),per=rcRollScaled(row.value);
+   item.rcQuantity=qty;item.rcUnit=row.unit;item.rcEncumbrance=qty*10;item.rcValuePerGP=per;item.gpValue=qty*per;item.treasureValueCP=gpToCP(item.gpValue);return item
+ }
+ let enc=rcRollScaled(row.enc),value=rcRollScaled(row.value);item.rcEncumbrance=enc;
+ if(row.quantityUnspecified){
+   item.rcUnit=row.unit;item.rcEncumbrancePerUnit=enc;item.rcValuePerGP=value;item.gpValue=null;item.treasureValueCP=null;item.needsRcQuantity=true;return item
+ }
+ if(row.valuePerEnc){
+   item.rcValuePerGP=value;item.rcValuePer="cn encumbrance";item.gpValue=enc*value;item.treasureValueCP=gpToCP(item.gpValue);return item
+ }
+ item.gpValue=value;item.treasureValueCP=gpToCP(value);if(row.unit)item.rcUnit=row.unit;return item
 }
 function rcRollMagicSpec(spec){
  let out=[];
