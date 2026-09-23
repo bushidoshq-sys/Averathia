@@ -438,7 +438,7 @@ const RC_MISC_MAGIC_TABLE=[
 ];
 function rcTablePick(table,roll=d(100)){for(const [max,value] of table)if(roll<=max)return value;return table.at(-1)?.[1]}
 function rcRollScaled(expr){
- let m=/^(\d+d\d+|\d+)(?:x(\d+))?$/i.exec(String(expr||"").replace(/\s+/g,""));
+ let m=/^(\d+d\d+(?:[+-]\d+)?|\d+)(?:x(\d+))?$/i.exec(String(expr||"").replace(/\s+/g,""));
  if(!m)return 0;
  let base=/d/i.test(m[1])?rollExpr(m[1]):+m[1],mult=+(m[2]||1);
  return Math.max(0,base*mult);
@@ -475,6 +475,109 @@ function rollRcMagicAny(allowed=null){
  if(cat==="potion")return rollRcPotion();
  return rollRcNamedMagic(cat)
 }
+
+const RC_JEWELRY_TYPES={
+ common:["Anklet","Beads","Bracelet","Brooch","Buckle","Cameo","Chain","Clasp","Locket","Pin"],
+ uncommon:["Armband","Belt","Collar","Earring","Four-Leaf Clover","Heart","Leaf","Necklace","Pendant","Rabbit's Foot"],
+ rare:["Amulet","Crown","Diadem","Medallion","Orb","Ring (nonmagical)","Scarab","Scepter","Talisman","Tiara"]
+};
+const RC_SPECIAL_TREASURE_TABLE=[
+ {max:10,n:"Rare Book",value:"1d100x10"},
+ {max:12,n:"Common Fur Pelt",value:"1d4"},
+ {max:17,n:"Common Fur Cape",value:"1d6x100"},
+ {max:20,n:"Common Fur Coat",value:"3d4x100"},
+ {max:22,n:"Rare Fur Pelt",value:"2d6"},
+ {max:27,n:"Rare Fur Cape",value:"4d6x100"},
+ {max:30,n:"Rare Fur Coat",value:"1d6x1000"},
+ {max:35,n:"Rare Incense",value:"5d6"},
+ {max:40,n:"Rare Perfume",value:"1d10+5x10"},
+ {max:55,n:"Rug or Tapestry",value:"2d10",perUnit:"square yard"},
+ {max:65,n:"Silk",value:"1d8",perUnit:"square yard"},
+ {max:75,n:"Animal Skin",value:"1d10"},
+ {max:85,n:"Monster Skin",value:"1d10x100"},
+ {max:90,n:"Rare Spice",value:"4d4",perEncumbrance:true},
+ {max:95,n:"Statuette",value:"1d10x100"},
+ {max:100,n:"Rare Wine",value:"1d6",perUnit:"bottle"}
+];
+function rcChance(p){return d(100)<=p}
+function rcBlankTreasure(source,type){return{source,type,coins:{cp:0,sp:0,ep:0,gp:0,pp:0},gems:[],jewelry:[],special:[],magic:[]}}
+function rcMergeTreasure(a,b,mult=1){
+ for(const k of ["cp","sp","ep","gp","pp"])a.coins[k]+=(b.coins[k]||0)*mult;
+ for(const k of ["gems","jewelry","special","magic"])for(const x of b[k]||[])for(let i=0;i<mult;i++)a[k].push({...x});
+ return a
+}
+function rcGemItem(level=h?.level||1){
+ let roll=d(100);if(level<9)roll=Math.max(1,roll-10);
+ let v=rcTablePick(RC_GEM_VALUE,roll);
+ if(v==="special")return{n:"Special Gem (Starstone or Tristal)",kind:"treasure",rcTreasure:true,rcGem:true,treasureValueCP:null,needsRcChoice:true};
+ return{n:`Gem — ${v.toLocaleString()} GP`,kind:"treasure",rcTreasure:true,rcGem:true,treasureValueCP:gpToCP(v),gpValue:v}
+}
+function rcJewelryItem(level=h?.level||1){
+ let roll=d(100);if(level<9)roll=Math.max(1,roll-10);
+ let value=rcTablePick(RC_JEWELRY_VALUE,roll),band=value<4000?"common":value<15000?"uncommon":"rare";
+ let types=RC_JEWELRY_TYPES[band],name=types[d(types.length)-1];
+ return{n:`${name} — ${value.toLocaleString()} GP`,kind:"treasure",rcTreasure:true,rcJewelry:true,treasureValueCP:gpToCP(value),gpValue:value}
+}
+function rcSpecialTreasureItem(){
+ let roll=d(100),row=RC_SPECIAL_TREASURE_TABLE.find(x=>roll<=x.max)||RC_SPECIAL_TREASURE_TABLE.at(-1);
+ let value=rcRollScaled(row.value),item={n:row.n,kind:"treasure",rcTreasure:true,rcSpecial:true,gpValue:value,treasureValueCP:gpToCP(value)};
+ if(row.perUnit)item.rcValuePer=row.perUnit;
+ if(row.perEncumbrance){item.rcValuePer="cn encumbrance";item.needsRcQuantity=true;item.treasureValueCP=null;item.gpValue=null}
+ return item
+}
+function rcRollMagicSpec(spec){
+ let out=[];
+ if(!spec)return out;
+ if(spec.oneOf){let map={sword:"sword",miscWeapon:"miscWeapon",armor:"armorShield"},cats=spec.oneOf.map(x=>map[x]||x);out.push(rollRcMagicAny(cats))}
+ for(let i=0;i<(spec.any||0);i++)out.push(rollRcMagicAny());
+ for(let i=0;i<(spec.potion||0);i++)out.push(rollRcPotion());
+ for(let i=0;i<(spec.scroll||0);i++)out.push(rollRcNamedMagic("scroll"));
+ for(let i=0;i<(spec.anyButWeapons||0);i++)out.push(rollRcMagicAny(["potion","scroll","wandStaffRod","ring","miscMagic","armorShield"]));
+ let np=spec.potions?rcRollScaled(spec.potions):0;for(let i=0;i<np;i++)out.push(rollRcPotion());
+ let ns=spec.scrolls?rcRollScaled(spec.scrolls):0;for(let i=0;i<ns;i++)out.push(rollRcNamedMagic("scroll"));
+ return out
+}
+function rcRollCarriedType(type,mult=1,level=h?.level||1){
+ let row=RC_TREASURE_CARRIED[type],out=rcBlankTreasure("carried",type);if(!row)return out;
+ for(const [kind,spec] of Object.entries(row.coins||{}))if(spec.chance===100||rcChance(spec.chance))out.coins[kind]+=rcRollScaled(spec.dice)*mult;
+ if(row.gems&&(row.gems.chance===100||rcChance(row.gems.chance))){let n=rcRollScaled(row.gems.dice)*mult;while(n--)out.gems.push(rcGemItem(level))}
+ if(row.jewelry&&(row.jewelry.chance===100||rcChance(row.jewelry.chance))){let n=rcRollScaled(row.jewelry.dice)*mult;while(n--)out.jewelry.push(rcJewelryItem(level))}
+ if(row.special&&(row.special.chance===100||rcChance(row.special.chance))){let n=rcRollScaled(row.special.dice)*mult;while(n--)out.special.push(rcSpecialTreasureItem())}
+ if(row.magic&&(row.magic.chance===100||rcChance(row.magic.chance))){let n=rcRollScaled(row.magic.dice)*mult;while(n--)out.magic.push(rollRcMagicAny())}
+ return out
+}
+function rcRollLairType(type,level=h?.level||1){
+ let row=RC_TREASURE_LAIR[type],out=rcBlankTreasure("lair",type);if(!row)return out;
+ for(const [kind,spec] of Object.entries(row.coins||{}))if(rcChance(spec[0]))out.coins[kind]+=rcRollScaled(spec[1])*1000;
+ if(row.gems&&rcChance(row.gems[0])){let n=rcRollScaled(row.gems[1]);while(n--)out.gems.push(rcGemItem(level))}
+ if(row.jewelry&&rcChance(row.jewelry[0])){let n=rcRollScaled(row.jewelry[1]);while(n--)out.jewelry.push(rcJewelryItem(level))}
+ if(row.special&&rcChance(row.special[0])){let n=rcRollScaled(row.special[1]);while(n--)out.special.push(rcSpecialTreasureItem())}
+ if(row.magic&&rcChance(row.magic[0]))out.magic.push(...rcRollMagicSpec(row.magic[1]));
+ return out
+}
+function rcMonsterTreasureProfile(m){
+ let tt=String(m?.rcTreasureType||"Nil").trim();if(!tt||tt==="Nil")return{carried:[],lair:[]};
+ if(m.id==="ogre")return{carried:[{type:"S",mult:10}],lair:[{type:"S",mult:100,carriedStyle:true},{type:"C",mult:1}]};
+ let carried=[],lair=[],paren=tt.match(/^\(([P-V])\)\s*(.*)$/);
+ if(paren){carried.push({type:paren[1],mult:1});tt=paren[2].trim()}
+ for(const letter of tt.match(/[A-V]/g)||[]){if(/[P-V]/.test(letter))carried.push({type:letter,mult:1});else lair.push({type:letter,mult:1})}
+ return{carried,lair}
+}
+function rcRollMonsterCarried(m,level=h?.level||1){
+ let p=rcMonsterTreasureProfile(m),out=rcBlankTreasure("monster",m?.n||m?.id||"monster");
+ for(const x of p.carried)rcMergeTreasure(out,rcRollCarriedType(x.type,x.mult,level));
+ return out
+}
+function rcRollMonsterLair(m,level=h?.level||1){
+ let p=rcMonsterTreasureProfile(m),out=rcBlankTreasure("monster-lair",m?.n||m?.id||"monster");
+ for(const x of p.lair){
+  if(x.carriedStyle)rcMergeTreasure(out,rcRollCarriedType(x.type,x.mult,level));
+  else rcMergeTreasure(out,rcRollLairType(x.type,level),x.mult||1)
+ }
+ return out
+}
+function rcTreasureCoinCP(t){return Object.entries(t?.coins||{}).reduce((sum,[k,v])=>sum+rcCoinValueCP(k,v),0)}
+function rcTreasureItemValueCP(t){return["gems","jewelry","special"].flatMap(k=>t?.[k]||[]).reduce((sum,x)=>sum+(Number.isFinite(x.treasureValueCP)?x.treasureValueCP:0),0)}
 
 const RC_UNGUARDED_TREASURE=[
  {levels:[1,1],sp:"1d6x100",gp:[50,"1d6x10"],gems:[5,"1d6"],jewelry:[2,"1d6"],magic:[2,{any:1}]},
