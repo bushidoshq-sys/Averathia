@@ -1,26 +1,21 @@
-name: Make fighter backgrounds transparent
+name: Restore original Fighter assets
 
 on:
   push:
     branches: [main]
     paths:
-      - ".github/scripts/remove_black_bg.py"
       - ".github/workflows/transparent-fighter-assets.yml"
 
 permissions:
   contents: write
 
 jobs:
-  transparent-fighters:
+  restore-fighters:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
-
-      - uses: actions/setup-python@v5
-        with:
-          python-version: "3.12"
 
       - name: Restore original Fighter assets
         run: |
@@ -32,45 +27,31 @@ jobs:
             fighter_female_2_full.png fighter_female_2_head.png fighter_female_2_sprite.png \
             fighter_female_3_full.png fighter_female_3_head.png fighter_female_3_sprite.png
 
-      - name: Install background-removal tools
-        run: python -m pip install --upgrade pillow "rembg[cpu]"
-
-      - name: Remove backgrounds from Fighter Male and Female
+      - name: Package originals
         run: |
-          python .github/scripts/remove_black_bg.py \
-            'fighter_male_*_*.png' \
-            'fighter_female_*_*.png'
+          zip -j fighter_male_originals.zip fighter_male_*_*.png
+          zip -j fighter_female_originals.zip fighter_female_*_*.png
 
-      - name: Build Fighter packages
-        run: |
-          rm -f fighter_male_transparent.zip fighter_female_transparent.zip
-          zip -j fighter_male_transparent.zip fighter_male_*_*.png
-          zip -j fighter_female_transparent.zip fighter_female_*_*.png
-
-      - name: Upload Fighter Male files
+      - name: Upload Fighter Male originals
         uses: actions/upload-artifact@v4
         with:
-          name: fighter-male-transparent-v2
-          path: |
-            fighter_male_*_*.png
-            fighter_male_transparent.zip
+          name: fighter-male-originals
+          path: fighter_male_originals.zip
 
-      - name: Upload Fighter Female files
+      - name: Upload Fighter Female originals
         uses: actions/upload-artifact@v4
         with:
-          name: fighter-female-transparent-v2
-          path: |
-            fighter_female_*_*.png
-            fighter_female_transparent.zip
+          name: fighter-female-originals
+          path: fighter_female_originals.zip
 
-      - name: Commit transparent assets
+      - name: Restore originals in main
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add fighter_male_*_*.png fighter_female_*_*.png fighter_male_transparent.zip fighter_female_transparent.zip
+          git add fighter_male_*_*.png fighter_female_*_*.png
           if git diff --cached --quiet; then
-            echo "No image changes."
+            echo "Assets already restored."
             exit 0
           fi
-          git commit -m "Improve transparent Fighter character assets"
+          git commit -m "Restore original Fighter assets"
           git push
