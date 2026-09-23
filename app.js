@@ -691,6 +691,25 @@ function rcTreasureSummary(t){
  return parts.join(", ")||"no treasure"
 }
 
+function rcRollCombatTreasure(enemies=[],isBoss=false,level=h?.level||1){
+ let out=rcBlankTreasure(isBoss?"boss-combat":"combat",isBoss?"boss":"ordinary"),ogres=enemies.filter(e=>e?.id==="ogre");
+ for(const e of enemies){
+  if(e?.id==="ogre")continue; // RC Ogre prose overrides generic carried notation for the encountered group.
+  rcMergeTreasure(out,rcRollMonsterCarried(e,level))
+ }
+ if(ogres.length)out.coins.gp+=d(6)*100; // RC: an ogre group encountered outside its lair carries 1d6 x 100 gp.
+ if(isBoss&&enemies.length){
+  let hoardOwner=enemies.find(e=>e?.boss)||enemies[0];
+  rcMergeTreasure(out,rcRollMonsterLair(hoardOwner,level))
+ }
+ return out
+}
+function rcAwardTreasure(t,label="Treasure"){
+ let applied=rcApplyTreasure(t),summary=rcTreasureSummary(t);
+ addlog(`${label}: ${summary}.`);
+ return{...applied,summary}
+}
+
 const RC_UNGUARDED_TREASURE=[
  {levels:[1,1],sp:"1d6x100",gp:[50,"1d6x10"],gems:[5,"1d6"],jewelry:[2,"1d6"],magic:[2,{any:1}]},
  {levels:[2,3],sp:"1d12x100",gp:[50,"1d6x100"],gems:[10,"1d6"],jewelry:[5,"1d6"],magic:[8,{any:1}]},
@@ -1312,9 +1331,9 @@ function changeRange(direction){
 }
 function resolveAttack(){let c=h.combat,pr=d(6),er=d(6);while(pr===er){pr=d(6);er=d(6)}clog(`Initiative: you ${pr}, enemies ${er}.`);if(pr>er){playerStrike();if(living().length)enemyStrike()}else{enemyStrike();if(h.combat&&h.hp>0&&living().length)playerStrike()}if(!h.combat)return;if(!living().length)return finishCombat();tickSpellBuffs();tickEnemySpellEffects();tickPlayerConditions();c.round++;save();renderCombat()}
 function finishCombat(){
- let boss=!!h.combat?.isBoss,gp=d(3)-1+(boss?d(3):0),sp=d(8)+(boss?d(6):0),cp=d(12)-1;
- addCoins(gp,sp,cp);
- addlog(`${boss?"Boss defeated":"Combat won"}. Treasure: ${gp} GP, ${sp} SP, ${cp} CP.`);
+ let boss=!!h.combat?.isBoss,enemies=[...(h.combat?.enemies||[])],treasure=rcRollCombatTreasure(enemies,boss,h.level);
+ addlog(boss?"Boss defeated.":"Combat won.");
+ rcAwardTreasure(treasure,boss?"RC boss treasure":"RC carried treasure");
  if(boss)resolveMissionBoss();
  recoverThrownWeapons();h.combat=null;endTripPause();save();page("depart");refresh();if(!autonomousCombatRunning)tick()
 }
@@ -1452,10 +1471,12 @@ function applyEventChoice(ev,ch){
    h.pendingEvent=null;endTripPause();save();renderPendingEvent();if(resumeAfter)tick();return
  }
  let baseXP=ch?.xp??ev.xp??0,xp=baseXP?awardXP(baseXP):0,coin=ch?.coins??ev.coins??[0,0,0];
- if(coin)addCoins(coin[0]||0,coin[1]||0,coin[2]||0)
- let result=ch?.result||"observed";
- journal({id:ev.id,type:ev.type,title:ev.title,text:ev.text,choice:ch?.label||null,result,xp,coins:coin});
- let rewardText=`${xp?`+${xp} XP. `:""}${coin&&(coin[0]||coin[1]||coin[2])?`${coin[0]||0} GP, ${coin[1]||0} SP, ${coin[2]||0} CP.`:""}`.trim(),summary=ch?.label?`${ch.label}.${rewardText?` ${rewardText}`:""}`:(rewardText||ev.text||"Observed.");addlog(`${ev.title}: ${summary}`);
+ let result=ch?.result||"observed",rcDiscoveryTreasure=null;
+ if(ev?.type==="Discovery"&&result==="search"){
+   rcDiscoveryTreasure=rcRollUnguardedTreasure(h.level);rcApplyTreasure(rcDiscoveryTreasure);coin=[0,0,0]
+ }else if(coin)addCoins(coin[0]||0,coin[1]||0,coin[2]||0)
+ journal({id:ev.id,type:ev.type,title:ev.title,text:ev.text,choice:ch?.label||null,result,xp,coins:coin,rcTreasure:rcDiscoveryTreasure?rcTreasureSummary(rcDiscoveryTreasure):null});
+ let rewardText=`${xp?`+${xp} XP. `:""}${rcDiscoveryTreasure?`RC treasure: ${rcTreasureSummary(rcDiscoveryTreasure)}.`:coin&&(coin[0]||coin[1]||coin[2])?`${coin[0]||0} GP, ${coin[1]||0} SP, ${coin[2]||0} CP.`:""}`.trim(),summary=ch?.label?`${ch.label}.${rewardText?` ${rewardText}`:""}`:(rewardText||ev.text||"Observed.");addlog(`${ev.title}: ${summary}`);
  if(result==="combat"){h.pendingEvent=null;renderPendingEvent();save();if(h.trip?.mode==="auto")autonomousCombat(false);else makeCombat();return}
  h.pendingEvent=null;endTripPause();save();renderPendingEvent();if(resumeAfter)tick()
 }
