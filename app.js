@@ -365,9 +365,9 @@ const RC_TREASURE_LAIR={
  J:{coins:{cp:[25,"1d4"],sp:[10,"1d3"]}},
  K:{coins:{sp:[30,"1d6"],ep:[10,"1d2"]}},
  L:{coins:{},gems:[50,"1d4"]},
- M:{coins:{gp:[40,"2d4"],pp:[50,"3d10"]},gems:[55,"5d4"],jewelry:[45,"2d6"],magic:[40,{potions:"2d4"}]},
- N:{coins:{},special:[10,"1d2"],magic:[50,{scrolls:"1d4"}]},
- O:{coins:{},special:[10,"1d3"]}
+ M:{coins:{gp:[40,"2d4"],pp:[50,"3d10"]},gems:[55,"5d4"],jewelry:[45,"2d6"]},
+ N:{coins:{},special:[10,"1d2"],magic:[40,{potions:"2d4"}]},
+ O:{coins:{},special:[10,"1d3"],magic:[50,{scrolls:"1d4"}]}
 };
 const RC_GEM_VALUE=[
  [3,10],[10,50],[25,100],[46,500],[71,1000],[90,5000],[97,10000],[100,"special"]
@@ -393,6 +393,49 @@ const RC_POTION_TABLE=[
  [90,"Strength"],[93,"Super-Healing"],[96,"Swimming"],[97,"Treasure Finding"],[98,"Undead Control"],
  [100,"Water Breathing"]
 ];
+const RC_SCROLL_TABLE=[
+ [3,"Communication"],[5,"Creation"],[13,"Curse"],[14,"Delay"],[17,"Equipment"],[19,"Illumination"],
+ [21,"Mages"],[25,"Map to normal treasure"],[28,"Map to magical treasure"],[30,"Map to combined treasure"],
+ [31,"Map to special treasure"],[34,"Mapping"],[36,"Portals"],[42,"Protection from Elementals"],
+ [50,"Protection from Lycanthropes"],[54,"Protection from Magic"],[61,"Protection from Undead"],
+ [63,"Questioning"],[64,"Repetition"],[66,"Seeing"],[68,"Shelter"],[71,"Spell Catching"],
+ [96,"Spell"],[98,"Trapping"],[100,"Truth"]
+];
+const RC_WAND_STAFF_ROD_TABLE=[
+ [5,"Wand of Cold"],[10,"Wand of Enemy Detection"],[14,"Wand of Fear"],[19,"Wand of Fireballs"],
+ [23,"Wand of Illusion"],[28,"Wand of Lightning Bolts"],[33,"Wand of Magic Detection"],
+ [38,"Wand of Metal Detection"],[42,"Wand of Negation"],[47,"Wand of Paralyzation"],
+ [52,"Wand of Polymorphing"],[56,"Wand of Secret Door Detection"],[60,"Wand of Trap Detection"],
+ [61,"Staff of Commanding"],[63,"Staff of Dispelling"],[66,"Staff of the Druids"],
+ [69,"Staff of an Element"],[71,"Staff of Harming"],[78,"Staff of Healing"],[79,"Staff of Power"],
+ [82,"Snake Staff"],[85,"Staff of Striking"],[87,"Staff of Withering"],[88,"Staff of Wizardry"],
+ [90,"Rod of Cancellation"],[91,"Rod of Dominion"],[92,"Rod of Health"],[94,"Rod of Inertia"],
+ [95,"Rod of Parrying"],[96,"Rod of Victory"],[99,"Rod of Weaponry"],[100,"Rod of the Wyrm"]
+];
+const RC_RING_TABLE=[
+ [2,"Animal Control"],[8,"Delusion"],[9,"Djinni Summoning"],[13,"Ear"],[17,"Elemental Adaptation"],
+ [23,"Fire Resistance"],[26,"Holiness"],[27,"Human Control"],[32,"Invisibility"],[35,"Life Protection"],
+ [38,"Memory"],[40,"Plant Control"],[45,"Protection +1"],[48,"Protection +2"],[50,"Protection +3"],
+ [51,"Protection +4"],[55,"Quickness"],[56,"Regeneration"],[59,"Remedies"],[61,"Safety"],
+ [64,"Seeing"],[67,"Spell Eating"],[69,"Spell Storing"],[71,"Spell Turning"],[75,"Survival"],
+ [77,"Telekinesis"],[81,"Truth"],[84,"Truthfulness"],[86,"Truthlessness"],[91,"Water Walking"],
+ [96,"Weakness"],[98,"Wishes"],[100,"X-ray Vision"]
+];
+const RC_MISC_MAGIC_TABLE=[
+ [2,"Amulet of Protection from Crystal Balls and ESP"],[4,"Bag of Devouring"],[9,"Bag of Holding"],
+ [12,"Boat, Undersea"],[14,"Boots of Levitation"],[17,"Boots of Speed"],[19,"Boots of Traveling/Leaping"],
+ [20,"Bowl of Commanding Water Elementals"],[21,"Brazier of Commanding Fire Elementals"],[23,"Broom of Flying"],
+ [24,"Censer of Controlling Air Elementals"],[27,"Chime of Time"],[29,"Crystal Ball"],[30,"Crystal Ball with Clairaudience"],
+ [31,"Crystal Ball with ESP"],[33,"Displacer Cloak"],[34,"Drums of Panic"],[35,"Efreeti Bottle"],
+ [38,"Egg of Wonder"],[40,"Elven Boots"],[42,"Elven Cloak"],[43,"Flying Carpet"],[45,"Gauntlets of Ogre Power"],
+ [47,"Girdle of Giant Strength"],[49,"Helm of Alignment Changing"],[51,"Helm of Reading"],[52,"Helm of Telepathy"],
+ [53,"Helm of Teleportation"],[54,"Horn of Blasting"],[56,"Lamp, Hurricane"],[59,"Lamp of Long Burning"],
+ [61,"Medallion of ESP, 30' range"],[62,"Medallion of ESP, 90' range"],[63,"Mirror of Life Trapping"],
+ [66,"Muzzle of Training"],[68,"Nail, Finger"],[71,"Nail of Pointing"],[76,"Ointment"],[79,"Pouch of Security"],
+ [82,"Quill of Copying"],[86,"Rope of Climbing"],[88,"Scarab of Protection"],[91,"Slate of Identification"],
+ [92,"Stone of Controlling Earth Elementals"],[94,"Talisman of Elemental Travel"],[97,"Wheel of Floating"],
+ [98,"Wheel of Fortune"],[100,"Wheel, Square"]
+];
 function rcTablePick(table,roll=d(100)){for(const [max,value] of table)if(roll<=max)return value;return table.at(-1)?.[1]}
 function rcRollScaled(expr){
  let m=/^(\d+d\d+|\d+)(?:x(\d+))?$/i.exec(String(expr||"").replace(/\s+/g,""));
@@ -412,6 +455,26 @@ function rcMagicInventoryItem(category,name){
  return{n:`RC ${category}: ${name}`,kind:"gear",can:false,eq:false,rcMagic:true,rcCategory:category,rcItem:name,unsupportedMagic:true};
 }
 function rollRcPotion(){let name=rcTablePick(RC_POTION_TABLE);return rcMagicInventoryItem("potion",name)}
+function rcChargesFor(name){
+ if(name.startsWith("Wand "))return rollExpr("3d10");
+ if(name.startsWith("Staff ")||name==="Snake Staff")return rollExpr("2d20");
+ return null
+}
+function rollRcNamedMagic(category){
+ let table={scroll:RC_SCROLL_TABLE,wandStaffRod:RC_WAND_STAFF_ROD_TABLE,ring:RC_RING_TABLE,miscMagic:RC_MISC_MAGIC_TABLE}[category];
+ if(!table)return rcMagicInventoryItem(category,"Unresolved RC subtable item");
+ let name=rcTablePick(table),item=rcMagicInventoryItem(category,name),charges=rcChargesFor(name);
+ if(charges!=null)item.charges=charges;
+ if(category==="scroll"&&name==="Spell"){item.rcSpellScroll=true;item.spellCount=d(3)}
+ return item
+}
+function rollRcMagicAny(allowed=null){
+ let candidates=RC_MAGIC_MAIN.filter(([,c])=>!allowed||allowed.includes(c)),roll=d(100),cat;
+ if(!allowed)cat=rcTablePick(RC_MAGIC_MAIN,roll);
+ else{let expanded=[];for(const [,c] of candidates)expanded.push(c);cat=expanded[d(expanded.length)-1]}
+ if(cat==="potion")return rollRcPotion();
+ return rollRcNamedMagic(cat)
+}
 
 const RC_UNGUARDED_TREASURE=[
  {levels:[1,1],sp:"1d6x100",gp:[50,"1d6x10"],gems:[5,"1d6"],jewelry:[2,"1d6"],magic:[2,{any:1}]},
