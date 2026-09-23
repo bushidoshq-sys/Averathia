@@ -1122,6 +1122,44 @@ $("#start").onclick=begin;$("#recall").onclick=()=>returnEarly();
 renderClasses();renderAv();rerollAll();
 $("#attackBtn").onclick=resolveAttack;$("#potionBtn").onclick=usePotionCombat;$("#retreatBtn").onclick=retreatCombat;
 
+function numOr(v,f=0){v=Number(v);return Number.isFinite(v)?v:f}
+function migratePersistentCharacter(saved){
+ if(!saved||typeof saved!=="object")return null;
+ let s=saved;
+ if(s.className==="Magic-User")s.className="Arcanist";
+ if(!s.className&&s.mechanicsClass)s.className=s.mechanicsClass;
+ if(!s.mechanicsClass)s.mechanicsClass=s.className||"Fighter";
+ s.level=Math.max(1,Math.trunc(numOr(s.level,1)));
+ s.xp=Math.max(0,Math.trunc(numOr(s.xp,0)));
+ s.maxhp=Math.max(1,Math.trunc(numOr(s.maxhp,numOr(s.hp,1))));
+ s.hp=Math.max(0,Math.min(s.maxhp,Math.trunc(numOr(s.hp,s.maxhp))));
+ s.stats=(s.stats&&typeof s.stats==="object")?s.stats:{};
+ for(const k of ["STR","DEX","CON","INT","WIS","CHA"])s.stats[k]=Math.max(1,Math.trunc(numOr(s.stats[k],9)));
+ s.gp=Math.max(0,numOr(s.gp,numOr(s.gold,0)));s.gold=s.gp;
+ s.sp=Math.max(0,Math.trunc(numOr(s.sp,0)));s.cp=Math.max(0,Math.trunc(numOr(s.cp,0)));
+ s.inv=Array.isArray(s.inv)?s.inv.map(x=>typeof x==="string"?{n:x,kind:"gear",can:false,eq:false}:x).filter(Boolean):[];
+ s.ammo=(s.ammo&&typeof s.ammo==="object"&&!Array.isArray(s.ammo))?s.ammo:{};
+ for(const k of ["Arrows","Quarrels","Sling Stones"])s.ammo[k]=Math.max(0,Math.trunc(numOr(s.ammo[k],0)));
+ s.rations=Math.max(0,numOr(s.rations,0));
+ s.waterCapacity=Math.max(0,numOr(s.waterCapacity,0));
+ s.water=Math.max(0,Math.min(s.waterCapacity,numOr(s.water,0)));
+ s.lightMinutes=Math.max(0,numOr(s.lightMinutes,0));
+ s.trophies=Array.isArray(s.trophies)?s.trophies:[];
+ s.conditions=Array.isArray(s.conditions)?s.conditions:[];
+ s.sex=s.sex==="Female"?"Female":"Male";
+ s.avatar=Number.isInteger(s.avatar)&&s.avatar>=0&&s.avatar<=2?s.avatar:0;
+ s.spells=(s.spells&&typeof s.spells==="object")?s.spells:{};
+ s.spells.used=(s.spells.used&&typeof s.spells.used==="object"&&!Array.isArray(s.spells.used))?s.spells.used:{};
+ s.spells.buffs=Array.isArray(s.spells.buffs)?s.spells.buffs:[];
+ s.spells.memorized=(s.spells.memorized&&typeof s.spells.memorized==="object"&&!Array.isArray(s.spells.memorized))?s.spells.memorized:{};
+ s.spells.spentMem=Array.isArray(s.spells.spentMem)?s.spells.spentMem:[];
+ if(s.worldClock&&typeof s.worldClock==="object"){
+  s.worldClock.realAnchor=numOr(s.worldClock.realAnchor,Date.now());
+  s.worldClock.atAnchor=numOr(s.worldClock.atAnchor,Date.now());
+ }else s.worldClock=null;
+ return s
+}
+
 // Persistent save bootstrap
 (function loadPersistentCharacter(){
  try{
@@ -1129,8 +1167,9 @@ $("#attackBtn").onclick=resolveAttack;$("#potionBtn").onclick=usePotionCombat;$(
   if(!raw)return;
   const saved=JSON.parse(raw);
   if(!saved||!saved.name||!saved.className)return;
-  h=saved;
-  if(h.gp==null)h.gp=Number(h.gold)||0;if(h.sp==null)h.sp=0;if(h.cp==null)h.cp=0;setWalletCP(walletCP());
+  h=migratePersistentCharacter(saved);
+  if(!h)return;
+  setWalletCP(walletCP());
   chosenClass=h.className||h.mechanicsClass||"Fighter";
   sex=h.sex||"Male"; avatar=Number.isInteger(h.avatar)?h.avatar:0;
   $("#create").classList.add("hide");
