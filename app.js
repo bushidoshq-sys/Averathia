@@ -690,6 +690,7 @@ const CLERIC_NOW=[
  {id:"striking",name:"Striking",rc:"Striking",sl:3,kind:"buff",damageBonus:"1d6",durationTurns:1}
 ];
 const SPELLS={Arcanist:ARCANE_NOW,Elf:ARCANE_NOW.map(x=>({...x,id:"elf_"+x.id})),Cleric:CLERIC_NOW};
+const PREPARED_CASTERS=new Set(["Arcanist","Elf","Cleric"]);
 
 function spellSlotsFor(cls=h.className,level=h.level){
  let t=SPELL_PROGRESS[cls];if(!t)return[];
@@ -698,12 +699,22 @@ function spellSlotsFor(cls=h.className,level=h.level){
 function ensureSpellState(){
  if(!h.spells)h.spells={used:{},buffs:[],memorized:{},spentMem:[]};
  if(!h.spells.used)h.spells.used={};if(!h.spells.buffs)h.spells.buffs=[];if(!h.spells.memorized)h.spells.memorized={};if(!h.spells.spentMem)h.spells.spentMem=[];
+ if(h.className==="Cleric"&&!h.spells.clericPreparedV1){
+  let slots=spellSlotsFor("Cleric",h.level),list=SPELLS.Cleric||[],spent=new Set(h.spells.spentMem||[]);
+  for(let sl=1;sl<=slots.length;sl++){
+   let cap=slots[sl-1]||0,known=list.filter(s=>s.sl===sl),valid=new Set(known.map(s=>s.id)),mem=Array.isArray(h.spells.memorized[sl])?h.spells.memorized[sl].filter(id=>valid.has(id)).slice(0,cap):[];
+   if(cap&&known.length)while(mem.length<cap)mem.push(known[0].id);
+   h.spells.memorized[sl]=mem;
+   let used=Math.min(Number(h.spells.used[sl])||0,mem.length);for(let i=0;i<used;i++)spent.add(`${sl}:${i}`);
+  }
+  h.spells.spentMem=[...spent];h.spells.used={};h.spells.clericPreparedV1=true;
+ }
 }
 function availableCombatSpells(){
  ensureSpellState();let slots=spellSlotsFor(),list=SPELLS[h.className]||[];
  return list.filter(s=>{
    if(s.sl>slots.length)return false;
-   if(["Arcanist","Elf"].includes(h.className)){
+   if(PREPARED_CASTERS.has(h.className)){
      let mem=h.spells.memorized[s.sl]||[],spent=h.spells.spentMem||[];
      return mem.some((id,i)=>id===s.id&&!spent.includes(`${s.sl}:${i}`));
    }
@@ -712,7 +723,7 @@ function availableCombatSpells(){
 }
 function consumeSpell(s){
  ensureSpellState();
- if(["Arcanist","Elf"].includes(h.className)){
+ if(PREPARED_CASTERS.has(h.className)){
    let mem=h.spells.memorized[s.sl]||[],spent=h.spells.spentMem||[];
    let i=mem.findIndex((id,i)=>id===s.id&&!spent.includes(`${s.sl}:${i}`));
    if(i<0)return false;spent.push(`${s.sl}:${i}`);h.spells.spentMem=spent;return true;
@@ -986,7 +997,7 @@ const SPELL_BRIEFS={
  "Mending Light":"Restores HP.","Battle Blessing":"Combat support buff.","Guardian Prayer":"Defensive support buff.","Greater Mending":"Restores more HP.",
  "Warding Light":"Defensive support.","War Prayer":"Combat support.","Restoring Grace":"Healing support.","Saint's Aegis":"Strong defensive support."
 };
-function classHasSkills(){return ["Thief","Elf","Dwarf","Arcanist"].includes(h?.className)}
+function classHasSkills(){return ["Thief","Elf","Dwarf","Arcanist","Cleric"].includes(h?.className)}
 function renderSkills(){
  let nav=$("#skillsNav");if(nav)nav.classList.toggle("hide",!classHasSkills());
  let box=$("#skillsContent");if(!box||!h)return;
@@ -999,25 +1010,25 @@ function renderSkills(){
   if(h.level>=10)out.push(`<div class=skillCard><b>Magic-user Scrolls</b><span class=small>Can attempt scroll use; 10% backfire chance.</span></div>`);
  }
  for(const [name,desc] of (CLASS_SPECIALS[h.className]||[]))out.push(`<div class=skillCard><b>${name}</b><span class=small>${desc}</span></div>`);
- if(["Arcanist","Elf"].includes(h.className)){
-  ensureSpellState();let slots=spellSlotsFor(),list=SPELLS[h.className]||[];
-  out.push(`<div class=skillCard><b>Memorized Spells</b><span class=small>Choose the spells prepared for the current daily slots. Rest restores expended memorized spells.</span></div>`);
+ if(PREPARED_CASTERS.has(h.className)){
+  ensureSpellState();let slots=spellSlotsFor(),list=SPELLS[h.className]||[],prepLocked=!!h.trip||!!h.combat||!!h.restUntil||(h.spells.spentMem||[]).length>0;
+  out.push(`<div class=skillCard><b>Memorized Spells</b><span class=small>Choose the spells prepared for the current daily slots. Rest restores expended memorized spells.${prepLocked?" Loadout is locked until you are back in town with no expended prepared slots.":""}</span></div>`);
   for(let sl=1;sl<=slots.length;sl++){
    let cap=slots[sl-1]||0;if(!cap)continue;
    let known=list.filter(s=>s.sl===sl),mem=(h.spells.memorized?.[sl]||[]);
    out.push(`<div class=skillCard><b>Spell Level ${sl} — ${mem.length}/${cap} memorized</b>`+
-    known.map(s=>{let copies=mem.filter(id=>id===s.id).length;return `<div class=spellPick><span>${s.name}<br><span class=small>${SPELL_BRIEFS[s.name]||"Spell effect."} · Prepared: ${copies}</span></span><span><button data-mem-add="${s.id}" data-sl="${sl}" ${mem.length>=cap?"disabled":""}>+</button> <button data-mem-remove="${s.id}" data-sl="${sl}" ${copies?"":"disabled"}>−</button></span></div>`}).join("")+`</div>`);
+    known.map(s=>{let copies=mem.filter(id=>id===s.id).length;return `<div class=spellPick><span>${s.name}<br><span class=small>${SPELL_BRIEFS[s.name]||"Spell effect."} · Prepared: ${copies}</span></span><span><button data-mem-add="${s.id}" data-sl="${sl}" ${mem.length>=cap||prepLocked?"disabled":""}>+</button> <button data-mem-remove="${s.id}" data-sl="${sl}" ${!copies||prepLocked?"disabled":""}>−</button></span></div>`}).join("")+`</div>`);
   }
  }
  box.innerHTML=out.join("")||`<div class=small>No class skills or special abilities to manage.</div>`;
  $$("[data-mem-add]").forEach(b=>b.onclick=()=>changeMemorized(b.dataset.memAdd,+b.dataset.sl,1)); $$("[data-mem-remove]").forEach(b=>b.onclick=()=>changeMemorized(b.dataset.memRemove,+b.dataset.sl,-1));
 }
 function changeMemorized(id,sl,delta){
- ensureSpellState();h.spells.memorized=h.spells.memorized||{};let a=h.spells.memorized[sl]||[],cap=spellSlotsFor()[sl-1]||0;
+ ensureSpellState();if(h.trip||h.combat||h.restUntil||(h.spells.spentMem||[]).length>0)return renderSkills();
+ h.spells.memorized=h.spells.memorized||{};let a=h.spells.memorized[sl]||[],cap=spellSlotsFor()[sl-1]||0;
  if(delta>0&&a.length<cap)a.push(id);
  if(delta<0){let i=a.lastIndexOf(id);if(i>=0)a.splice(i,1)}
  h.spells.memorized[sl]=a;
- h.spells.spentMem=(h.spells.spentMem||[]).filter(k=>!k.startsWith(sl+":"));
  save();renderSkills();
 }
 function pickEvent(){
