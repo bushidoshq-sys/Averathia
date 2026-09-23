@@ -1166,10 +1166,11 @@ function migratePersistentCharacter(saved){
   const raw=localStorage.getItem("averathia-v041");
   if(!raw)return;
   const saved=JSON.parse(raw);
-  if(!saved||!saved.name||!saved.className)return;
+  if(!saved||!saved.name||(!saved.className&&!saved.mechanicsClass))return;
   h=migratePersistentCharacter(saved);
   if(!h)return;
   setWalletCP(walletCP());
+  localStorage.setItem("averathia-v041",JSON.stringify(h));
   chosenClass=h.className||h.mechanicsClass||"Fighter";
   sex=h.sex||"Male"; avatar=Number.isInteger(h.avatar)?h.avatar:0;
   $("#create").classList.add("hide");
