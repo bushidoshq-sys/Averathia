@@ -705,7 +705,7 @@ function ensureSpellState(){
   let slots=spellSlotsFor("Cleric",h.level),list=SPELLS.Cleric||[],spent=new Set(h.spells.spentMem||[]);
   for(let sl=1;sl<=slots.length;sl++){
    let cap=slots[sl-1]||0,known=list.filter(s=>s.sl===sl),valid=new Set(known.map(s=>s.id)),mem=Array.isArray(h.spells.memorized[sl])?h.spells.memorized[sl].filter(id=>valid.has(id)).slice(0,cap):[];
-   if(cap&&known.length)while(mem.length<cap)mem.push(known[0].id);
+   if(cap&&known.length)while(mem.length<cap)mem.push(known[mem.length%known.length].id);
    h.spells.memorized[sl]=mem;
    let used=Math.min(Number(h.spells.used[sl])||0,mem.length);for(let i=0;i<used;i++)spent.add(`${sl}:${i}`);
   }
