@@ -436,6 +436,38 @@ const RC_MISC_MAGIC_TABLE=[
  [92,"Stone of Controlling Earth Elementals"],[94,"Talisman of Elemental Travel"],[97,"Wheel of Floating"],
  [98,"Wheel of Fortune"],[100,"Wheel, Square"]
 ];
+const RC_ARMOR_SIZE=[[68,"Human"],[81,"Dwarf"],[91,"Elf"],[98,"Halfling"],[100,"Giant"]];
+const RC_ARMOR_TYPE=[
+ [10,"Leather Armor"],[17,"Scale Mail"],[30,"Chain Mail"],[39,"Banded Mail"],[50,"Plate Mail"],
+ [55,"Suit Armor"],[75,"Shield"],[77,"Scale Mail & Shield"],[85,"Chain Mail & Shield"],
+ [90,"Banded Mail & Shield"],[100,"Plate Mail & Shield"]
+];
+const RC_ARMOR_SPECIAL=[[7,"Absorption"],[17,"Charm"],[32,"Cure Wounds"],[42,"Electricity"],[47,"Energy Drain"],[50,"Ethereality"],[60,"Fly"],[66,"Gaseous Form"],[75,"Haste"],[85,"Invisibility"],[93,"Reflection"],[100,"Remove Curse"]];
+const RC_SIMPLE_MAGIC_MISSILE=[
+ [6,"Arrows +1 (2d10)"],[11,"Arrows +2 (2d6)"],[15,"Arrows +3 (2d4)"],[18,"Arrow +1, silver"],[20,"Arrow +2, silver"],[21,"Arrow +3, silver"],
+ [25,"Blowgun +1"],[28,"Bola +1"],[33,"Short Bow +1"],[37,"Short Bow +2"],[40,"Short Bow +3"],
+ [45,"Long Bow +1"],[49,"Long Bow +2"],[52,"Long Bow +3"],[57,"Light Crossbow +1"],[61,"Light Crossbow +2"],[64,"Light Crossbow +3"],
+ [69,"Heavy Crossbow +1"],[73,"Heavy Crossbow +2"],[76,"Heavy Crossbow +3"],[82,"Quarrels +1 (2d10)"],[87,"Quarrels +2 (2d6)"],
+ [91,"Quarrels +3 (2d4)"],[94,"Quarrel +1, silver"],[96,"Quarrel +2, silver"],[97,"Quarrel +3, silver"],[100,"Sling +1"]
+];
+const RC_SIMPLE_MAGIC_SWORD=[
+ [10,"Short Sword +1"],[20,"Short Sword +2"],[30,"Short Sword +3"],[34,"Sword +1"],[35,"Sword +1, +3 vs dragonkind"],
+ [36,"Sword +1, +3 vs giantkind"],[37,"Sword +1, +3 vs lycanthropes"],[38,"Sword +1, +3 vs regenerating monsters"],
+ [39,"Sword +1, +3 vs spellcasters"],[40,"Sword +1, +3 vs undead"],[50,"Sword +2"],[60,"Sword +3"],[64,"Bastard Sword +1"],
+ [65,"Bastard Sword +1, +3 vs dragonkind"],[66,"Bastard Sword +1, +3 vs giantkind"],[67,"Bastard Sword +1, +3 vs lycanthropes"],
+ [68,"Bastard Sword +1, +3 vs regenerating monsters"],[69,"Bastard Sword +1, +3 vs spellcasters"],[70,"Bastard Sword +1, +3 vs undead"],
+ [75,"Bastard Sword +2"],[80,"Bastard Sword +3"],[84,"Two-Handed Sword +1"],[85,"Two-Handed Sword +1, +3 vs dragonkind"],
+ [86,"Two-Handed Sword +1, +3 vs giantkind"],[87,"Two-Handed Sword +1, +3 vs lycanthropes"],[88,"Two-Handed Sword +1, +3 vs regenerating monsters"],
+ [89,"Two-Handed Sword +1, +3 vs spellcasters"],[90,"Two-Handed Sword +1, +3 vs undead"],[95,"Two-Handed Sword +2"],[100,"Two-Handed Sword +3"]
+];
+const RC_SIMPLE_MAGIC_MISC_WEAPON=[
+ [5,"Battle Axe +1"],[8,"Battle Axe +2"],[10,"Battle Axe +3"],[15,"Hand Axe +1"],[18,"Hand Axe +2"],[20,"Hand Axe +3"],
+ [25,"Dagger +1"],[28,"Dagger +2"],[30,"Dagger +3"],[35,"Throwing Hammer +1"],[38,"Throwing Hammer +2"],[40,"Throwing Hammer +3"],
+ [45,"War Hammer +1"],[48,"War Hammer +2"],[50,"War Hammer +3"],[55,"Mace +1"],[58,"Mace +2"],[60,"Mace +3"],
+ [65,"Polearm +1"],[68,"Polearm +2"],[70,"Polearm +3"],[72,"Horned Shield +1"],[75,"Knife Shield +1"],[78,"Sword Shield +1"],
+ [80,"Tusked Shield +1"],[85,"Spear +1"],[88,"Spear +2"],[90,"Spear +3"],[95,"Staff +1"],[98,"Staff +2"],[100,"Staff +3"]
+];
+
 function rcTablePick(table,roll=d(100)){for(const [max,value] of table)if(roll<=max)return value;return table.at(-1)?.[1]}
 function rcRollScaled(expr){
  let m=/^(\d+d\d+(?:[+-]\d+)?|\d+)(?:x(\d+))?$/i.exec(String(expr||"").replace(/\s+/g,""));
@@ -460,7 +492,24 @@ function rcChargesFor(name){
  if(name.startsWith("Staff ")||name==="Snake Staff")return rollExpr("2d20");
  return null
 }
+function rcArmorBonusFor(type){
+ let r=d(100),group=/Shield/.test(type)&&!/Mail/.test(type)?"shield":/Plate|Suit/.test(type)?"plate":/Chain/.test(type)?"chain":"light";
+ let cuts=group==="shield"?[[40,1],[67,2],[84,3],[94,4],[100,5]]:group==="plate"?[[50,1],[74,2],[88,3],[96,4],[100,5]]:group==="chain"?[[60,1],[81,2],[92,3],[98,4],[100,5]]:[[70,1],[88,2],[96,3],[99,4],[100,5]];
+ return rcTablePick(cuts,r)
+}
+function rollRcArmorShield(){
+ let size=rcTablePick(RC_ARMOR_SIZE),type=rcTablePick(RC_ARMOR_TYPE),bonus=rcArmorBonusFor(type),chance={1:10,2:15,3:20,4:25,5:30}[bonus],power=rcChance(chance)?rcTablePick(RC_ARMOR_SPECIAL):null,cursed=d(8)===1;
+ let name=`${size} ${type} ${cursed?"cursed ":""}+${bonus}${power?" — "+power:""}`;
+ return{n:name,kind:"gear",can:false,eq:false,rcMagic:true,rcCategory:"armorShield",rcItem:type,rcSize:size,magicBonus:bonus,rcSpecialPower:power,cursed,unsupportedMagic:true}
+}
+function rollRcSimpleMagicWeapon(category){
+ let table=category==="missileWeaponOrMissile"?RC_SIMPLE_MAGIC_MISSILE:category==="sword"?RC_SIMPLE_MAGIC_SWORD:RC_SIMPLE_MAGIC_MISC_WEAPON;
+ let name=rcTablePick(table);
+ return{n:name,kind:"gear",can:false,eq:false,rcMagic:true,rcCategory:category,rcItem:name,unsupportedMagic:true,rcWeaponGeneration:"simple"}
+}
 function rollRcNamedMagic(category){
+ if(category==="armorShield")return rollRcArmorShield();
+ if(["missileWeaponOrMissile","sword","miscWeapon"].includes(category))return rollRcSimpleMagicWeapon(category);
  let table={scroll:RC_SCROLL_TABLE,wandStaffRod:RC_WAND_STAFF_ROD_TABLE,ring:RC_RING_TABLE,miscMagic:RC_MISC_MAGIC_TABLE}[category];
  if(!table)return rcMagicInventoryItem(category,"Unresolved RC subtable item");
  let name=rcTablePick(table),item=rcMagicInventoryItem(category,name),charges=rcChargesFor(name);
@@ -471,7 +520,7 @@ function rollRcNamedMagic(category){
 function rollRcMagicAny(allowed=null){
  let candidates=RC_MAGIC_MAIN.filter(([,c])=>!allowed||allowed.includes(c)),roll=d(100),cat;
  if(!allowed)cat=rcTablePick(RC_MAGIC_MAIN,roll);
- else{let expanded=[];for(const [,c] of candidates)expanded.push(c);cat=expanded[d(expanded.length)-1]}
+ else{let guard=0;do{cat=rcTablePick(RC_MAGIC_MAIN)}while(!allowed.includes(cat)&&++guard<100);if(!allowed.includes(cat))cat=allowed[d(allowed.length)-1]}
  if(cat==="potion")return rollRcPotion();
  return rollRcNamedMagic(cat)
 }
