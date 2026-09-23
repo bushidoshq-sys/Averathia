@@ -111,7 +111,7 @@ function refresh(){if(h?.deadUntil&&Date.now()<h.deadUntil){renderDeathPage();re
  if($("#restStatus"))$("#restStatus").textContent=h.deadUntil?`Recall: ${Math.ceil((h.deadUntil-Date.now())/60000)} min`:h.restUntil?`Resting: ${Math.max(0,Math.ceil((h.restUntil-Date.now())/60000))} min RT remaining`:"";
  let classLabel=["Elf","Dwarf"].includes(h.className)?h.className:`Human ${h.className}`;$("#top").innerHTML=`<b>${h.name}</b> — Level ${h.level} ${classLabel} &nbsp; ❤️ ${h.hp}/${h.maxhp} &nbsp; ⭐ ${h.xp} XP${h.level<classLevelData().cap?` / ${classLevelData().xp[h.level]}`:" · MAX"} &nbsp; 🪙 ${Math.trunc(h.gp ?? h.gold ?? 0)} GP · ${Math.trunc(h.sp ?? 0)} SP · ${Math.trunc(h.cp ?? 0)} CP`;let av=chibiHTML(h.sex,h.avatar,true);$("#townAvatar").innerHTML=$("#sheetAvatar").innerHTML=av;let coins=`${Math.trunc(h.gp||0)} GP · ${Math.trunc(h.sp||0)} SP · ${Math.trunc(h.cp||0)} CP`;$("#sheetData").innerHTML=`<b>${h.name}</b> &nbsp; ${h.sex} · ${["Elf","Dwarf"].includes(h.className)?h.className:`Human ${h.className}`}`;let order=["STR","DEX","CON","INT","WIS","CHA"];$("#sheetStats").innerHTML=order.map(k=>`<div class=stat>${k}<br><b>${h.stats[k]}</b></div>`).join("");let ammo=`Arrows: ${ammoCount("Arrows")} · Quarrels: ${ammoCount("Quarrels")} · Sling stones: ${ammoCount("Sling Stones")}`;$("#sheetResources").innerHTML=`Rations: ${h.rations.toFixed(2)} days · Water: ${h.water.toFixed(2)}/${h.waterCapacity} skins · Light: ${(h.lightMinutes/60).toFixed(2)} h · ${ammo}`;sheetInventory();renderShop();$("#requirements").innerHTML=`<p>Needed for ${mins} min: food ${(mins/1440).toFixed(3)} days · water ${(4*mins/1440).toFixed(3)} skins · light ${(mins*2/3).toFixed(1)} min.</p>`}
 function renderDeathPage(){if(!h?.deadUntil)return;clearTimeout(timer);$$(".page").forEach(x=>x.classList.add("hide"));let p=$("#death");if(!p)return;p.classList.remove("hide");let left=Math.max(0,h.deadUntil-Date.now()),m=Math.floor(left/60000),s=Math.floor(left/1000)%60;$("#graveName").textContent=h.name;$("#deathCountdown").textContent=`${m}:${String(s).padStart(2,"0")}`;$("#top").innerHTML=`<b>${h.name}</b> — DEAD`;timer=setTimeout(()=>{if(Date.now()>=h.deadUntil){h.deadUntil=null;h.hp=Math.max(1,h.maxhp);h.trip=null;h.combat=null;save();page("town")}else renderDeathPage()},500)}
-function page(id){if(h?.deadUntil&&Date.now()<h.deadUntil&&id!=="death"){renderDeathPage();return}$$(".page").forEach(x=>x.classList.add("hide"));$("#"+id).classList.remove("hide");$$("[data-page]").forEach(x=>x.classList.toggle("on",x.dataset.page===id));refresh()}
+function page(id){if(h?.deadUntil&&Date.now()<h.deadUntil&&id!=="death"&&id!=="settings"){renderDeathPage();return}$(".page").forEach(x=>x.classList.add("hide"));$("#"+id).classList.remove("hide");$("[data-page]").forEach(x=>x.classList.toggle("on",x.dataset.page===id));if(id!=="settings")refresh()}
 $$("[data-page]").forEach(b=>b.onclick=()=>page(b.dataset.page));$$("[data-go]").forEach(b=>b.onclick=()=>page(b.dataset.go));
 function home(){if(!h)return;h.water=h.waterCapacity;save()}
 const RANGED_WEAPONS=new Set(["Short Bow","Long Bow","Light Crossbow","Heavy Crossbow","Sling"]);
@@ -1142,6 +1142,16 @@ function returnEarly(msg="You decide to return early."){
  save();page("depart");refresh();tick()
 }
 $("#start").onclick=begin;$("#recall").onclick=()=>returnEarly();
+function openResetCharacterConfirm(){let box=$("#resetCharacterConfirm");if(box)box.classList.remove("hide")}
+function closeResetCharacterConfirm(){let box=$("#resetCharacterConfirm");if(box)box.classList.add("hide")}
+function permanentlyResetCharacter(){
+ clearTimeout(timer);
+ localStorage.removeItem("averathia-v041");
+ location.reload();
+}
+$("#resetCharacter").onclick=openResetCharacterConfirm;
+$("#cancelResetCharacter").onclick=closeResetCharacterConfirm;
+$("#confirmResetCharacter").onclick=permanentlyResetCharacter;
 renderClasses();renderAv();rerollAll();
 $("#attackBtn").onclick=resolveAttack;$("#potionBtn").onclick=usePotionCombat;$("#retreatBtn").onclick=retreatCombat;
 
