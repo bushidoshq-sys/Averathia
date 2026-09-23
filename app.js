@@ -878,9 +878,9 @@ function renderSpellButton(){
   menu.innerHTML=spells.flatMap(s=>{
    let oor=s.enemyTarget&&Number.isFinite(s.rangeFeet)&&combatDistance()>s.rangeFeet,rt=Number.isFinite(s.rangeFeet)?` · ${s.rangeFeet} ft`:"";
    if(s.kind==="hold"){
-    let validCount=validHoldTargets(s).length,groupDisabled=oor||validCount<2;
+    let valid=validHoldTargets(s),validCount=valid.length,current=c.enemies[c.target],singleValid=!!current&&valid.includes(current),groupDisabled=oor||validCount<2;
     return [
-     `<button class="spellChoice" data-cast-spell="${s.id}" data-hold-mode="single" ${oor||validCount<1?"disabled":""}><b>${s.name}</b> <span class="small">Single · -2 save${rt}${oor?" · OUT OF RANGE":""}</span></button>`,
+     `<button class="spellChoice" data-cast-spell="${s.id}" data-hold-mode="single" ${oor||!singleValid?"disabled":""}><b>${s.name}</b> <span class="small">Single · -2 save${rt}${!singleValid?" · SELECT HUMANOID TARGET":""}${oor?" · OUT OF RANGE":""}</span></button>`,
      `<button class="spellChoice" data-cast-spell="${s.id}" data-hold-mode="group" ${groupDisabled?"disabled":""}><b>${s.name}</b> <span class="small">Group · choose up to 4${rt}${validCount<2?" · NEEDS 2+ TARGETS":""}${oor?" · OUT OF RANGE":""}</span></button>`
     ]
    }
