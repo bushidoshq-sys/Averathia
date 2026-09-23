@@ -22,25 +22,35 @@ jobs:
         with:
           python-version: "3.12"
 
-      - name: Install Pillow
-        run: python -m pip install --upgrade pillow
+      - name: Restore original Fighter assets
+        run: |
+          git checkout b3854cde4553dc5123fbea4de07ebb3d269df10c -- \
+            fighter_male_1_full.png fighter_male_1_head.png fighter_male_1_sprite.png \
+            fighter_male_2_full.png fighter_male_2_head.png fighter_male_2_sprite.png \
+            fighter_male_3_full.png fighter_male_3_head.png fighter_male_3_sprite.png \
+            fighter_female_1_full.png fighter_female_1_head.png fighter_female_1_sprite.png \
+            fighter_female_2_full.png fighter_female_2_head.png fighter_female_2_sprite.png \
+            fighter_female_3_full.png fighter_female_3_head.png fighter_female_3_sprite.png
 
-      - name: Remove dark backgrounds from Fighter Male and Female
+      - name: Install background-removal tools
+        run: python -m pip install --upgrade pillow "rembg[cpu]"
+
+      - name: Remove backgrounds from Fighter Male and Female
         run: |
           python .github/scripts/remove_black_bg.py \
             'fighter_male_*_*.png' \
             'fighter_female_*_*.png'
 
-      - name: Build Fighter Male package
-        run: zip -j fighter_male_transparent.zip fighter_male_*_*.png
-
-      - name: Build Fighter Female package
-        run: zip -j fighter_female_transparent.zip fighter_female_*_*.png
+      - name: Build Fighter packages
+        run: |
+          rm -f fighter_male_transparent.zip fighter_female_transparent.zip
+          zip -j fighter_male_transparent.zip fighter_male_*_*.png
+          zip -j fighter_female_transparent.zip fighter_female_*_*.png
 
       - name: Upload Fighter Male files
         uses: actions/upload-artifact@v4
         with:
-          name: fighter-male-transparent
+          name: fighter-male-transparent-v2
           path: |
             fighter_male_*_*.png
             fighter_male_transparent.zip
@@ -48,7 +58,7 @@ jobs:
       - name: Upload Fighter Female files
         uses: actions/upload-artifact@v4
         with:
-          name: fighter-female-transparent
+          name: fighter-female-transparent-v2
           path: |
             fighter_female_*_*.png
             fighter_female_transparent.zip
@@ -62,5 +72,5 @@ jobs:
             echo "No image changes."
             exit 0
           fi
-          git commit -m "Make Fighter character backgrounds transparent"
+          git commit -m "Improve transparent Fighter character assets"
           git push
