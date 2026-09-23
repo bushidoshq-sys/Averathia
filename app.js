@@ -1097,7 +1097,7 @@ function applyEventChoice(ev,ch){
  if(coin)addCoins(coin[0]||0,coin[1]||0,coin[2]||0)
  let result=ch?.result||"observed";
  journal({id:ev.id,type:ev.type,title:ev.title,text:ev.text,choice:ch?.label||null,result,xp,coins:coin});
- addlog(`${ev.title}: ${ch?.label?ch.label+". ":""}${xp?`+${xp} XP. `:""}${coin&&(coin[0]||coin[1]||coin[2])?`${coin[0]||0} GP, ${coin[1]||0} SP, ${coin[2]||0} CP.`:""}`);
+ let rewardText=`${xp?`+${xp} XP. `:""}${coin&&(coin[0]||coin[1]||coin[2])?`${coin[0]||0} GP, ${coin[1]||0} SP, ${coin[2]||0} CP.`:""}`.trim(),summary=ch?.label?`${ch.label}.${rewardText?` ${rewardText}`:""}`:(rewardText||ev.text||"Observed.");addlog(`${ev.title}: ${summary}`);
  if(result==="combat"){h.pendingEvent=null;save();if(h.trip?.mode==="auto")autonomousCombat(false);else makeCombat();return}
  h.pendingEvent=null;endTripPause();save();renderPendingEvent();if(resumeAfter)tick()
 }
