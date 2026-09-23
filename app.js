@@ -857,7 +857,6 @@ function resetDailySpells(){ensureSpellState();h.spells.used={};h.spells.spentMe
 function beginHoldGroupSelection(s,menu){
  let valid=validHoldTargets(s),chosen=[];
  if(valid.length<2){menu.classList.add("hide");return renderCombat()}
- if(valid.length<=4){menu.classList.add("hide");castCombatSpell(s.id,"group",null,valid.map(q=>q.id));return}
  const draw=()=>{
   let picked=new Set(chosen);
   menu.innerHTML=`<div class="small"><b>${s.name}</b> — choose 2–4 humanoid targets. Selected: ${chosen.length}/4.</div>`+
@@ -907,7 +906,7 @@ function renderSpellButton(){
   menu.classList.toggle("hide");
   $$("[data-cast-spell]").forEach(x=>x.onclick=()=>{
    let chosen=spells.find(s=>s.id===x.dataset.castSpell),holdMode=x.dataset.holdMode||null;
-   if(chosen?.kind==="hold"&&holdMode==="group"&&validHoldTargets(chosen).length>4)return beginHoldGroupSelection(chosen,menu);
+   if(chosen?.kind==="hold"&&holdMode==="group")return beginHoldGroupSelection(chosen,menu);
    if(chosen?.missilesByLevel&&magicMissileCount()>1&&living().length>1)return beginMissileAllocation(chosen,menu);
    menu.classList.add("hide");castCombatSpell(x.dataset.castSpell,holdMode)
   })
