@@ -179,31 +179,59 @@ function activeWeapon(){
  return w.ranged&&ammoCount(ammoTypeFor(w.ranged.n))>0?w.ranged:(w.melee||w.ranged)
 }
 function combatStats(){let weapon=activeWeapon(),armor=h.inv.find(x=>x.kind==="armor"&&x.eq),shield=h.inv.find(x=>x.kind==="shield"&&x.eq),wd=weapon?itemData(weapon.n):{},ad=armor?itemData(armor.n):{},name=weapon?.n||"Unarmed",dexAC=mod(h.stats.DEX);return{weapon:name,weaponItem:weapon,damage:wd.damage||"1d2",attackMode:attackModeFor(name),rangeText:weaponRangeText(name),armor:armor?.n||"None",shield:shield?.n||"None",dexAC,ac:(ad.ac??9)+(shield?-1:0)-dexAC}}
+function isInventoryEquipable(x){return !!x?.can&&x?.kind!=="clothing"}
+function normalizeInventoryOrder(){
+ if(!h||!Array.isArray(h.inv))return;
+ let equip=[],other=[];for(const x of h.inv)(isInventoryEquipable(x)?equip:other).push(x);
+ h.inv=[...equip,...other]
+}
+function waterskinSummaryRows(){
+ let cap=Math.max(0,Math.trunc(h?.waterCapacity||0)),water=Math.max(0,Math.min(cap,Number(h?.water)||0));
+ let full=Math.min(cap,Math.floor(water+1e-9)),partial=Math.max(0,water-full),used=full+(partial>0.0001?1:0),empty=Math.max(0,cap-used),rows=[];
+ if(full)rows.push(`<div class="sheetEquipRow"><span>Full Waterskin ×${full}</span><span></span></div>`);
+ if(partial>0.0001)rows.push(`<div class="sheetEquipRow"><span>Half-drunk Waterskin (${partial.toFixed(2)})</span><span></span></div>`);
+ if(empty)rows.push(`<div class="sheetEquipRow"><span>Empty Waterskin ×${empty}</span><span></span></div>`);
+ return rows.join("")
+}
+function discardInventoryItem(i){let q=h.inv[i];if(!q||q.kind!=="clothing")return;h.inv.splice(i,1);save()}
 function sheetInventory(){
- let cs=combatStats(),box=$("#sheetInv");
- box.innerHTML=`<div class="combatSummary">Combat: ${cs.weapon} (${cs.damage}) · AC ${cs.ac}${cs.shield!=="None"?" · Shield":""}</div>`+
- (h.inv.length?h.inv.map((x,i)=>`<div class="sheetEquipRow invDrag" data-inv="${i}"><span>☰ ${x.eq?"✓ ":""}${x.n}</span>${x.can?`<button data-eq="${i}">${x.eq?"Unequip":"Equip"}</button>`:"<span></span>"}</div>`).join(""):"No purchased equipment.");
- enableInventoryDrag(box);
+ normalizeInventoryOrder();
+ let cs=combatStats(),box=$("#sheetInv"),tabs=`<div class="row inventoryTabs"><button data-invtab="Inventory" class="${inventoryTab==="Inventory"?"on":""}">Inventory</button><button data-invtab="Clothing" class="${inventoryTab==="Clothing"?"on":""}">Clothing</button></div>`;
+ if(inventoryTab==="Clothing"){
+  let rows=h.inv.map((x,i)=>({x,i})).filter(o=>o.x.kind==="clothing");
+  box.innerHTML=`<div class="combatSummary">Combat: ${cs.weapon} (${cs.damage}) · AC ${cs.ac}${cs.shield!=="None"?" · Shield":""}</div>`+tabs+
+   (rows.length?rows.map(({x,i})=>`<div class="sheetEquipRow"><span>${x.n}${x.starterClothing?" · starter":""}</span><button data-discard="${i}">Discard</button></div>`).join(""):"No clothing.");
+  $$("[data-discard]").forEach(b=>b.onclick=()=>discardInventoryItem(+b.dataset.discard))
+ }else{
+  let equip=h.inv.map((x,i)=>({x,i})).filter(o=>isInventoryEquipable(o.x)),other=h.inv.map((x,i)=>({x,i})).filter(o=>!isInventoryEquipable(o.x)&&o.x.kind!=="clothing"&&o.x.n!=="Waterskin");
+  box.innerHTML=`<div class="combatSummary">Combat: ${cs.weapon} (${cs.damage}) · AC ${cs.ac}${cs.shield!=="None"?" · Shield":""}</div>`+tabs+
+   `<div class="inventoryGroupLabel">Equippable</div>`+
+   (equip.length?equip.map(({x,i},order)=>`<div class="sheetEquipRow invDrag" data-equip-index="${order}" data-inv="${i}"><span>☰ ${x.eq?"✓ ":""}${x.n}</span><button data-eq="${i}">${x.eq?"Unequip":"Equip"}</button></div>`).join(""):"<div class=small>None.</div>")+
+   `<div class="inventoryGroupLabel">Gear & Items</div>`+waterskinSummaryRows()+
+   (other.length?other.map(({x})=>`<div class="sheetEquipRow"><span>${x.n}</span><span></span></div>`).join(""):"<div class=small>No other items.</div>");
+  enableInventoryDrag(box)
+ }
+ $$("[data-invtab]").forEach(b=>b.onclick=()=>{inventoryTab=b.dataset.invtab;sheetInventory()})
 }
 function enableInventoryDrag(box){
  let drag=null,gap=document.createElement("div");gap.className="invGap";
- $$(".invDrag").forEach(row=>row.onpointerdown=e=>{
+ box.querySelectorAll(".invDrag").forEach(row=>row.onpointerdown=e=>{
    if(e.target.closest("button"))return;
-   drag=row;row.classList.add("dragging");row.setPointerCapture?.(e.pointerId);
+   drag=row;row.classList.add("dragging");row.setPointerCapture?.(e.pointerId)
  });
  box.onpointermove=e=>{
    if(!drag)return;e.preventDefault();
    let rows=[...box.querySelectorAll(".invDrag:not(.dragging)")],before=rows.find(r=>e.clientY<r.getBoundingClientRect().top+r.offsetHeight/2);
-   if(before)box.insertBefore(gap,before);else box.appendChild(gap);
+   if(before)box.insertBefore(gap,before);else{let last=rows.at(-1);if(last)last.insertAdjacentElement("afterend",gap)}
  };
- box.onpointerup=e=>{
+ box.onpointerup=()=>{
    if(!drag)return;
-   let from=+drag.dataset.inv,rows=[...box.querySelectorAll(".invDrag:not(.dragging)")];
-   let to=gap.parentNode?rows.filter(r=>r.compareDocumentPosition(gap)&Node.DOCUMENT_POSITION_FOLLOWING).length:from;
-   let item=h.inv.splice(from,1)[0];if(to>from)to--;h.inv.splice(Math.max(0,Math.min(h.inv.length,to)),0,item);
-   drag.classList.remove("dragging");gap.remove();drag=null;save();
+   let equip=h.inv.filter(isInventoryEquipable),rest=h.inv.filter(x=>!isInventoryEquipable(x)),from=+drag.dataset.equipIndex;
+   let others=[...box.querySelectorAll(".invDrag:not(.dragging)")],to=gap.parentNode?others.filter(r=>r.compareDocumentPosition(gap)&Node.DOCUMENT_POSITION_FOLLOWING).length:from;
+   let moved=equip.splice(from,1)[0];equip.splice(Math.max(0,Math.min(equip.length,to)),0,moved);h.inv=[...equip,...rest];
+   drag.classList.remove("dragging");gap.remove();drag=null;save()
  };
- box.onpointercancel=()=>{if(drag)drag.classList.remove("dragging");gap.remove();drag=null};
+ box.onpointercancel=()=>{if(drag)drag.classList.remove("dragging");gap.remove();drag=null}
 }
 let shopMode="buy";
 
@@ -229,12 +257,14 @@ function rcTreasureSalePriceCP(item){
 }
 function sellPriceCP(item){
  if(item?.rcTreasure)return rcTreasureSalePriceCP(item);
+ if(item?.starterClothing)return (h?.stats?.CHA||0)>=16?1:0;
  let d=shopData(item.n);if(!d)return 0;return Math.round(gpToCP(d[1])*.5*(1+chaSellBonus()))
 }
 function sellDescriptor(item){
  if(item?.rcGem)return `RC gem cashing fee ${rcTreasureCashFeePct(item)}%`;
  if(item?.rcJewelry)return `RC jewelry cashing fee ${rcTreasureCashFeePct(item)}%`;
  if(item?.rcSpecial)return "RC market value";
+ if(item?.starterClothing)return (h?.stats?.CHA||0)>=16?"High CHA found a 1 CP buyer":"Starter clothing · discard / 0 CP";
  return "Sell price"
 }
 function canSellResource(n){
@@ -260,13 +290,13 @@ function removeSoldResource(n){
 }
 function sell(i){
  let q=h.inv[i];if(!q||q.noSell||q.bound)return;
- let price=sellPriceCP(q);if(price<=0||!canSellResource(q.n))return;
+ let price=sellPriceCP(q);if((price<=0&&!q.starterClothing)||!canSellResource(q.n))return;
  if(q.eq)q.eq=false;
  removeSoldResource(q.n);
  h.inv.splice(i,1);
  setWalletCP(walletCP()+price);
  if(q.rcSpecial){let baseXP=Math.floor(price/100);if(baseXP)awardXP(baseXP)}
- save();
+ save()
 }
 const CLASS_EQUIPMENT={
  Fighter:{armor:"all",weapons:"all"},
@@ -285,24 +315,40 @@ function classCanUse(name,kind){
  if(kind==="weapon")return r.weapons==="all"||r.weapons.includes(name);
  return true
 }
-function shopKind(name,section=tab){return section==="Armor"?(name==="Shield"?"shield":"armor"):(section==="Weapons"?"weapon":"gear")}
+function shopKind(name,section=tab){
+ return section==="Armor"?(name==="Shield"?"shield":"armor"):(section==="Weapons"?"weapon":section==="Clothing"?"clothing":"gear")
+}
 function renderShop(){
  if(!h)return;
  let bonus=Math.round(chaSellBonus()*100);
  $("#shopItems").innerHTML=
  `<div class="shopMode"><button id="buyMode" class="${shopMode!=="sell"?"on":""}">Buy</button><button id="sellMode" class="${shopMode==="sell"?"on":""}">Sell</button></div>`+
  (shopMode==="sell"
- ? `<div class="small">Ordinary gear resale: 50% of shop value${bonus?` + ${bonus}% CHA sell bonus`:""}. RC gems, jewelry and special treasure use their own cashing rules. Prices shown are the amount you receive.</div>`+
-   (h.inv.map((x,i)=>{let price=sellPriceCP(x),ok=!x.noSell&&!x.bound&&price>0&&canSellResource(x.n);return `<div class=item><span><b>${x.n}</b><div class=small>${x.eq?"Equipped · ":""}${sellDescriptor(x)}</div></span><span>${coinTextCP(price)}</span><button data-sell="${i}" ${ok?"":"disabled"}>Sell</button></div>`}).join("")||"<p>Inventory is empty.</p>")
+ ? `<div class="small">Ordinary gear resale: 50% of shop value${bonus?` + ${bonus}% CHA sell bonus`:""}. Starter clothing is normally worthless; CHA 16+ can get 1 CP. RC gems, jewelry and special treasure use their own cashing rules.</div>`+
+   (h.inv.map((x,i)=>{let price=sellPriceCP(x),ok=!x.noSell&&!x.bound&&(price>0||x.starterClothing)&&canSellResource(x.n),action=x.starterClothing&&price===0?"Discard":"Sell";return `<div class=item><span><b>${x.n}</b><div class=small>${x.eq?"Equipped · ":""}${sellDescriptor(x)}</div></span><span>${coinTextCP(price)}</span><button data-sell="${i}" ${ok?"":"disabled"}>${action}</button></div>`}).join("")||"<p>Inventory is empty.</p>")
  : SHOP[tab].map((x,i)=>{let kind=shopKind(x[0]),allowed=classCanUse(x[0],kind),price=buyPriceCP(x),disc=Math.round(chaBuyDiscount()*100);return `<div class=item><span><b>${x[0]}</b><div class=small>${x[2]}${allowed?"":" · Restricted for "+h.className}${disc?` · CHA -${disc}%`:""}</div></span><span>${coinTextCP(price)}</span><button data-buy="${i}" ${walletCP()<price||!allowed?"disabled":""}>Buy</button></div>`}).join(""));
  $("#buyMode").onclick=()=>{shopMode="buy";renderShop()};
  $("#sellMode").onclick=()=>{shopMode="sell";renderShop()};
  $$("[data-buy]").forEach(b=>b.onclick=()=>buy(SHOP[tab][+b.dataset.buy]));
  $$("[data-sell]").forEach(b=>b.onclick=()=>sell(+b.dataset.sell));
- $("#owned").innerHTML=h.inv.map((x,i)=>`<div class=item><span>${x.n}</span><span>${x.eq?"✓ Equipped":""}</span>${x.can?`<button data-eq="${i}">${x.eq?"Unequip":"Equip"}</button>`:"<span></span>"}</div>`).join("")||"Nothing purchased.";
+ let owned=h.inv.filter(x=>x.n!=="Waterskin"),water=waterskinSummaryRows().replaceAll("sheetEquipRow","item");
+ $("#owned").innerHTML=(owned.map(x=>`<div class=item><span>${x.n}</span><span>${x.eq?"✓ Equipped":""}</span>${x.can?`<button data-eq="${h.inv.indexOf(x)}">${x.eq?"Unequip":"Equip"}</button>`:"<span></span>"}</div>`).join("")+water)||"Nothing purchased."
 }
 $$("[data-tab]").forEach(b=>b.onclick=()=>{tab=b.dataset.tab;$$("[data-tab]").forEach(x=>x.classList.toggle("on",x===b));renderShop()});
-function buy(x){let kind=shopKind(x[0]);if(!classCanUse(x[0],kind))return;let cost=buyPriceCP(x);if(walletCP()<cost)return;setWalletCP(walletCP()-cost);if(x[0].startsWith("Rations"))h.rations+=7;else if(x[0]==="Arrows — 20"){h.ammo=h.ammo||{};h.ammo.Arrows=(h.ammo.Arrows||0)+20}else if(x[0]==="Quarrels — 30"){h.ammo=h.ammo||{};h.ammo.Quarrels=(h.ammo.Quarrels||0)+30}else if(x[0]==="Sling Stones — 30"){h.ammo=h.ammo||{};h.ammo["Sling Stones"]=(h.ammo["Sling Stones"]||0)+30}else if(x[0]==="Waterskin"){h.waterCapacity++;h.water++}else if(x[0]==="Torch")h.lightMinutes+=60;else if(x[0]==="6 Torches")h.lightMinutes+=360;else if(x[0]==="Oil Flask")h.lightMinutes+=240;let armor=tab==="Armor",weapon=tab==="Weapons";h.inv.push({n:x[0],kind:armor?(x[0]==="Shield"?"shield":"armor"):(weapon?"weapon":"gear"),can:armor||weapon,eq:false});save()}
+function buy(x){
+ let kind=shopKind(x[0]);if(!classCanUse(x[0],kind))return;let cost=buyPriceCP(x);if(walletCP()<cost)return;setWalletCP(walletCP()-cost);
+ if(x[0].startsWith("Rations"))h.rations+=7;
+ else if(x[0]==="Arrows — 20"){h.ammo=h.ammo||{};h.ammo.Arrows=(h.ammo.Arrows||0)+20}
+ else if(x[0]==="Quarrels — 30"){h.ammo=h.ammo||{};h.ammo.Quarrels=(h.ammo.Quarrels||0)+30}
+ else if(x[0]==="Sling Stones — 30"){h.ammo=h.ammo||{};h.ammo["Sling Stones"]=(h.ammo["Sling Stones"]||0)+30}
+ else if(x[0]==="Waterskin"){h.waterCapacity++;h.water++}
+ else if(x[0]==="Torch")h.lightMinutes+=60;
+ else if(x[0]==="6 Torches")h.lightMinutes+=360;
+ else if(x[0]==="Oil Flask")h.lightMinutes+=240;
+ let armor=tab==="Armor",weapon=tab==="Weapons",clothing=tab==="Clothing";
+ h.inv.push({n:x[0],kind:armor?(x[0]==="Shield"?"shield":"armor"):(weapon?"weapon":clothing?"clothing":"gear"),can:armor||weapon,eq:false,eventKey:typeof EVENT_KEY_ITEMS!=="undefined"&&EVENT_KEY_ITEMS.has(x[0])});
+ save()
+}
 function equip(i){let q=h.inv[i];if(!q||!q.can)return;if(!classCanUse(q.n,q.kind)){alert(`${h.className} cannot use ${q.n}.`);return}if(q.eq){q.eq=false;save();return}if(q.kind==="armor")h.inv.forEach(z=>{if(z.kind==="armor")z.eq=false});if(q.kind==="weapon"){let ranged=RANGED_WEAPONS.has(q.n);h.inv.forEach(z=>{if(z.kind==="weapon"&&RANGED_WEAPONS.has(z.n)===ranged)z.eq=false});if(itemData(q.n).two)h.inv.forEach(z=>{if(z.kind==="shield")z.eq=false})}if(q.kind==="shield"){let w=h.inv.find(z=>z.kind==="weapon"&&z.eq);if(w&&itemData(w.n).two){alert("A shield cannot be equipped with a two-handed weapon.");return}h.inv.forEach(z=>{if(z.kind==="shield")z.eq=false})}q.eq=true;save()}
 document.addEventListener("click",e=>{if(e.target.dataset.eq!==undefined)equip(+e.target.dataset.eq)});
 $$("[data-heal]").forEach(b=>b.onclick=()=>{let pct=+b.dataset.heal,cost=gpToCP({10:2,50:10,100:20}[pct]);if(walletCP()<cost){$("#healmsg").textContent="Not enough gold.";return}if(h.hp>=h.maxhp){$("#healmsg").textContent="Already at full health.";return}setWalletCP(walletCP()-cost);h.hp=Math.min(h.maxhp,h.hp+Math.ceil(h.maxhp*pct/100));$("#healmsg").textContent="Healing complete.";save()});
