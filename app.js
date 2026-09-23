@@ -1,12 +1,12 @@
 const RC_AVERATHIA_SPELL_AUDIT={"Arcanist/Elf":{"1":{"NOW":["Magic Missile","Shield","Sleep","Light"],"LATER":["Charm Person","Detect Magic","Floating Disc","Hold Portal","Read Languages","Read Magic","Ventriloquism"],"NO":[]},"2":{"NOW":["Mirror Image","Web"],"LATER":["Continual Light","Detect Evil","Detect Invisible","ESP","Invisibility","Knock","Levitate","Locate Object","Wizard Lock"],"NO":[]},"3":{"NOW":["Fireball","Lightning Bolt","Haste","Slow","Hold Person","Protection from Normal Missiles"],"LATER":["Clairvoyance","Create Air","Dispel Magic","Fly","Infravision","Invisibility 10' Radius","Water Breathing"],"NO":[]}},"Cleric":{"1":{"NOW":["Cure Light Wounds","Protection from Evil","Remove Fear","Resist Cold"],"LATER":["Detect Evil","Detect Magic","Light","Purify Food and Water"],"NO":[]},"2":{"NOW":["Bless","Hold Person","Resist Fire"],"LATER":["Find Traps","Know Alignment","Silence 15' Radius","Snake Charm","Speak with Animal"],"NO":[]},"3":{"NOW":["Cure Disease","Striking"],"LATER":["Continual Light","Cure Blindness","Dispel Magic","Growth of Animals","Locate Object","Speak with the Dead"],"NO":[]}}};
 const $=s=>document.querySelector(s),$$=s=>[...document.querySelectorAll(s)],d=n=>1+Math.floor(Math.random()*n);
-let sex="Male",avatar=0,cs=[],pick=null,h=null,tab="Weapons",mode="present",risk="Normal",mins=1,timer=null,autonomousCombatRunning=false;
+let sex="Male",avatar=0,cs=[],pick=null,h=null,tab="Weapons",inventoryTab="Inventory",mode="present",risk="Normal",mins=1,timer=null,autonomousCombatRunning=false;
 const classSlug=c=>c.toLowerCase();
 function artPath(cls,sx,i,kind="full"){return `${classSlug(cls)}_${sx.toLowerCase()}_${i+1}_${kind}.png`;}
 const CLASSES=[["Fighter","⚔️","Human"],["Cleric","✦","Human"],["Arcanist","✧","Human"],["Thief","🗝️","Human"],["Elf","🏹","Race-as-class"],["Dwarf","⛏️","Race-as-class"]];
 const FN={Male:["Aldric","Edric","Garran","Leofric","Oswin","Roderic","Wulfric","Cedric","Beren","Tobran"],Female:["Alda","Elowen","Mara","Rowena","Isolde","Aveline","Seren","Edith","Brynja","Tamsin"]};
 const LN=["Stonefield","Ashford","Blackwood","Thorne","Vale","Ironwood","Hawke","Westmere","Oakheart","Ravenbrook","Greyward","Redfern"];
-const SHOP={Weapons:[["Battle Axe",7,"1d8"],["Hand Axe",4,"1d6"],["Short Bow",25,"1d6"],["Long Bow",40,"1d6"],["Light Crossbow",30,"1d6"],["Heavy Crossbow",50,"2d4"],["Club",3,"1d4"],["Throwing Hammer",4,"1d4"],["War Hammer",5,"1d6"],["Mace",5,"1d6"],["Staff",5,"1d6"],["Dagger",3,"1d4"],["Silver Dagger",30,"1d4"],["Halberd",7,"1d10"],["Javelin",1,"1d6"],["Lance",10,"1d10"],["Pike",3,"1d10"],["Polearm",7,"1d10"],["Poleaxe",5,"1d10"],["Spear",3,"1d6"],["Trident",5,"1d6"],["Short Sword",7,"1d6"],["Sword",10,"1d8"],["Bastard Sword (1H)",15,"1d6+1"],["Bastard Sword (2H)",15,"1d8+1"],["Two-Handed Sword",15,"1d10"],["Cestus",5,"1d3"],["Sling",2,"1d4"],],Armor:[["Shield",10,"AC -1"],["Leather Armor",20,"AC 7"],["Scale Mail",30,"AC 6"],["Chain Mail",40,"AC 5"],["Banded Mail",50,"AC 4"],["Plate Mail",60,"AC 3"],["Suit Armor",250,"AC 0"]],Gear:[["Rations — 7 days",5,"7 days food"],["Waterskin",1,"1 quart; reusable"],["Torch",0.17,"1 hour light"],["6 Torches",1,"6 hours light"],["Lantern",10,""],["Oil Flask",2,"4 hours lantern fuel"],["Backpack",5,""],["50-foot Rope",1,""],["Tinder Box",3,""],["Grappling Hook",25,""],["Arrows — 20",5,"20 arrows"],["Quarrels — 30",10,"30 crossbow bolts"],["Sling Stones — 30",1,"30 sling stones"],["Healing Potion",10,"1D6+1 HP"]]};
+const SHOP={Weapons:[["Battle Axe",7,"1d8"],["Hand Axe",4,"1d6"],["Short Bow",25,"1d6"],["Long Bow",40,"1d6"],["Light Crossbow",30,"1d6"],["Heavy Crossbow",50,"2d4"],["Club",3,"1d4"],["Throwing Hammer",4,"1d4"],["War Hammer",5,"1d6"],["Mace",5,"1d6"],["Staff",5,"1d6"],["Dagger",3,"1d4"],["Silver Dagger",30,"1d4"],["Halberd",7,"1d10"],["Javelin",1,"1d6"],["Lance",10,"1d10"],["Pike",3,"1d10"],["Polearm",7,"1d10"],["Poleaxe",5,"1d10"],["Spear",3,"1d6"],["Trident",5,"1d6"],["Short Sword",7,"1d6"],["Sword",10,"1d8"],["Bastard Sword (1H)",15,"1d6+1"],["Bastard Sword (2H)",15,"1d8+1"],["Two-Handed Sword",15,"1d10"],["Cestus",5,"1d3"],["Sling",2,"1d4"],],Armor:[["Shield",10,"AC -1"],["Leather Armor",20,"AC 7"],["Scale Mail",30,"AC 6"],["Chain Mail",40,"AC 5"],["Banded Mail",50,"AC 4"],["Plate Mail",60,"AC 3"],["Suit Armor",250,"AC 0"]],Gear:[["Rations — 7 days",5,"7 days food"],["Waterskin",1,"1 quart; reusable"],["Torch",0.2,"1 hour light"],["6 Torches",1,"6 hours light"],["Lantern",10,""],["Oil Flask",2,"4 hours lantern fuel"],["Backpack",5,""],["50-foot Rope",1,""],["Tinder Box",3,""],["Grappling Hook",25,""],["Garlic",5,"Event key"],["Hammer",2,"Small hammer"],["Holy Water",25,"1d8 vs undead · 10/30/50 ft"],["Iron Spike",0.1,"One spike"],["12 Iron Spikes",1,"Twelve spikes"],["Steel Mirror",5,"Event key"],["10-foot Pole",1,"Wooden pole"],["Belt Pouch",0.5,"Event key · protects against theft"],["Quiver",1,"For arrows or quarrels"],["Small Sack",1,"Capacity 200 cn"],["Large Sack",2,"Capacity 600 cn"],["3 Stakes + Mallet",3,"Event key"],["Wine — 1 quart",1,"Wineskin not included"],["Wolfsbane",10,"Event key"],["Arrows — 20",5,"20 arrows"],["Quarrels — 30",10,"30 crossbow bolts"],["Sling Stones — 30",1,"30 sling stones"],["Healing Potion",10,"1D6+1 HP"]],Clothing:[["Belt",0.2,"RC belt"],["Plain Boots",1,"Plain boots"],["Riding Boots",5,"Riding / swash-topped boots"],["Short Cloak",0.5,"Short cloak"],["Long Cloak",1,"Long cloak"],["Plain Clothes",0.5,"Plain clothes"],["Middle-Class Clothes",5,"Middle-class clothes"],["Fine Clothes",20,"Fine clothes"],["Extravagant Clothes",50,"50+ GP baseline"],["Hat or Cap",0.2,"Standard headgear"],["Shoes",0.5,"Shoes"]]};
 function mod(v){return v===18?3:v>=16?2:v>=13?1:0}
 const CREATION_ABILITY_PRIORITY={
  Fighter:["STR","CON","DEX","CHA","WIS","INT"],
@@ -34,11 +34,21 @@ $("#male").onclick=()=>{sex="Male";avatar=0;$("#male").classList.add("on");$("#f
 $("#female").onclick=()=>{sex="Female";avatar=0;$("#female").classList.add("on");$("#male").classList.remove("on");renderAv()};
 $("#genName").onclick=()=>{$("#charName").value=fullName();renderAv()};
 $("#charName").addEventListener("input",renderAv);$("#reroll").onclick=rerollAll;
+function starterClothingItems(){return[
+ {n:"Basic Canvas Shoes",kind:"clothing",can:false,eq:false,starterClothing:true},
+ {n:"Canvas Tunic",kind:"clothing",can:false,eq:false,starterClothing:true},
+ {n:"Hemp Rope Belt",kind:"clothing",can:false,eq:false,starterClothing:true}
+]}
+function addStarterClothing(){
+ for(const x of starterClothingItems())if(!h.inv.some(i=>i.n===x.n))h.inv.push(x);
+ h.clothingStarterV1=true
+}
 function addClassStartingItems(){
  const special={Arcanist:["Spellbook"],Elf:["Spellbook"],Cleric:["Holy Symbol"],Thief:["Thief's Tools"]}[chosenClass]||[];
  for(const n of special)h.inv.push({n,kind:"classItem",can:false,eq:false,bound:true,noSell:true});
  const weapon={Fighter:"Sword",Dwarf:"Battle Axe"}[chosenClass];
  if(weapon)h.inv.push({n:weapon,kind:"weapon",can:true,eq:false,bound:true,noSell:true});
+ addStarterClothing()
 }
 $("#chooseCharacter").onclick=()=>{if(!cs[0])return;let c=structuredClone(cs[0]);h={...c,maxhp:c.hp,xp:0,level:1,name:$("#charName").value.trim()||fullName(),sex,avatar,className:chosenClass,mechanicsClass:chosenClass,gp:0,sp:0,cp:0,inv:[],rations:0,water:0,waterCapacity:0,lightMinutes:0};h.gp=c.gold;addClassStartingItems();$("#create").classList.add("hide");$("#game").classList.remove("hide");save();home();page("town")};
 const CLASS_LEVELS={
@@ -100,7 +110,7 @@ function updateRest(){
    h.restUntil=null;let rate=mummyDiseaseActive()?.025:.25;h.hp=Math.min(h.maxhp,h.hp+Math.ceil(h.maxhp*rate));resetDailySpells();save();return true
  }return false
 }
-function save(){if(h)checkLevelUps();localStorage.setItem("averathia-v041",JSON.stringify(h));refresh()}
+function save(){if(h){normalizeInventoryOrder();checkLevelUps()}localStorage.setItem("averathia-v041",JSON.stringify(h));refresh()}
 const TROPHY_COLLECTIONS={"Arcanist":[["The Violet Codex","Book"],["Atlas of the Hollow Stars","Book"],["The Thirteenth Equation","Book"],["Grimoire of the Glass Moon","Book"],["The Ashen Index","Book"],["Treatise on Silent Doors","Book"]],"Thief":[["The Widow's Ruby","Jewel"],["Emerald of Seven Doors","Jewel"],["The Blackbird Brooch","Jewel"],["Moon-Tear Sapphire","Jewel"],["The Gilded Serpent","Jewel"],["Crownless Diamond","Jewel"]],"Fighter":[["Slayer of the Bridge Ogre","Deed"],["Victor of Blackstone Pass","Deed"],["Defender of Three Wells","Deed"],["Breaker of the Iron Siege","Deed"],["Champion of Raven Ford","Deed"],["The Last Stand at Greywatch","Deed"]],"Cleric":[["Fingerbone of Saint Ordel","Relic"],["Bell of Saint Merra","Relic"],["Ashes of Saint Caldrin","Relic"],["Broken Halo of Saint Vey","Relic"],["Lantern of Saint Edrin","Relic"],["Tear of Saint Alwen","Relic"]],"Dwarf":[["Rune of the First Hearth","Rune"],["Rune of Borun's Exile","Rune"],["Rune of the Seven Sons","Rune"],["Rune of the Deep Anvil","Rune"],["Rune of the Lost Hold","Rune"],["Rune of the Returning Kin","Rune"]],"Elf":[["Silveroak Acorn","Seed"],["Moonwillow Seed","Seed"],["Starbloom Kernel","Seed"],["Heartnut of the Elder Grove","Seed"],["Dawnpine Cone","Seed"],["Whisperleaf Seed","Seed"]]};const TROPHY_TITLES={"Arcanist":"Forbidden Library","Thief":"Crown Jewels","Fighter":"Deeds of Renown","Cleric":"Relics of the Saints","Dwarf":"Ancestral Runes","Elf":"Seeds of the First Wood"};
 function ensureTrophies(){if(h&&!Array.isArray(h.trophies))h.trophies=[]}
 function unlockTrophy(name){ensureTrophies();if(!h||h.trophies.includes(name))return false;let valid=(TROPHY_COLLECTIONS[h.className]||[]).some(x=>x[0]===name);if(!valid)return false;h.trophies.push(name);save();return true}
@@ -123,7 +133,7 @@ const WEAPON_RANGES={
  "Hand Axe":[10,20,30],"Short Bow":[50,100,150],"Long Bow":[70,140,210],
  "Light Crossbow":[60,120,180],"Heavy Crossbow":[80,160,240],"Throwing Hammer":[10,20,30],
  "Dagger":[10,20,30],"Silver Dagger":[10,20,30],"Javelin":[30,60,90],
- "Spear":[20,40,60],"Trident":[10,20,30],"Sling":[40,80,160]
+ "Spear":[20,40,60],"Trident":[10,20,30],"Sling":[40,80,160],"Holy Water":[10,30,50]
 };
 function weaponRangeText(name){let r=WEAPON_RANGES[name];return r?`${r[0]}/${r[1]}/${r[2]}'`:"—"}
 const RANGE_BANDS=[{name:"Hand-to-Hand",feet:5},{name:"Close",feet:20},{name:"Medium",feet:80},{name:"Long",feet:150}];
