@@ -558,7 +558,7 @@ function playerStrikeSingle(){
  let c=h.combat,t=c.enemies[c.target];if(!t||t.hp<=0){t=living()[0];if(!t)return;c.target=t.id}
  let cs=combatStats(),w=cs.weapon,item=cs.weaponItem,mode=attackModeFor(w);
  if(c.skipNext){clog("Critical fumble: you lose this initiative.");c.skipNext=false;return}
- if(mode==="melee"&&t.enchanted&&protectionFromEvilActive()&&!c.protEvilBarrierBroken){c.protEvilBarrierBroken=true;clog("You attack an enchanted creature in melee; Protection from Evil no longer bars its touch, though its attack/save modifiers remain.")}
+ if(t.enchanted&&protectionFromEvilActive()&&!c.protEvilBarrierBroken){c.protEvilBarrierBroken=true;clog("You attack an enchanted creature; Protection from Evil no longer bars its touch, though its attack/save modifiers remain.")}
  if(t.sleeping&&c.range==="Hand-to-Hand"&&EDGED_WEAPONS.has(w)){let dmg=t.hp;t.hp=0;t.sleeping=false;t.disabledRounds=0;clog(`Sleeping ${t.n} is slain with a single edged-weapon blow (${dmg} HP).`);let gained=awardXP(t.xp);clog(`${t.n} defeated. +${gained} XP.`);return}
  if(mode==="out-of-range"){clog(`${w} cannot reach a target at ${c.range} range. Close to Hand-to-Hand or use a ranged/thrown weapon.`);return}
  if(mode==="missile"&&c.range==="Hand-to-Hand"&&(t.disabledRounds||0)<=0){clog(`${w} cannot be used effectively at Hand-to-Hand against a mobile target.`);return}
