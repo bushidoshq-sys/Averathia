@@ -1580,19 +1580,49 @@ function changeMemorized(id,sl,delta){
  h.spells.memorized[sl]=a;
  save();renderSkills();
 }
-const EVENT_KEY_ITEMS=new Set(["Garlic","Holy Water","Steel Mirror","Belt Pouch","3 Stakes + Mallet","Wolfsbane","Hammer","Iron Spike","12 Iron Spikes","10-foot Pole","Small Sack","Large Sack","Quiver"]);
+const EVENT_KEY_ITEMS=new Set(["Garlic","Holy Water","Steel Mirror","Belt Pouch","3 Stakes + Mallet","Wolfsbane","Hammer","Iron Spike","12 Iron Spikes","10-foot Pole","Small Sack","Large Sack","Quiver","Wine — 1 quart","50-foot Rope","Grappling Hook","Tinder Box","Lantern","Backpack"]);
 function hasInventoryItem(name){return !!h?.inv?.some(x=>x.n===name)}
 function takeInventoryItem(name){let i=h?.inv?.findIndex(x=>x.n===name)??-1;if(i<0)return false;h.inv.splice(i,1);return true}
+function eventChoiceAvailable(ch){
+ if(ch?.requiresItem)return hasInventoryItem(ch.requiresItem);
+ if(Array.isArray(ch?.requiresAnyItem))return ch.requiresAnyItem.some(hasInventoryItem);
+ return true
+}
+function eventRequirementItem(ch){
+ if(ch?.requiresItem)return ch.requiresItem;
+ if(Array.isArray(ch?.requiresAnyItem))return ch.requiresAnyItem.find(hasInventoryItem)||null;
+ return null
+}
+function eventUnlockedByInventory(ev){let keyed=(ev?.choices||[]).filter(c=>c.requiresItem||c.requiresAnyItem);return !keyed.length||keyed.some(eventChoiceAvailable)}
 const GEAR_KEY_EVENTS=[
  {id:"GEAR-001",type:"Decision",title:"A Nervous Young Suitor",text:"A young suitor is about to ask for a hand in marriage, but wants one last look at himself before he goes in.",choices:[{label:"Lend him your Steel Mirror",result:"gearKey",requiresItem:"Steel Mirror",xp:3,coins:[0,5,0]},{label:"Wish him courage",result:"passed"}]},
  {id:"GEAR-002",type:"Decision",title:"The Vampire Hunter",text:"Another adventurer is hurrying toward a vampire's lair and suddenly realizes the garlic was left back in town.",choices:[{label:"Give your Garlic",result:"gearKey",requiresItem:"Garlic",consumeItem:true,xp:4,coins:[0,0,0]},{label:"Wish them luck",result:"passed"}]},
  {id:"GEAR-003",type:"Decision",title:"Forgotten Stakes",text:"A worried adventurer is heading after a vampire and has somehow forgotten the stakes and mallet.",choices:[{label:"Give 3 Stakes + Mallet",result:"gearKey",requiresItem:"3 Stakes + Mallet",consumeItem:true,xp:4,coins:[0,0,0]},{label:"Wish them luck",result:"passed"}]},
- {id:"GEAR-004",type:"Decision",title:"Light Fingers",text:"A cutpurse brushes past you in a crowded roadside market.",choices:[{label:"Check your belongings",result:"theft"},{label:"Keep moving",result:"theft"}]}
+ {id:"GEAR-004",type:"Decision",title:"Light Fingers",text:"A cutpurse brushes past you in a crowded roadside market.",choices:[{label:"Check your belongings",result:"theft"},{label:"Keep moving",result:"theft"}]},
+ {id:"GEAR-005",type:"Decision",title:"The Wheelwright's Problem",text:"A wheelwright beside a stranded cart has everything needed except a hammer.",choices:[{label:"Lend your Hammer",result:"gearKey",requiresItem:"Hammer",xp:3,coins:[0,4,0]},{label:"Keep moving",result:"passed"}]},
+ {id:"GEAR-006",type:"Decision",title:"A Loose Wagon Wheel",text:"A merchant cannot keep a wheel pin seated and needs something sturdy to wedge it.",choices:[{label:"Give an Iron Spike",result:"gearKey",requiresItem:"Iron Spike",consumeItem:true,xp:2,coins:[0,3,0]},{label:"Leave the merchant to it",result:"passed"}]},
+ {id:"GEAR-007",type:"Decision",title:"The Unsafe Mine Door",text:"Miners are trying to brace a dangerous old access door before anyone passes through.",choices:[{label:"Give your 12 Iron Spikes",result:"gearKey",requiresItem:"12 Iron Spikes",consumeItem:true,xp:5,coins:[1,0,0]},{label:"Take another route",result:"passed"}]},
+ {id:"GEAR-008",type:"Discovery",title:"Flooded Ford",text:"Travelers are arguing about whether the water ahead hides a sudden drop.",choices:[{label:"Lend your 10-foot Pole to sound the depth",result:"gearKey",requiresItem:"10-foot Pole",xp:3,coins:[0,3,0]},{label:"Leave them to judge it",result:"passed"}]},
+ {id:"GEAR-009",type:"Decision",title:"The Herbalist's Harvest",text:"A herbalist has gathered more useful plants than can be carried home.",choices:[{label:"Give your Small Sack",result:"gearKey",requiresItem:"Small Sack",consumeItem:true,xp:2,coins:[0,4,0]},{label:"Move on",result:"passed"}]},
+ {id:"GEAR-010",type:"Decision",title:"Spilled Grain",text:"A miller stares at a torn grain sack while good grain spills onto the road.",choices:[{label:"Give your Large Sack",result:"gearKey",requiresItem:"Large Sack",consumeItem:true,xp:3,coins:[0,6,0]},{label:"Move on",result:"passed"}]},
+ {id:"GEAR-011",type:"Decision",title:"The Archer's Broken Quiver",text:"A road warden has arrows but a split quiver and must continue the patrol.",choices:[{label:"Give your Quiver",result:"gearKey",requiresItem:"Quiver",consumeItem:true,xp:3,coins:[0,5,0]},{label:"Wish the warden luck",result:"passed"}]},
+ {id:"GEAR-012",type:"Decision",title:"A Shaken Courier",text:"A bruised courier has made it out of an ambush and asks for a moment to steady the nerves.",choices:[{label:"Give your Wine",result:"gearKey",requiresItem:"Wine — 1 quart",consumeItem:true,xp:2,coins:[0,0,0]},{label:"Offer only directions",result:"passed"}]},
+ {id:"GEAR-013",type:"Decision",title:"Tracks Under a Full Moon",text:"A hunter following unnatural tracks realizes the wolfsbane pouch is empty.",choices:[{label:"Give your Wolfsbane",result:"gearKey",requiresItem:"Wolfsbane",consumeItem:true,xp:4,coins:[0,5,0]},{label:"Advise the hunter to turn back",result:"passed"}]},
+ {id:"GEAR-014",type:"Discovery",title:"The Ravine Rescue",text:"A traveler is stranded below a steep roadside bank after a fall.",choices:[{label:"Use your 50-foot Rope to help",result:"gearKey",requiresItem:"50-foot Rope",xp:4,coins:[0,5,0]},{label:"Find help elsewhere",result:"passed"}]},
+ {id:"GEAR-015",type:"Discovery",title:"Pack on the Ledge",text:"A merchant's pack lies on a narrow ledge beyond safe reach.",choices:[{label:"Use your Grappling Hook",result:"gearKey",requiresItem:"Grappling Hook",xp:3,coins:[0,5,0]},{label:"Leave it",result:"passed"}]},
+ {id:"GEAR-016",type:"Decision",title:"Cold Camp",text:"A group of exhausted travelers has dry wood but nothing that will catch a spark.",choices:[{label:"Lend your Tinder Box",result:"gearKey",requiresItem:"Tinder Box",xp:2,coins:[0,2,0]},{label:"Continue onward",result:"passed"}]},
+ {id:"GEAR-017",type:"Decision",title:"The Dark Culvert",text:"A frightened traveler must pass through a long dark culvert before night closes in.",choices:[{label:"Lend your Lantern",result:"gearKey",requiresItem:"Lantern",xp:3,coins:[0,4,0]},{label:"Point out another road",result:"passed"}]},
+ {id:"GEAR-018",type:"Decision",title:"The Courier's Torn Pack",text:"A courier's pack has split open and the dispatches will not survive the road loose.",choices:[{label:"Give your Backpack",result:"gearKey",requiresItem:"Backpack",consumeItem:true,xp:4,coins:[0,5,0]},{label:"Leave the courier to improvise",result:"passed"}]}
 ];
-function eventChoiceAvailable(ch){return !ch?.requiresItem||hasInventoryItem(ch.requiresItem)}
+const CLOTHING_KEY_EVENTS=[
+ {id:"CLO-001",type:"Decision",title:"The Guild Supper",text:"A local guild is admitting respectable travelers to its evening supper, but the doorkeeper is turning away anyone dressed for the road.",choices:[{label:"Attend in respectable clothes",result:"gearKey",requiresAnyItem:["Middle-Class Clothes","Fine Clothes","Extravagant Clothes"],xp:3,coins:[0,5,0]},{label:"Skip the supper",result:"passed"}]},
+ {id:"CLO-002",type:"Decision",title:"A Merchant's Introduction",text:"A prosperous merchant is willing to make introductions, provided you look suitable for the company being kept.",choices:[{label:"Make the introduction properly dressed",result:"gearKey",requiresAnyItem:["Middle-Class Clothes","Fine Clothes","Extravagant Clothes"],xp:3,coins:[0,4,0]},{label:"Decline",result:"passed"}]},
+ {id:"CLO-003",type:"Decision",title:"The Noble Reception",text:"A minor noble is receiving petitioners tonight. Road clothes will not get past the steward.",choices:[{label:"Enter in Fine Clothes",result:"gearKey",requiresAnyItem:["Fine Clothes","Extravagant Clothes"],xp:4,coins:[1,0,0]},{label:"Leave the matter for another day",result:"passed"}]},
+ {id:"CLO-004",type:"Decision",title:"The Grand Banquet",text:"An invitation has appeared for a lavish banquet where appearance matters almost as much as a name.",choices:[{label:"Attend in Extravagant Clothes",result:"gearKey",requiresItem:"Extravagant Clothes",xp:6,coins:[2,0,0]},{label:"Ignore the invitation",result:"passed"}]}
+];
 function pickEvent(){
  let pools={Fighter:FIGHTER_EVENTS,Cleric:CLERIC_EVENTS,Arcanist:ARCANIST_EVENTS,Thief:THIEF_EVENTS,Elf:ELF_EVENTS,Dwarf:DWARF_EVENTS};
- let source=[...(pools[h.className]||FIGHTER_EVENTS),...GEAR_KEY_EVENTS],used=new Set((h.trip.journal||[]).map(x=>x.id));
+ let unlockedGlobal=[...GEAR_KEY_EVENTS,...CLOTHING_KEY_EVENTS].filter(eventUnlockedByInventory),source=[...(pools[h.className]||FIGHTER_EVENTS),...unlockedGlobal],used=new Set((h.trip.journal||[]).map(x=>x.id));
  let available=source.filter(e=>!used.has(e.id));if(!available.length)available=source;
  let roll=d(100),wanted=roll<=40?"Encounter":roll<=60?"Decision":roll<=80?"Discovery":"Quiet";
  let typed=available.filter(e=>e.type===wanted);let pool=typed.length?typed:available;
@@ -1604,11 +1634,11 @@ function clericWisCheck(difficulty="Normal"){
 }
 function applyEventChoice(ev,ch){
  let resumeAfter=h.pendingEvent===ev;
- if(ch?.requiresItem&&!hasInventoryItem(ch.requiresItem)){addlog(`${ev.title}: ${ch.requiresItem} is required.`);return}
+ if(!eventChoiceAvailable(ch)){addlog(`${ev.title}: the required item is not available.`);return}
  if(ch?.result==="gearKey"){
-   if(ch.consumeItem)takeInventoryItem(ch.requiresItem);
+   let usedItem=eventRequirementItem(ch);if(ch.consumeItem&&usedItem)takeInventoryItem(usedItem);
    let xp=ch.xp?awardXP(ch.xp):0,coin=ch.coins||[0,0,0];if(coin)addCoins(coin[0]||0,coin[1]||0,coin[2]||0);
-   journal({id:ev.id,type:ev.type,title:ev.title,text:ev.text,choice:ch.label,result:"gearKey",xp,coins:coin,item:ch.requiresItem,consumed:!!ch.consumeItem});
+   journal({id:ev.id,type:ev.type,title:ev.title,text:ev.text,choice:ch.label,result:"gearKey",xp,coins:coin,item:usedItem,consumed:!!ch.consumeItem});
    let reward=`${xp?`+${xp} XP. `:""}${coin&&(coin[0]||coin[1]||coin[2])?`${coin[0]||0} GP, ${coin[1]||0} SP, ${coin[2]||0} CP.`:""}`;
    addlog(`${ev.title}: ${ch.label}.${reward?` ${reward}`:""}`);
    h.pendingEvent=null;endTripPause();save();renderPendingEvent();if(resumeAfter)tick();return
@@ -1680,7 +1710,7 @@ function renderPendingEvent(){
  let box=$("#eventChoice");if(!box)return;
  let ev=h?.pendingEvent;if(!ev){box.classList.add("hide");box.innerHTML="";return}
  box.classList.remove("hide");
- box.innerHTML=`<div class=eventCard><div class=eyebrow>${ev.type}</div><h3>${ev.title}</h3><p>${ev.text}</p><div class=eventButtons>${ev.choices.map((c,i)=>`<button data-choice="${i}" ${eventChoiceAvailable(c)?"":"disabled"}>${c.label}${c.requiresItem&&!eventChoiceAvailable(c)?` · Requires ${c.requiresItem}`:""}</button>`).join("")}</div></div>`;
+ box.innerHTML=`<div class=eventCard><div class=eyebrow>${ev.type}</div><h3>${ev.title}</h3><p>${ev.text}</p><div class=eventButtons>${ev.choices.map((c,i)=>`<button data-choice="${i}" ${eventChoiceAvailable(c)?"":"disabled"}>${c.label}${!eventChoiceAvailable(c)?` · Requires ${c.requiresItem||c.requiresAnyItem?.join(" / ")||"item"}`:""}</button>`).join("")}</div></div>`;
  $$("[data-choice]").forEach(b=>b.onclick=()=>applyEventChoice(ev,ev.choices[+b.dataset.choice]))
 }
 function buildAdventureReport(){
