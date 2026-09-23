@@ -380,6 +380,39 @@ const RC_MAGIC_MAIN=[
  [25,"potion"],[37,"scroll"],[46,"wandStaffRod"],[52,"ring"],[62,"miscMagic"],
  [72,"armorShield"],[83,"missileWeaponOrMissile"],[92,"sword"],[100,"miscWeapon"]
 ];
+const RC_COIN_TO_CP={cp:1,sp:10,ep:50,gp:100,pp:500};
+const RC_POTION_TABLE=[
+ [2,"Agility"],[3,"Animal Control"],[6,"Antidote"],[8,"Blending"],[10,"Bug Repellent"],
+ [12,"Clairaudience"],[14,"Clairvoyance"],[16,"Climbing"],[18,"Defense"],[22,"Delusion"],
+ [24,"Diminution"],[25,"Dragon Control"],[27,"Dreamspeech"],[28,"Elasticity"],[30,"Elemental Form"],
+ [32,"ESP"],[33,"Ethereality"],[36,"Fire Resistance"],[39,"Flying"],[41,"Fortitude"],
+ [42,"Freedom"],[45,"Gaseous Form"],[46,"Giant Control"],[49,"Giant Strength"],[51,"Growth"],
+ [57,"Healing"],[60,"Heroism"],[61,"Human Control"],[64,"Invisibility"],[66,"Invulnerability"],
+ [68,"Levitation"],[70,"Longevity"],[71,"Luck"],[72,"Merging"],[74,"Plant Control"],
+ [77,"Poison"],[80,"Polymorph Self"],[82,"Sight"],[84,"Speech"],[88,"Speed"],
+ [90,"Strength"],[93,"Super-Healing"],[96,"Swimming"],[97,"Treasure Finding"],[98,"Undead Control"],
+ [100,"Water Breathing"]
+];
+function rcTablePick(table,roll=d(100)){for(const [max,value] of table)if(roll<=max)return value;return table.at(-1)?.[1]}
+function rcRollScaled(expr){
+ let m=/^(\d+d\d+|\d+)(?:x(\d+))?$/i.exec(String(expr||"").replace(/\s+/g,""));
+ if(!m)return 0;
+ let base=/d/i.test(m[1])?rollExpr(m[1]):+m[1],mult=+(m[2]||1);
+ return Math.max(0,base*mult);
+}
+function rcCoinValueCP(kind,count){return Math.max(0,Math.floor(Number(count)||0))*(RC_COIN_TO_CP[kind]||0)}
+function rcCreditCoins(coins={}){
+ let total=0,converted={ep:0,pp:0};
+ for(const [kind,count] of Object.entries(coins)){total+=rcCoinValueCP(kind,count);if(kind==="ep"||kind==="pp")converted[kind]+=count}
+ if(total)setWalletCP(walletCP()+total);
+ return{cpValue:total,converted};
+}
+function rcMagicInventoryItem(category,name){
+ if(category==="potion"&&name==="Healing")return{n:"Healing Potion",kind:"gear",can:false,eq:false,rcMagic:true,rcCategory:"potion",rcItem:"Healing"};
+ return{n:`RC ${category}: ${name}`,kind:"gear",can:false,eq:false,rcMagic:true,rcCategory:category,rcItem:name,unsupportedMagic:true};
+}
+function rollRcPotion(){let name=rcTablePick(RC_POTION_TABLE);return rcMagicInventoryItem("potion",name)}
+
 const RC_UNGUARDED_TREASURE=[
  {levels:[1,1],sp:"1d6x100",gp:[50,"1d6x10"],gems:[5,"1d6"],jewelry:[2,"1d6"],magic:[2,{any:1}]},
  {levels:[2,3],sp:"1d12x100",gp:[50,"1d6x100"],gems:[10,"1d6"],jewelry:[5,"1d6"],magic:[8,{any:1}]},
