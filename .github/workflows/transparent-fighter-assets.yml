@@ -1,16 +1,17 @@
-name: Restore original Fighter assets
+name: Make fighter backgrounds transparent
 
 on:
   push:
     branches: [main]
     paths:
+      - ".github/scripts/remove_black_bg.py"
       - ".github/workflows/transparent-fighter-assets.yml"
 
 permissions:
   contents: write
 
 jobs:
-  restore-fighters:
+  transparent-fighters:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -27,31 +28,49 @@ jobs:
             fighter_female_2_full.png fighter_female_2_head.png fighter_female_2_sprite.png \
             fighter_female_3_full.png fighter_female_3_head.png fighter_female_3_sprite.png
 
-      - name: Package originals
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install Pillow
+        run: python -m pip install --upgrade pillow
+
+      - name: Key out connected dark background
         run: |
-          zip -j fighter_male_originals.zip fighter_male_*_*.png
-          zip -j fighter_female_originals.zip fighter_female_*_*.png
+          python .github/scripts/remove_black_bg.py \
+            'fighter_male_*_*.png' \
+            'fighter_female_*_*.png'
 
-      - name: Upload Fighter Male originals
+      - name: Build Fighter packages
+        run: |
+          rm -f fighter_male_transparent.zip fighter_female_transparent.zip
+          zip -j fighter_male_transparent.zip fighter_male_*_*.png
+          zip -j fighter_female_transparent.zip fighter_female_*_*.png
+
+      - name: Upload Fighter Male files
         uses: actions/upload-artifact@v4
         with:
-          name: fighter-male-originals
-          path: fighter_male_originals.zip
+          name: fighter-male-transparent-final
+          path: |
+            fighter_male_*_*.png
+            fighter_male_transparent.zip
 
-      - name: Upload Fighter Female originals
+      - name: Upload Fighter Female files
         uses: actions/upload-artifact@v4
         with:
-          name: fighter-female-originals
-          path: fighter_female_originals.zip
+          name: fighter-female-transparent-final
+          path: |
+            fighter_female_*_*.png
+            fighter_female_transparent.zip
 
-      - name: Restore originals in main
+      - name: Commit transparent assets
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add fighter_male_*_*.png fighter_female_*_*.png
+          git add fighter_male_*_*.png fighter_female_*_*.png fighter_male_transparent.zip fighter_female_transparent.zip
           if git diff --cached --quiet; then
-            echo "Assets already restored."
+            echo "No image changes."
             exit 0
           fi
-          git commit -m "Restore original Fighter assets"
+          git commit -m "Make Fighter backgrounds transparent"
           git push
