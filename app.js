@@ -104,7 +104,7 @@ function ensureTrophies(){if(h&&!Array.isArray(h.trophies))h.trophies=[]}
 function unlockTrophy(name){ensureTrophies();if(!h||h.trophies.includes(name))return false;let valid=(TROPHY_COLLECTIONS[h.className]||[]).some(x=>x[0]===name);if(!valid)return false;h.trophies.push(name);save();return true}
 function renderTrophies(){let grid=$("#trophyGrid"),intro=$("#trophyIntro");if(!grid||!h)return;ensureTrophies();let list=TROPHY_COLLECTIONS[h.className]||[],got=new Set(h.trophies);intro.textContent=`${TROPHY_TITLES[h.className]||"Collection"} — ${list.filter(x=>got.has(x[0])).length}/${list.length} discovered`;grid.innerHTML=list.map(([name,kind])=>got.has(name)?`<div class="trophyCard unlocked"><div class=trophyIcon>✦</div><b>${name}</b><span>${kind}</span></div>`:`<div class="trophyCard locked"><div class=trophyIcon>?</div><b>???</b><span>Undiscovered</span></div>`).join("")}
 
-function refresh(){if(h?.deadUntil&&Date.now()<h.deadUntil){renderDeathPage();return}renderTrophies();if(h)renderSkills();if($("#lastAdventure")){if(h?.lastAdventure){$("#lastAdventure").classList.remove("hide");$("#lastAdventureText").textContent=h.lastAdventure}else $("#lastAdventure").classList.add("hide")}if(h?.pendingEvent)renderPendingEvent();if(!h)return;updateRest();
+function refresh(){if(h?.deadUntil&&Date.now()<h.deadUntil){renderDeathPage();return}renderTrophies();if(h)renderSkills();if($("#lastAdventure")){if(h?.lastAdventure){$("#lastAdventure").classList.remove("hide");$("#lastAdventureText").textContent=h.lastAdventure}else $("#lastAdventure").classList.add("hide")}renderPendingEvent();if(!h)return;updateRest();
  if(h.deadUntil&&Date.now()>=h.deadUntil){h.deadUntil=null;h.hp=Math.max(1,h.maxhp);h.trip=null;h.combat=null;save();page("town");return}
  if($("#worldClock"))$("#worldClock").textContent=atClockText();
  if($("#longRestBtn")){$("#longRestBtn").disabled=!!h.restUntil||!!h.deadUntil;$("#longRestBtn").onclick=()=>startLongRest()}
@@ -1098,7 +1098,7 @@ function applyEventChoice(ev,ch){
  let result=ch?.result||"observed";
  journal({id:ev.id,type:ev.type,title:ev.title,text:ev.text,choice:ch?.label||null,result,xp,coins:coin});
  let rewardText=`${xp?`+${xp} XP. `:""}${coin&&(coin[0]||coin[1]||coin[2])?`${coin[0]||0} GP, ${coin[1]||0} SP, ${coin[2]||0} CP.`:""}`.trim(),summary=ch?.label?`${ch.label}.${rewardText?` ${rewardText}`:""}`:(rewardText||ev.text||"Observed.");addlog(`${ev.title}: ${summary}`);
- if(result==="combat"){h.pendingEvent=null;save();if(h.trip?.mode==="auto")autonomousCombat(false);else makeCombat();return}
+ if(result==="combat"){h.pendingEvent=null;renderPendingEvent();save();if(h.trip?.mode==="auto")autonomousCombat(false);else makeCombat();return}
  h.pendingEvent=null;endTripPause();save();renderPendingEvent();if(resumeAfter)tick()
 }
 function autonomousChoice(ev){
