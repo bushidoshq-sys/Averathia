@@ -884,7 +884,12 @@ function renderSpellButton(){
      `<button class="spellChoice" data-cast-spell="${s.id}" data-hold-mode="group" ${groupDisabled?"disabled":""}><b>${s.name}</b> <span class="small">Group · choose up to 4${rt}${validCount<2?" · NEEDS 2+ TARGETS":""}${oor?" · OUT OF RANGE":""}</span></button>`
     ]
    }
-   return [`<button class="spellChoice" data-cast-spell="${s.id}" ${oor?"disabled":""}><b>${s.name}</b> <span class="small">L${s.sl}${rt}${oor?" · OUT OF RANGE":""}</span></button>`]
+   let activeBuff=false;
+   if(s.kind==="buff"){
+    let boundWeapon=s.rc==="Striking"?combatStats().weapon:null;
+    activeBuff=h.spells?.buffs?.some(b=>b.rc===s.rc&&(s.rc!=="Striking"||b.boundWeapon===boundWeapon))||false;
+   }
+   return [`<button class="spellChoice" data-cast-spell="${s.id}" ${oor||activeBuff?"disabled":""}><b>${s.name}</b> <span class="small">L${s.sl}${rt}${activeBuff?" · ACTIVE":""}${oor?" · OUT OF RANGE":""}</span></button>`]
   }).join("");
   menu.classList.toggle("hide");
   $$("[data-cast-spell]").forEach(x=>x.onclick=()=>{
