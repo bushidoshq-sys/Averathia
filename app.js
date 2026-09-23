@@ -401,6 +401,42 @@ const RC_SCROLL_TABLE=[
  [63,"Questioning"],[64,"Repetition"],[66,"Seeing"],[68,"Shelter"],[71,"Spell Catching"],
  [96,"Spell"],[98,"Trapping"],[100,"Truth"]
 ];
+const RC_SCROLL_SPELL_COUNT=[[50,1],[83,2],[100,3]];
+const RC_SCROLL_SPELL_LEVEL_CLERICAL=[[34,1],[58,2],[76,3],[88,4],[95,5],[99,6],[100,7]];
+const RC_SCROLL_SPELL_LEVEL_MAGICAL=[[28,1],[49,2],[64,3],[75,4],[84,5],[91,6],[96,7],[99,8],[100,9]];
+const RC_SCROLL_LOW_SPELLS={
+ Magical:{
+  1:["Analyze","Charm Person","Detect Magic","Floating Disc","Hold Portal","Light","Magic Missile","Protection from Evil","Read Languages","Read Magic","Shield","Sleep","Ventriloquism"],
+  2:["Continual Light","Detect Evil","Detect Invisible","Entangle","ESP","Invisibility","Knock","Levitate","Locate Object","Mirror Image","Phantasmal Force","Web","Wizard Lock"],
+  3:["Clairvoyance","Create Air","Dispel Magic","Fireball","Fly","Haste","Hold Person","Infravision","Invisibility 10' Radius","Lightning Bolt","Protection from Evil 10' Radius","Protection from Normal Missiles","Water Breathing"]
+ },
+ Clerical:{
+  1:["Cure Light Wounds","Detect Evil","Detect Magic","Light","Protection from Evil","Purify Food and Water","Remove Fear","Resist Cold"],
+  2:["Bless","Find Traps","Know Alignment","Hold Person","Resist Fire","Silence 15' Radius","Snake Charm","Speak with Animals"],
+  3:["Continual Light","Cure Disease","Growth of Animals","Locate Object","Remove Curse","Striking"]
+ }
+};
+function rcScrollSpellType(){let r=d(100);return r<=70?"Magical":r<=95?"Clerical":"Druidic"}
+function rcScrollSpellLevel(type){
+ let table=type==="Magical"?RC_SCROLL_SPELL_LEVEL_MAGICAL:RC_SCROLL_SPELL_LEVEL_CLERICAL;
+ return rcTablePick(table)
+}
+function rcImplementedSpellLink(type,name,level){
+ let list=type==="Magical"?(typeof ARCANE_NOW!=="undefined"?ARCANE_NOW:[]):type==="Clerical"?(typeof CLERIC_NOW!=="undefined"?CLERIC_NOW:[]):[];
+ let hit=list.find(x=>x.sl===level&&(x.rc===name||x.name===name));
+ return hit?{id:hit.id,name:hit.name,rc:hit.rc,sl:hit.sl}:null
+}
+function rcRollSpellScrollDetail(){
+ let type=rcScrollSpellType(),count=rcTablePick(RC_SCROLL_SPELL_COUNT),spells=[];
+ for(let i=0;i<count;i++){
+  let level=rcScrollSpellLevel(type),names=RC_SCROLL_LOW_SPELLS[type]?.[level]||null,name=names?names[d(names.length)-1]:null;
+  let entry={type,level,name:name||null};
+  if(name)entry.implemented=rcImplementedSpellLink(type,name,level);
+  spells.push(entry)
+ }
+ return{type,count,spells}
+}
+
 const RC_WAND_STAFF_ROD_TABLE=[
  [5,"Wand of Cold"],[10,"Wand of Enemy Detection"],[14,"Wand of Fear"],[19,"Wand of Fireballs"],
  [23,"Wand of Illusion"],[28,"Wand of Lightning Bolts"],[33,"Wand of Magic Detection"],
@@ -514,7 +550,10 @@ function rollRcNamedMagic(category){
  if(!table)return rcMagicInventoryItem(category,"Unresolved RC subtable item");
  let name=rcTablePick(table),item=rcMagicInventoryItem(category,name),charges=rcChargesFor(name);
  if(charges!=null)item.charges=charges;
- if(category==="scroll"&&name==="Spell"){item.rcSpellScroll=true;item.spellCount=d(3)}
+ if(category==="scroll"&&name==="Spell"){
+   let detail=rcRollSpellScrollDetail();item.rcSpellScroll=true;item.rcScrollType=detail.type;item.spellCount=detail.count;item.rcScrollSpells=detail.spells;
+   item.n=`RC Spell Scroll — ${detail.type} (${detail.count} spell${detail.count===1?"":"s"})`;
+ }
  return item
 }
 function rollRcMagicAny(allowed=null){
