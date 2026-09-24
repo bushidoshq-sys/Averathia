@@ -52,10 +52,20 @@ jobs:
             page.on('pageerror', e => pageErrors.push(String(e)));
             page.on('console', m => { if (m.type() === 'error') consoleErrors.push(m.text()); });
 
+            const responses = [];
+            page.on('response', r => { if (/app\\.js|index\\.html/.test(r.url())) responses.push({ url:r.url(), status:r.status() }); });
+            const failedRequests = [];
+            page.on('requestfailed', r => failedRequests.push({ url:r.url(), error:r.failure()?.errorText || 'failed' }));
             await page.goto('http://127.0.0.1:8000/', { waitUntil: 'networkidle' });
+            await page.waitForTimeout(500);
             assert.equal(await page.title(), 'Averathia');
-            assert.equal(await page.locator('[data-class]').count(), 6, 'Expected six class choices');
-            assert.equal(await page.locator('[data-av]').count(), 3, 'Expected three avatar choices');
+            const classCount = await page.locator('[data-class]').count();
+            const avatarCount = await page.locator('[data-av]').count();
+            if (classCount !== 6 || avatarCount !== 3) {
+              console.error('STARTUP_DIAGNOSTICS', JSON.stringify({ classCount, avatarCount, pageErrors, consoleErrors, responses, failedRequests }, null, 2));
+            }
+            assert.equal(classCount, 6, 'Expected six class choices');
+            assert.equal(avatarCount, 3, 'Expected three avatar choices');
 
             await page.fill('#charName', 'Smoke Tester');
             await page.click('[data-class="Fighter"]');
