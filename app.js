@@ -303,7 +303,7 @@ function renderHome(){
  document.querySelectorAll("[data-home-coin-denom]").forEach(b=>b.onclick=()=>{homeCoinDenom=b.dataset.homeCoinDenom;homeCoinAmount="";renderHome()});
  document.querySelectorAll("[data-home-coin-key]").forEach(b=>b.onclick=()=>homeCoinKey(b.dataset.homeCoinKey));
  document.querySelectorAll("[data-home-coin-preset]").forEach(b=>b.onclick=()=>homeCoinSetPreset(b.dataset.homeCoinPreset));
- if($("#homeCoinAmountInput"))$("#homeCoinAmountInput").oninput=e=>{homeCoinAmount=String(Math.max(0,Math.trunc(Number(e.target.value)||0))).slice(0,7);renderHome()};
+ if($("#homeCoinAmountInput"))$("#homeCoinAmountInput").oninput=e=>{homeCoinAmount=String(Math.max(0,Math.trunc(Number(e.target.value)||0))).slice(0,7);let b=$("#homeCoinConfirm"),v=homeCoinAmountNumber(),lim=homeCoinTransferLimit();if(b)b.disabled=v<1||v>lim};
  if($("#homeCoinConfirm"))$("#homeCoinConfirm").onclick=transferHomeCoins;
  document.querySelectorAll("[data-home-store]").forEach(function(b){b.onclick=function(){storeAtHome(+b.dataset.homeStore)}});document.querySelectorAll("[data-home-take]").forEach(function(b){b.onclick=function(){takeFromHome(+b.dataset.homeTake)}});document.querySelectorAll("[data-home-gp-store]").forEach(function(b){b.onclick=function(){storeGpInHomeSack(+b.dataset.homeGpStore)}});document.querySelectorAll("[data-home-gp-take]").forEach(function(b){b.onclick=function(){takeGpFromHomeSack(+b.dataset.homeGpTake)}});
  if($("#buyHorseBtn"))$("#buyHorseBtn").onclick=buyHorse;if($("#sellHorseBtn"))$("#sellHorseBtn").onclick=sellHorse;if($("#buyFeedBtn"))$("#buyFeedBtn").onclick=function(){buyMountFeed(1)};
