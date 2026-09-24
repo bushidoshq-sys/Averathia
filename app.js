@@ -110,9 +110,9 @@ const RETAINER_CARRY_BP=1600;
 const WISHING_WELL_CHANCE=100;
 const HOME_COIN_STORAGE=[
  {name:"None",capacity:0},
- {name:"Coin Chest",capacity:1000},
- {name:"Strongbox",capacity:5000},
- {name:"Vault",capacity:25000}
+ {name:"Coin Chest",capacity:10000},
+ {name:"Strongbox",capacity:50000},
+ {name:"Vault",capacity:250000}
 ];
 function ensureHomeState(obj=h){
  if(!obj)return;
@@ -146,6 +146,17 @@ function homeTier(obj=h){ensureHomeState(obj);return obj?obj.homeTier:0}
 function homeCoinStorageSpec(obj=h){let t=homeTier(obj);return HOME_COIN_STORAGE[t]||HOME_COIN_STORAGE[0]}
 function homeCoinCount(obj=h){ensureHomeState(obj);return Math.max(0,obj?.homeCoins?.gp||0)+Math.max(0,obj?.homeCoins?.sp||0)+Math.max(0,obj?.homeCoins?.cp||0)}
 function homeCoinValueCP(obj=h){ensureHomeState(obj);return Math.max(0,obj?.homeCoins?.gp||0)*100+Math.max(0,obj?.homeCoins?.sp||0)*10+Math.max(0,obj?.homeCoins?.cp||0)}
+function homeSpendableCP(){return walletCP()+homeCoinValueCP()}
+function setHomeCoinValueCP(cp){
+ ensureHomeState();cp=Math.max(0,Math.round(Number(cp)||0));
+ h.homeCoins.gp=Math.floor(cp/100);h.homeCoins.sp=Math.floor((cp%100)/10);h.homeCoins.cp=cp%10
+}
+function spendFromWalletAndHome(cp){
+ cp=Math.max(0,Math.round(Number(cp)||0));if(homeSpendableCP()<cp)return false;
+ let fromWallet=Math.min(walletCP(),cp);setWalletCP(walletCP()-fromWallet);cp-=fromWallet;
+ if(cp>0)setHomeCoinValueCP(homeCoinValueCP()-cp);
+ return true
+}
 function storeCoinsAtHome(){
  if(!hasRoom()||h.trip||h.combat)return;ensureHomeState();
  let cap=homeCoinStorageSpec().capacity,space=Math.max(0,cap-homeCoinCount());if(space<1)return;
@@ -180,8 +191,8 @@ function horseSellPriceCP(){return Math.round(gpToCP(RIDING_HORSE_PRICE_GP)*.5*(
 function feedPackPriceCP(){return Math.round(gpToCP(MOUNT_FEED_WEEK_GP)*(1-chaBuyDiscount()))}
 function buyHomeUpgrade(){
  if(h.trip||h.combat)return;let t=homeTier();if(t>=3)return;let cost=homeUpgradeCostCP();
- if(walletCP()<cost){alert("Not enough money for "+HOME_TIER_NAMES[t+1]+".");return}
- setWalletCP(walletCP()-cost);h.homeTier=t+1;ensureHomeState();processTownAutomation();save()
+ if(homeSpendableCP()<cost){alert("Not enough money for "+HOME_TIER_NAMES[t+1]+".");return}
+ spendFromWalletAndHome(cost);h.homeTier=t+1;ensureHomeState();processTownAutomation();save()
 }
 function storeAtHome(i){
  if(!hasRoom()||h.trip||h.combat)return;let x=h.inv[i];if(!x)return;if(x.eq)x.eq=false;h.homeStorage.push(x);h.inv.splice(i,1);save()
