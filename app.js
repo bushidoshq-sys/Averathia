@@ -105,6 +105,7 @@ function startLongRest(){
  h.restUntil=Date.now()+realMsForATHours(8);save();return true
 }
 function cureDiseaseCostGP(level=h?.level||1){level=Math.max(1,Math.trunc(Number(level)||1));return 10*level*(level+1)}
+function curePoisonCostGP(level=h?.level||1){level=Math.max(1,Math.trunc(Number(level)||1));return 5*level*(level+1)}
 function diseaseNowFor(obj=h){
  if(obj===h)return averathiaNow();
  let wc=obj?.worldClock;if(wc&&Number.isFinite(Number(wc.atAnchor))&&Number.isFinite(Number(wc.realAnchor)))return Number(wc.atAnchor)+(Date.now()-Number(wc.realAnchor))*AT_RATE;
@@ -120,6 +121,10 @@ function ensureDiseases(obj=h){
  obj.mummyDisease=obj.diseases.some(x=>x.type==="mummy");syncDiseaseCondition(obj);return obj.diseases
 }
 function hasDisease(){return ensureDiseases().length>0}
+function hasCurableDisease(){return ensureDiseases().some(x=>x?.type!=="centipede")}
+function activePoisonTimedConditions(){return ensureTimedConditions().filter(x=>(Number(x.rounds)||0)>0&&(x.type==="lethalSpiderPoison"||x.type==="tarantellaDance"))}
+function activePoisonDiseases(){return ensureDiseases().filter(x=>x?.type==="centipede")}
+function hasActivePoison(){return activePoisonDiseases().length>0||activePoisonTimedConditions().length>0}
 function mummyDiseaseActive(){return ensureDiseases().some(x=>x.type==="mummy")}
 function magicalHealingBlockedByDisease(){return ensureDiseases().some(x=>x.magicalHealingBlocked)}
 function diseaseNaturalHealingMultiplier(){let m=1;for(const x of ensureDiseases())if(Number.isFinite(Number(x.naturalHealingMultiplier)))m=Math.min(m,Number(x.naturalHealingMultiplier));return m}
@@ -176,10 +181,12 @@ function addDisease(dis){
  let item={id:dis.id||`${dis.type}-${Date.now()}-${d(100000)}`,contractedAtAT:averathiaNow(),...dis};ds.push(item);h.mummyDisease=ds.some(x=>x.type==="mummy");syncDiseaseCondition();return item
 }
 function nextDiseaseForCure(){
- let ds=ensureDiseases();if(!ds.length)return null;
+ let ds=ensureDiseases().filter(x=>x?.type!=="centipede");if(!ds.length)return null;
  return [...ds].sort((a,b)=>(Number(!!b.magicalHealingBlocked)-Number(!!a.magicalHealingBlocked))||(Number(!!b.fatalAtAT)-Number(!!a.fatalAtAT))||(Number(a.contractedAtAT)||0)-(Number(b.contractedAtAT)||0))[0]
 }
 function cureOneDisease(){let target=nextDiseaseForCure();if(!target)return null;h.diseases=ensureDiseases().filter(x=>x.id!==target.id);h.mummyDisease=h.diseases.some(x=>x.type==="mummy");syncDiseaseCondition();return target}
+function nextPoisonForCure(){let timed=activePoisonTimedConditions().sort((a,b)=>(Number(!!b.lethalOnExpire)-Number(!!a.lethalOnExpire))||(Number(a.rounds)||0)-(Number(b.rounds)||0));if(timed.length)return{kind:"timed",effect:timed[0]};let diseases=activePoisonDiseases();return diseases.length?{kind:"disease",effect:diseases[0]}:null}
+function cureOnePoison(){let target=nextPoisonForCure();if(!target)return null;if(target.kind==="timed")h.timedConditions=ensureTimedConditions().filter(x=>x.id!==target.effect.id);else h.diseases=ensureDiseases().filter(x=>x.id!==target.effect.id);syncDiseaseCondition();return target.effect}
 function diseaseTimeLeftText(until){let ms=Math.max(0,Number(until)-averathiaNow()),hours=ms/3600000;return hours<24?`${Math.max(1,Math.ceil(hours))}h`:`${Math.max(1,Math.ceil(hours/24))}d`}
 function diseaseStatusText(){
  let now=averathiaNow();return ensureDiseases().map(x=>{let bits=[x.name||"Disease"];if(x.magicalHealingBlocked)bits.push("magical healing blocked");if(Number(x.bedRestUntilAT)>now)bits.push(`bed rest ${diseaseTimeLeftText(x.bedRestUntilAT)}`);if(Number(x.activityBlockedUntilAT)>now)bits.push(`physical activity blocked ${diseaseTimeLeftText(x.activityBlockedUntilAT)}`);return bits.join(" · ")}).join(" | ")
@@ -230,7 +237,7 @@ function renderTrophies(){let grid=$("#trophyGrid"),intro=$("#trophyIntro");if(!
 function refresh(){updateNavigationLock();if(h){ageTimedBuffsClock(Date.now());if(ageTimedConditionsClock(Date.now())===false)return;if(updateDiseases())return}if(h?.deadUntil&&Date.now()<h.deadUntil){renderDeathPage();return}renderTrophies();if(h)renderSkills();if($("#lastAdventure")){if(h?.lastAdventure){$("#lastAdventure").classList.remove("hide");$("#lastAdventureText").textContent=h.lastAdventure}else $("#lastAdventure").classList.add("hide")}renderPendingEvent();if(!h)return;updateRest();
  if(h.deadUntil&&Date.now()>=h.deadUntil){h.deadUntil=null;h.hp=Math.max(1,h.maxhp);h.trip=null;h.combat=null;save();page("town");return}
  if($("#worldClock"))$("#worldClock").textContent=atClockText();
- if($("#longRestBtn")){$("#longRestBtn").disabled=!!h.restUntil||!!h.deadUntil;$("#longRestBtn").onclick=()=>startLongRest()}if($("#cureDiseaseHealer")){$("#cureDiseaseHealer").textContent=`Cure Disease — ${cureDiseaseCostGP()} gp`;$("#cureDiseaseHealer").disabled=!hasDisease()}
+ if($("#longRestBtn")){$("#longRestBtn").disabled=!!h.restUntil||!!h.deadUntil;$("#longRestBtn").onclick=()=>startLongRest()}if($("#cureDiseaseHealer")){$("#cureDiseaseHealer").textContent=`Cure Disease — ${cureDiseaseCostGP()} gp`;$("#cureDiseaseHealer").disabled=!hasCurableDisease()}if($("#curePoisonHealer")){$("#curePoisonHealer").textContent=`Cure Poison — ${curePoisonCostGP()} gp`;$("#curePoisonHealer").disabled=!hasActivePoison()}
  if($("#restStatus"))$("#restStatus").textContent=h.deadUntil?`Recall: ${Math.ceil((h.deadUntil-Date.now())/60000)} min`:h.restUntil?`Resting: ${Math.max(0,Math.ceil((h.restUntil-Date.now())/60000))} min RT remaining`:"";
  let classLabel=["Elf","Dwarf"].includes(h.className)?h.className:`Human ${h.className}`;$("#top").innerHTML=`<div class="topIdentity"><b>${h.name}</b> — Level ${h.level} ${classLabel}</div><div class="topVitals">❤️ ${h.hp}/${h.maxhp} &nbsp;&nbsp; ⭐ ${h.xp} XP${h.level<classLevelData().cap?` / ${classLevelData().xp[h.level]}`:" · MAX"}</div><div class="topCoins">🪙 ${Math.trunc(h.gp ?? h.gold ?? 0)} GP &nbsp;·&nbsp; ${Math.trunc(h.sp ?? 0)} SP &nbsp;·&nbsp; ${Math.trunc(h.cp ?? 0)} CP</div>${hasDisease()?`<div class="topDisease">🦠 ${diseaseStatusText()}</div>`:""}${ensureTimedConditions().length?`<div class="topDisease">🕷️ ${timedConditionStatusText()}</div>`:""}`;let av=chibiHTML(h.sex,h.avatar,true);$("#townAvatar").innerHTML=$("#sheetAvatar").innerHTML=av;let coins=`${Math.trunc(h.gp||0)} GP · ${Math.trunc(h.sp||0)} SP · ${Math.trunc(h.cp||0)} CP`;$("#sheetData").innerHTML=`<b>${h.name}</b> &nbsp; ${h.sex} · ${["Elf","Dwarf"].includes(h.className)?h.className:`Human ${h.className}`}`;let order=["STR","DEX","CON","INT","WIS","CHA"];$("#sheetStats").innerHTML=order.map(k=>`<div class=stat>${k}<br><b>${h.stats[k]}</b></div>`).join("");let ammo=`Arrows: ${ammoCount("Arrows")} · Quarrels: ${ammoCount("Quarrels")} · Sling stones: ${ammoCount("Sling Stones")}`;$("#sheetResources").innerHTML=`Rations: ${h.rations.toFixed(2)} days · Water: ${h.water.toFixed(2)}/${h.waterCapacity} skins · Light: ${(totalLightMinutes()/60).toFixed(2)} h · ${ammo}${hasDisease()?`<br>🦠 ${diseaseStatusText()}`:""}${ensureTimedConditions().length?`<br>🕷️ ${timedConditionStatusText()}`:""}`;sheetInventory();renderShop();let needs=survivalNeedsForMinutes(mins),needLight=mins*2/3,diseaseBlocked=diseaseJourneyBlocked(),timedBlocked=timedConditionJourneyBlocked(),bed=diseaseBlocked||timedBlocked;$("#requirements").innerHTML=`<p>Needed for ${mins} min (${(mins*AT_RATE/60).toFixed(1)} AT h): food ${needs.foodDays.toFixed(3)} days · water ${needs.waterSkins.toFixed(3)} skins · light ${needLight.toFixed(1)} min (2/3 of adventure).</p>${diseaseBlocked?`<p class="small">🦠 ${diseaseStatusText()} — Journey unavailable during required bed rest.</p>`:""}${timedBlocked?`<p class="small">🕷️ ${timedConditionStatusText()} — Journey unavailable while this condition is active.</p>`:""}`;if($("#start"))$("#start").disabled=bed}
 function renderDeathPage(){if(!h?.deadUntil)return;clearTimeout(timer);$$(".page").forEach(x=>x.classList.add("hide"));let p=$("#death");if(!p)return;p.classList.remove("hide");let left=Math.max(0,h.deadUntil-Date.now()),m=Math.floor(left/60000),s=Math.floor(left/1000)%60;$("#graveName").textContent=h.name;$("#deathCountdown").textContent=`${m}:${String(s).padStart(2,"0")}`;$("#top").innerHTML=`<b>${h.name}</b> — DEAD`;timer=setTimeout(()=>{if(Date.now()>=h.deadUntil){h.deadUntil=null;h.hp=Math.max(1,h.maxhp);h.trip=null;h.combat=null;save();page("town")}else renderDeathPage()},500)}
@@ -239,7 +246,7 @@ function updateNavigationLock(){
  $$("[data-page]").forEach(b=>{let allowed=!lockedTarget||b.dataset.page===lockedTarget;b.disabled=!allowed;b.classList.toggle("journeyLocked",!allowed)});
 }
 function page(id){
- if(h?.combat&&id!=="combat")id="combat";
+ if(h?.combat)id="combat";
  else if(h?.trip&&id!=="depart")id="depart";
  if(h?.deadUntil&&Date.now()<h.deadUntil&&id!=="death"&&id!=="settings"){renderDeathPage();return}
  $$(".page").forEach(x=>x.classList.add("hide"));$("#"+id).classList.remove("hide");$$("[data-page]").forEach(x=>x.classList.toggle("on",x.dataset.page===id));updateNavigationLock();if(id!=="settings")refresh()
@@ -618,7 +625,7 @@ function buy(x){
 }
 function equip(i){let q=h.inv[i];if(!q||!q.can)return;if(!classCanUse(q.baseWeapon||q.baseArmor||q.n,q.kind)){alert(`${h.className} cannot use ${q.n}.`);return}if(q.eq){q.eq=false;save();return}if(q.kind==="armor")h.inv.forEach(z=>{if(z.kind==="armor")z.eq=false});if(q.kind==="weapon"){let ranged=isRangedWeapon(q);h.inv.forEach(z=>{if(z.kind==="weapon"&&isRangedWeapon(z)===ranged)z.eq=false});if(itemData(q).two)h.inv.forEach(z=>{if(z.kind==="shield")z.eq=false})}if(q.kind==="shield"){let w=h.inv.find(z=>z.kind==="weapon"&&z.eq);if(w&&itemData(w).two){alert("A shield cannot be equipped with a two-handed weapon.");return}h.inv.forEach(z=>{if(z.kind==="shield")z.eq=false})}q.eq=true;save()}
 document.addEventListener("click",e=>{if(e.target.dataset.eq!==undefined)equip(+e.target.dataset.eq)});
-$$("[data-heal]").forEach(b=>b.onclick=()=>{let pct=+b.dataset.heal,cost=gpToCP({10:2,50:10,100:20}[pct]);if(magicalHealingBlockedByDisease()){$("#healmsg").textContent="Tomb Rot blocks magical healing. Cure the disease first.";return}if(walletCP()<cost){$("#healmsg").textContent="Not enough gold.";return}if(h.hp>=h.maxhp){$("#healmsg").textContent="Already at full health.";return}setWalletCP(walletCP()-cost);h.hp=Math.min(h.maxhp,h.hp+Math.ceil(h.maxhp*pct/100));$("#healmsg").textContent="Healing complete.";save()});if($("#cureDiseaseHealer"))$("#cureDiseaseHealer").onclick=()=>{let target=nextDiseaseForCure(),price=cureDiseaseCostGP(),cost=gpToCP(price);if(!target){$("#healmsg").textContent="No disease to cure.";return}if(walletCP()<cost){$("#healmsg").textContent=`Cure Disease costs ${price} gp.`;return}setWalletCP(walletCP()-cost);let cured=cureOneDisease();$("#healmsg").textContent=`${cured.name} cured for ${price} gp.`;save()};
+$$("[data-heal]").forEach(b=>b.onclick=()=>{let pct=+b.dataset.heal,cost=gpToCP({10:2,50:10,100:20}[pct]);if(magicalHealingBlockedByDisease()){$("#healmsg").textContent="Tomb Rot blocks magical healing. Cure the disease first.";return}if(walletCP()<cost){$("#healmsg").textContent="Not enough gold.";return}if(h.hp>=h.maxhp){$("#healmsg").textContent="Already at full health.";return}setWalletCP(walletCP()-cost);h.hp=Math.min(h.maxhp,h.hp+Math.ceil(h.maxhp*pct/100));$("#healmsg").textContent="Healing complete.";save()});if($("#cureDiseaseHealer"))$("#cureDiseaseHealer").onclick=()=>{let target=nextDiseaseForCure(),price=cureDiseaseCostGP(),cost=gpToCP(price);if(!target){$("#healmsg").textContent="No disease to cure.";return}if(walletCP()<cost){$("#healmsg").textContent=`Cure Disease costs ${price} gp.`;return}setWalletCP(walletCP()-cost);let cured=cureOneDisease();$("#healmsg").textContent=`${cured.name} cured for ${price} gp.`;save()};if($("#curePoisonHealer"))$("#curePoisonHealer").onclick=()=>{let target=nextPoisonForCure(),price=curePoisonCostGP(),cost=gpToCP(price);if(!target){$("#healmsg").textContent="No poison to cure.";return}if(walletCP()<cost){$("#healmsg").textContent=`Cure Poison costs ${price} gp.`;return}setWalletCP(walletCP()-cost);let cured=cureOnePoison();$("#healmsg").textContent=`${cured.name} cured for ${price} gp.`;save()};
 $$("[data-mode]").forEach(b=>b.onclick=()=>{mode=b.dataset.mode;$$("[data-mode]").forEach(x=>x.classList.toggle("on",x===b))});$$("[data-risk]").forEach(b=>b.onclick=()=>{risk=b.dataset.risk;$$("[data-risk]").forEach(x=>x.classList.toggle("on",x===b))});$$("[data-min]").forEach(b=>b.onclick=()=>{mins=+b.dataset.min;$$("[data-min]").forEach(x=>x.classList.toggle("on",x===b));refresh()});
 function clock(t){return new Date(t).toLocaleTimeString([], {hour:"2-digit",minute:"2-digit"})}
 function adventureLog(t,type="Event"){
@@ -1387,7 +1394,7 @@ function startClericUndeadFight(ev){
 }
 function autoPotionThreshold(){return{Cautious:.65,Normal:.45,Bold:.25}[h.trip?.risk||"Normal"]}
 function autoSpellScore(s){
- if(s.kind==="cleanse"){let active=(h.conditions||[]).includes(s.condition)||(s.rc==="Cure Disease"&&hasDisease());return active?110:0}
+ if(s.kind==="cleanse"){let active=(h.conditions||[]).includes(s.condition)||(s.rc==="Cure Disease"&&hasCurableDisease());return active?110:0}
  if(s.kind==="heal")return magicalHealingBlockedByDisease()?0:(h.hp/h.maxhp<.55?100:0);
  if(s.rc==="Striking"&&living().some(e=>e.mummy)){let w=combatStats().weapon,dup=h.spells?.buffs?.some(b=>b.rc==="Striking"&&b.boundWeapon===w);return dup?0:95}
  if(s.kind==="buff"){let dup=h.spells?.buffs?.some(b=>b.rc===s.rc);return dup?0:(living().length>1?55:30)}
@@ -2025,12 +2032,12 @@ function renderSkills(){
   out.push(`<div class=skillCard><b>Memorized Spells</b><span class=small>Choose the spells prepared for the current daily slots. Rest restores expended memorized spells.${prepLocked?" Loadout is locked until you are back in town with no expended prepared slots.":""}</span></div>`);
   for(let sl=1;sl<=slots.length;sl++){let cap=slots[sl-1]||0;if(!cap)continue;let known=list.filter(s=>s.sl===sl),mem=(h.spells.memorized?.[sl]||[]);out.push(`<div class=skillCard><b>Spell Level ${sl} — ${mem.length}/${cap} memorized</b>`+known.map(s=>{let copies=mem.filter(id=>id===s.id).length;return `<div class=spellPick><span>${s.name}<br><span class=small>${SPELL_BRIEFS[s.name]||"Spell effect."} · Prepared: ${copies}</span></span><span><button data-mem-add="${s.id}" data-sl="${sl}" ${mem.length>=cap||prepLocked?"disabled":""}>+</button> <button data-mem-remove="${s.id}" data-sl="${sl}" ${!copies||prepLocked?"disabled":""}>−</button></span></div>`}).join("")+`</div>`)}
  }
- if(h.className==="Cleric"&&hasDisease()){let ready=availableCombatSpells().some(x=>x.id==="cure_disease");out.push(`<div class=skillCard><b>Cure Disease</b><span class=small>${diseaseStatusText()}</span><button id=townCureDisease ${ready&&!h.trip&&!h.combat&&!h.restUntil?"":"disabled"}>Cast on self</button></div>`)}
+ if(h.className==="Cleric"&&hasCurableDisease()){let ready=availableCombatSpells().some(x=>x.id==="cure_disease");out.push(`<div class=skillCard><b>Cure Disease</b><span class=small>${diseaseStatusText()}</span><button id=townCureDisease ${ready&&!h.trip&&!h.combat&&!h.restUntil?"":"disabled"}>Cast on self</button></div>`)}
  box.innerHTML=out.join("")||`<div class=small>No class skills or special abilities to manage.</div>`;
  $$("[data-mem-add]").forEach(b=>b.onclick=()=>changeMemorized(b.dataset.memAdd,+b.dataset.sl,1));$$("[data-mem-remove]").forEach(b=>b.onclick=()=>changeMemorized(b.dataset.memRemove,+b.dataset.sl,-1));if($("#townCureDisease"))$("#townCureDisease").onclick=castTownCureDisease
 }
 function castTownCureDisease(){
- if(h.trip||h.combat||h.restUntil||!hasDisease())return false;let spell=(SPELLS.Cleric||[]).find(x=>x.id==="cure_disease");if(!spell||!availableCombatSpells().some(x=>x.id===spell.id)||!consumeSpell(spell))return false;
+ if(h.trip||h.combat||h.restUntil||!hasCurableDisease())return false;let spell=(SPELLS.Cleric||[]).find(x=>x.id==="cure_disease");if(!spell||!availableCombatSpells().some(x=>x.id===spell.id)||!consumeSpell(spell))return false;
  let cured=cureOneDisease();if(cured){save();renderSkills();return true}return false
 }
 function changeMemorized(id,sl,delta){
