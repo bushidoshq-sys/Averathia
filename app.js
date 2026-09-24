@@ -251,6 +251,8 @@ function rcMagicUseKind(item){
  if(item.rcCategory==="potion"&&item.rcItem==="Fire Resistance")return"fireResistPotion";
  if(item.rcCategory==="potion"&&item.rcItem==="Speed")return"speedPotion";
  if(item.rcCategory==="potion"&&item.rcItem==="Defense")return"defensePotion";
+ if(item.rcCategory==="potion"&&item.rcItem==="Freedom")return"freedomPotion";
+ if(item.rcCategory==="potion"&&item.rcItem==="Antidote")return"antidotePotion";
  if(item.rcCategory==="wandStaffRod"&&item.rcItem==="Wand of Fireballs")return"wandFireball";
  if(item.rcCategory==="wandStaffRod"&&item.rcItem==="Wand of Lightning Bolts")return"wandLightning";
  if(item.rcCategory==="wandStaffRod"&&item.rcItem==="Staff of Healing")return"staffHeal";
@@ -278,7 +280,7 @@ function rcMagicCombatUsable(item){
  if(["wandFireball","wandLightning"].includes(k))return Number(item.charges)>0&&combatDistance()<=240;
  if(["staffHeal","rodHeal"].includes(k))return rcMagicHealReady(item)&&h.hp<h.maxhp;
  if(k==="superHeal")return h.hp<h.maxhp;
- if(k==="fireResistPotion"||k==="speedPotion"||k==="defensePotion")return true;
+ if(["fireResistPotion","speedPotion","defensePotion","freedomPotion","antidotePotion"].includes(k))return true;
  return false
 }
 function resolveRcMagicHeal(item,index,inCombat=false){
@@ -304,7 +306,7 @@ function resolveRcWandAttack(item){
 }
 function activeRcTimedPotion(){ensureSpellState();return h.spells.buffs.find(b=>b.potionEffect)||null}
 function resolveRcTimedPotion(item,index){
- let k=rcMagicUseKind(item);if(!["fireResistPotion","speedPotion","defensePotion"].includes(k))return false;
+ let k=rcMagicUseKind(item);if(!["fireResistPotion","speedPotion","defensePotion","freedomPotion","antidotePotion"].includes(k))return false;
  h.inv.splice(index,1);ensureSpellState();
  let active=activeRcTimedPotion();
  if(active){
@@ -316,12 +318,14 @@ function resolveRcTimedPotion(item,index){
  let turns=k==="defensePotion"?1:d(6)+6,rounds=turns*RC_ROUNDS_PER_TURN;
  if(k==="fireResistPotion"){h.spells.buffs.push({rc:"Potion of Fire Resistance",potionEffect:true,resist:"fire",saveBonusVs:"fire",damagePerDieReduction:1,normalFireImmune:true,rounds});clog(`Potion of Fire Resistance takes effect for ${turns} turns.`)}
  else if(k==="speedPotion"){h.spells.buffs.push({rc:"Potion of Speed",potionEffect:true,speedSource:"potion",rounds});clog(`Potion of Speed takes effect for ${turns} turns.`)}
- else{let roll=d(10),bonus=roll<=3?1:roll<=5?2:roll<=7?3:roll<=9?4:5;h.spells.buffs.push({rc:"Potion of Defense",potionEffect:true,ac:-bonus,defenseBonus:bonus,rounds});clog(`Potion of Defense grants AC +${bonus} for 1 turn (roll ${roll}).`)}
+ else if(k==="defensePotion"){let roll=d(10),bonus=roll<=3?1:roll<=5?2:roll<=7?3:roll<=9?4:5;h.spells.buffs.push({rc:"Potion of Defense",potionEffect:true,ac:-bonus,defenseBonus:bonus,rounds});clog(`Potion of Defense grants AC +${bonus} for 1 turn (roll ${roll}).`)}
+ else if(k==="freedomPotion"){h.spells.buffs.push({rc:"Potion of Freedom",potionEffect:true,immuneParalysis:true,rounds});clog(`Potion of Freedom prevents paralysis for ${turns} turns.`)}
+ else{let roll=d(10),limit=roll<=4?3:roll<=7?7:roll<=9?15:Infinity;h.spells.buffs.push({rc:"Potion of Antidote",potionEffect:true,poisonSaveBonus:2,poisonHdImmunity:limit,rounds});clog(`Potion of Antidote protects for ${turns} turns: +2 poison saves and immunity to ${Number.isFinite(limit)?`${limit}-HD or weaker poison`:"all poison"}.`)}
  return true
 }
 function useRcMagicItemCombat(index){
  if(!h?.combat||h.combat.paralyzed)return false;let item=h.inv[index];if(!item||!rcMagicCombatUsable(item))return false;
- let k=rcMagicUseKind(item),ok=["wandFireball","wandLightning"].includes(k)?resolveRcWandAttack(item):["fireResistPotion","speedPotion","defensePotion"].includes(k)?resolveRcTimedPotion(item,index):resolveRcMagicHeal(item,index,true);if(!ok)return false;
+ let k=rcMagicUseKind(item),ok=["wandFireball","wandLightning"].includes(k)?resolveRcWandAttack(item):["fireResistPotion","speedPotion","defensePotion","freedomPotion","antidotePotion"].includes(k)?resolveRcTimedPotion(item,index):resolveRcMagicHeal(item,index,true);if(!ok)return false;
  if(!living().length)return finishCombat();
  enemyStrike();if(h.combat){tickSpellBuffs();tickEnemySpellEffects();tickPlayerConditions();h.combat.round++;save();renderCombat()}return true
 }
@@ -753,7 +757,7 @@ function rcCreditCoins(coins={}){
 }
 function rcMagicInventoryItem(category,name){
  if(category==="potion"&&name==="Healing")return{n:"Healing Potion",kind:"gear",can:false,eq:false,rcMagic:true,rcCategory:"potion",rcItem:"Healing"};
- let supported=(category==="potion"&&["Super-Healing","Fire Resistance","Speed","Defense"].includes(name))||(category==="wandStaffRod"&&["Wand of Fireballs","Wand of Lightning Bolts","Staff of Healing","Rod of Health"].includes(name));
+ let supported=(category==="potion"&&["Super-Healing","Fire Resistance","Speed","Defense","Freedom","Antidote"].includes(name))||(category==="wandStaffRod"&&["Wand of Fireballs","Wand of Lightning Bolts","Staff of Healing","Rod of Health"].includes(name));
  return{n:`RC ${category}: ${name}`,kind:"gear",can:false,eq:false,rcMagic:true,rcCategory:category,rcItem:name,unsupportedMagic:!supported};
 }
 function rollRcPotion(){let name=rcTablePick(RC_POTION_TABLE);return rcMagicInventoryItem("potion",name)}
@@ -1276,6 +1280,13 @@ function combatDeath(reason=""){
  recoverThrownWeapons();h.trip=null;h.pendingEvent=null;h.combat=null;h.deadUntil=Date.now()+h.level*5*60000;h.hp=0;
  localStorage.setItem("averathia-v041",JSON.stringify(h));renderDeathPage();return false
 }
+function paralysisImmune(){return !!h?.spells?.buffs?.some(b=>b.immuneParalysis)}
+function poisonProtection(){
+ let buffs=h?.spells?.buffs||[],bonus=buffs.reduce((n,b)=>n+(b.poisonSaveBonus||0),0),limit=0;
+ for(const b of buffs)if(b.poisonHdImmunity===Infinity)limit=Infinity;else if(Number.isFinite(Number(b.poisonHdImmunity)))limit=Math.max(limit,Number(b.poisonHdImmunity));
+ return{bonus,limit}
+}
+function poisonImmuneFor(e){let p=poisonProtection();return p.limit===Infinity||(p.limit>0&&(Number(e?.hdDice)||0)<=p.limit)}
 function enemyStrike(){
  for(const e of living()){
   if(e.disabledRounds>0)continue;
@@ -1291,13 +1302,13 @@ function enemyStrike(){
    let dmg=rollExpr(e.damage);if(r===20)dmg*=2;if(e.damageType)dmg=applyElementalResistance(dmg,e.damage,e.damageType,e.damageNature!=="normal");h.hp=Math.max(0,h.hp-dmg);
    clog(`${e.n} hits with ${e.activeWeapon||"its attack"} for ${dmg}${r===20?" — critical":""}.`);
    if(e.special==="poison"){
-    let s=savingThrow("Death/Poison");clog(`Poison save ${s.roll} vs ${s.target}: ${s.success?"success":"FAIL"}.`);
-    if(!s.success){h.hp=0;clog("The poison is lethal.")}
+    if(poisonImmuneFor(e))clog(`Potion of Antidote neutralizes ${e.n}'s poison.`);
+    else{let s=savingThrow("Death/Poison",poisonProtection().bonus);clog(`Poison save ${s.roll} vs ${s.target}: ${s.success?"success":"FAIL"}.`);if(!s.success){h.hp=0;clog("The poison is lethal.")}}
    }
    if(e.special==="paralysis"){
-    if(e.id==="ghoul"&&h.className==="Elf"){clog(`${h.name}'s elven nature resists the ghoul's paralyzing touch.`)}
-    else {let s=savingThrow("Paralysis/Stone");clog(`Paralysis save ${s.roll} vs ${s.target}: ${s.success?"success":"FAIL"}.`);
-    if(!s.success){h.combat.paralyzed=true;h.combat.paralyzedRounds=(d(4)+d(4))*RC_ROUNDS_PER_TURN;clog(`${h.name} is paralyzed for ${Math.ceil(h.combat.paralyzedRounds/RC_ROUNDS_PER_TURN)} turn(s) and cannot act.`)}}
+    if(paralysisImmune())clog(`Potion of Freedom prevents ${e.n}'s paralysis.`);
+    else if(e.id==="ghoul"&&h.className==="Elf"){clog(`${h.name}'s elven nature resists the ghoul's paralyzing touch.`)}
+    else {let s=savingThrow("Paralysis/Stone");clog(`Paralysis save ${s.roll} vs ${s.target}: ${s.success?"success":"FAIL"}.`);if(!s.success){h.combat.paralyzed=true;h.combat.paralyzedRounds=(d(4)+d(4))*RC_ROUNDS_PER_TURN;clog(`${h.name} is paralyzed for ${Math.ceil(h.combat.paralyzedRounds/RC_ROUNDS_PER_TURN)} turn(s) and cannot act.`)}}
    }
    if(e.special==="disease"){
     h.conditions=h.conditions||[];
