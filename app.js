@@ -248,6 +248,8 @@ function discardInventoryItem(i){let q=h.inv[i];if(!q||q.kind!=="clothing")retur
 function rcMagicUseKind(item){
  if(!item?.rcMagic)return null;
  if(item.rcCategory==="potion"&&item.rcItem==="Super-Healing")return"superHeal";
+ if(item.rcCategory==="potion"&&item.rcItem==="Fire Resistance")return"fireResistPotion";
+ if(item.rcCategory==="potion"&&item.rcItem==="Speed")return"speedPotion";
  if(item.rcCategory==="wandStaffRod"&&item.rcItem==="Wand of Fireballs")return"wandFireball";
  if(item.rcCategory==="wandStaffRod"&&item.rcItem==="Wand of Lightning Bolts")return"wandLightning";
  if(item.rcCategory==="wandStaffRod"&&item.rcItem==="Staff of Healing")return"staffHeal";
@@ -275,6 +277,7 @@ function rcMagicCombatUsable(item){
  if(["wandFireball","wandLightning"].includes(k))return Number(item.charges)>0&&combatDistance()<=240;
  if(["staffHeal","rodHeal"].includes(k))return rcMagicHealReady(item)&&h.hp<h.maxhp;
  if(k==="superHeal")return h.hp<h.maxhp;
+ if(k==="fireResistPotion"||k==="speedPotion")return true;
  return false
 }
 function resolveRcMagicHeal(item,index,inCombat=false){
@@ -298,9 +301,25 @@ function resolveRcWandAttack(item){
  for(const q of targets){let dmg=base,sv=monsterSpellSave(q,"Wands");if(sv.success)dmg=Math.floor(dmg/2);if(q.mummy)dmg=Math.floor(dmg/2);q.hp=Math.max(0,q.hp-dmg);clog(`${item.rcItem}: ${q.n} save ${sv.roll} vs ${sv.target} [${sv.saveAs||"RC"}] — ${sv.success?"success":"FAIL"}; ${dmg} damage.`);if(k==="wandFireball"&&q.webbed&&q.hp>0){let burn=d(6);if(q.mummy)burn=Math.floor(burn/2);q.hp=Math.max(0,q.hp-burn);q.disabledRounds=Math.min(Math.max(1,q.disabledRounds||2),2);clog(`The burning web deals ${burn} extra fire damage to ${q.n}.`)}if(q.hp<=0){let gained=awardXP(q.xp);clog(`${q.n} defeated. +${gained} XP.`)}}
  return true
 }
+function activeRcTimedPotion(){ensureSpellState();return h.spells.buffs.find(b=>b.potionEffect)||null}
+function resolveRcTimedPotion(item,index){
+ let k=rcMagicUseKind(item);if(!["fireResistPotion","speedPotion"].includes(k))return false;
+ h.inv.splice(index,1);ensureSpellState();
+ let active=activeRcTimedPotion();
+ if(active){
+  h.spells.buffs=h.spells.buffs.filter(b=>!b.potionEffect);
+  h.combat.paralyzed=true;h.combat.fearParalyzed=false;h.combat.potionSick=true;h.combat.paralyzedRounds=3*RC_ROUNDS_PER_TURN;
+  clog(`Mixing active potions makes ${h.name} violently sick; both potion effects end and ${h.name} cannot act for 3 turns.`);
+  return true
+ }
+ let turns=d(6)+6,rounds=turns*RC_ROUNDS_PER_TURN;
+ if(k==="fireResistPotion"){h.spells.buffs.push({rc:"Potion of Fire Resistance",potionEffect:true,resist:"fire",saveBonusVs:"fire",damagePerDieReduction:1,normalFireImmune:true,rounds});clog(`Potion of Fire Resistance takes effect for ${turns} turns.`)}
+ else{h.spells.buffs.push({rc:"Potion of Speed",potionEffect:true,speedSource:"potion",rounds});clog(`Potion of Speed takes effect for ${turns} turns.`)}
+ return true
+}
 function useRcMagicItemCombat(index){
  if(!h?.combat||h.combat.paralyzed)return false;let item=h.inv[index];if(!item||!rcMagicCombatUsable(item))return false;
- let k=rcMagicUseKind(item),ok=["wandFireball","wandLightning"].includes(k)?resolveRcWandAttack(item):resolveRcMagicHeal(item,index,true);if(!ok)return false;
+ let k=rcMagicUseKind(item),ok=["wandFireball","wandLightning"].includes(k)?resolveRcWandAttack(item):["fireResistPotion","speedPotion"].includes(k)?resolveRcTimedPotion(item,index):resolveRcMagicHeal(item,index,true);if(!ok)return false;
  if(!living().length)return finishCombat();
  enemyStrike();if(h.combat){tickSpellBuffs();tickEnemySpellEffects();tickPlayerConditions();h.combat.round++;save();renderCombat()}return true
 }
@@ -722,7 +741,7 @@ function rcCreditCoins(coins={}){
 }
 function rcMagicInventoryItem(category,name){
  if(category==="potion"&&name==="Healing")return{n:"Healing Potion",kind:"gear",can:false,eq:false,rcMagic:true,rcCategory:"potion",rcItem:"Healing"};
- let supported=(category==="potion"&&name==="Super-Healing")||(category==="wandStaffRod"&&["Wand of Fireballs","Wand of Lightning Bolts","Staff of Healing","Rod of Health"].includes(name));
+ let supported=(category==="potion"&&["Super-Healing","Fire Resistance","Speed"].includes(name))||(category==="wandStaffRod"&&["Wand of Fireballs","Wand of Lightning Bolts","Staff of Healing","Rod of Health"].includes(name));
  return{n:`RC ${category}: ${name}`,kind:"gear",can:false,eq:false,rcMagic:true,rcCategory:category,rcItem:name,unsupportedMagic:!supported};
 }
 function rollRcPotion(){let name=rcTablePick(RC_POTION_TABLE);return rcMagicInventoryItem("potion",name)}
@@ -1190,9 +1209,8 @@ function autonomousCombat(isBoss=false){makeCombat(isBoss);return runAutonomousC
 function applyMummyFear(){if(!h?.combat||h.combat.mummyFearChecked)return;let m=living().find(e=>e.mummy);if(!m)return;h.combat.mummyFearChecked=true;let s=savingThrow("Paralysis/Stone");clog(`Mummy fear save ${s.roll} vs ${s.target}: ${s.success?"success":"FAIL"}.`);if(!s.success){h.combat.paralyzed=true;h.combat.fearParalyzed=true;h.combat.paralyzedRounds=null;clog(`${h.name} is paralyzed with fear while the Mummy remains in sight.`)}}
 function playerStrike(){
  if(h.combat?.paralyzed){clog(`${h.name} is paralyzed and cannot act.`);return}
- let haste=h.spells?.buffs?.some(b=>b.extraAttack);
- playerStrikeSingle();
- if(haste&&h.combat&&living().length){clog("Haste grants a second weapon attack.");playerStrikeSingle()}
+ let attacks=rcWeaponAttacksPerAction();
+ for(let i=0;i<attacks&&h.combat&&living().length;i++){if(i>0)clog(`${rcSpeedLevel()===2?"Double-speed":"Speed"} grants weapon attack ${i+1} of ${attacks}.`);playerStrikeSingle()}
 }
 function rcMagicWeaponOpponentBonus(item,target){
  if(!item?.rcVsBonus||!item.rcVs||!target)return 0;let key=String(item.rcVs).toLowerCase();
@@ -1319,7 +1337,7 @@ const ARCANE_NOW=[
  {id:"web",name:"Web",rc:"Web",sl:2,kind:"web",durationTurns:48,enemyTarget:true,rangeFeet:10,areaFeet:10},
  {id:"fireball",name:"Fireball",rc:"Fireball",sl:3,kind:"area",perLevel:true,save:"Spells",half:true,damageType:"fire",enemyTarget:true,rangeFeet:240,areaFeet:40},
  {id:"lightning_bolt",name:"Lightning Bolt",rc:"Lightning Bolt",sl:3,kind:"line",perLevel:true,save:"Spells",half:true,enemyTarget:true,rangeFeet:180,lineLengthFeet:60,lineWidthFeet:5},
- {id:"haste",name:"Haste",rc:"Haste",sl:3,kind:"buff",extraAttack:true,durationTurns:3},
+ {id:"haste",name:"Haste",rc:"Haste",sl:3,kind:"buff",extraAttack:true,speedSource:"haste",durationTurns:3},
  {id:"slow",name:"Slow",rc:"Slow",sl:3,kind:"debuff",save:"Spells",durationTurns:3,enemyTarget:true,rangeFeet:240,areaFeet:60,maxTargets:24},
  {id:"hold_person",name:"Hold Person",rc:"Hold Person",sl:3,kind:"hold",save:"Spells",durationTurnsPerLevel:1,maxTargets:4,humanoidOnly:true,enemyTarget:true,rangeFeet:120},
  {id:"prot_missiles",name:"Protection from Normal Missiles",rc:"Protection from Normal Missiles",sl:3,kind:"buff",missileWard:true,durationTurns:12}
@@ -1492,8 +1510,22 @@ function castCombatSpell(id,holdMode=null,missileTargetIds=null,holdTargetIds=nu
  if(h.combat){tickSpellBuffs();tickEnemySpellEffects();tickPlayerConditions();h.combat.round++;save();renderCombat()}
 }
 function tickEnemySpellEffects(){if(!h.combat)return;for(const e of living()){if(e.disabledRounds>0)e.disabledRounds--;if(e.disabledRounds<=0&&e.webbed){e.webbed=false;clog(`${e.n} breaks free of the web.`)}if(e.disabledRounds<=0&&e.sleeping){e.sleeping=false;clog(`${e.n} awakens.`)}if(e.disabledRounds<=0&&e.held){e.held=false;clog(`${e.n} is no longer held.`)}if(e.slowRounds>0)e.slowRounds--;if(e.blindRounds>0){e.blindRounds--;if(e.blindRounds<=0){e.blindMoveTicks=0;clog(`${e.n} can see again.`)}}}}
-function tickPlayerConditions(){if(!h?.combat)return;if(h.combat.fearParalyzed&&!living().some(e=>e.mummy)){h.combat.fearParalyzed=false;h.combat.paralyzed=false;h.combat.paralyzedRounds=0;clog(`${h.name} can move again now that the Mummy is out of sight.`)}if(h.combat.paralyzed&&!h.combat.fearParalyzed){if(!Number.isFinite(h.combat.paralyzedRounds))h.combat.paralyzedRounds=1;h.combat.paralyzedRounds--;if(h.combat.paralyzedRounds<=0){h.combat.paralyzed=false;h.combat.paralyzedRounds=0;clog(`${h.name} can move again.`)}}}
-function spellAttackBonus(){ensureSpellState();return h.spells.buffs.reduce((a,b)=>a+(b.attack||0),0)}
+function tickPlayerConditions(){
+ if(!h?.combat)return;
+ if(h.combat.fearParalyzed&&!living().some(e=>e.mummy)){h.combat.fearParalyzed=false;h.combat.paralyzed=false;h.combat.paralyzedRounds=0;clog(`${h.name} can move again now that the Mummy is out of sight.`)}
+ if(h.combat.paralyzed&&!h.combat.fearParalyzed){
+  if(!Number.isFinite(h.combat.paralyzedRounds))h.combat.paralyzedRounds=1;h.combat.paralyzedRounds--;
+  if(h.combat.paralyzedRounds<=0){let sick=!!h.combat.potionSick;h.combat.paralyzed=false;h.combat.paralyzedRounds=0;h.combat.potionSick=false;clog(sick?`${h.name} recovers from potion sickness.`:`${h.name} can move again.`)}
+ }
+}
+function rcSpeedLevel(){
+ ensureSpellState();let sources=new Set();
+ for(const b of h.spells.buffs){if(b.speedSource)sources.add(b.speedSource);else if(b.extraAttack)sources.add("haste")}
+ return Math.min(2,sources.size)
+}
+function rcWeaponAttacksPerAction(){return 2**rcSpeedLevel()}
+function rcSpeedHitBonus(){return rcSpeedLevel()*2}
+function spellAttackBonus(){ensureSpellState();return h.spells.buffs.reduce((a,b)=>a+(b.attack||0),0)+rcSpeedHitBonus()}
 function spellACBonus(){ensureSpellState();return h.spells.buffs.reduce((a,b)=>a+(b.ac||0),0)}
 function effectiveAC(isMissile=false){let ac=combatStats().ac;for(const b of h.spells.buffs){let fixed=isMissile?b.fixedMissileAC:b.fixedAC;if(fixed!=null)ac=Math.min(ac,fixed)}return ac+spellACBonus()}
 function tickSpellBuffs(){ensureSpellState();h.spells.buffs.forEach(b=>b.rounds--);h.spells.buffs=h.spells.buffs.filter(b=>b.rounds>0)}
@@ -1562,15 +1594,15 @@ function rangeAttackMod(weapon=combatStats().weaponKey){
 }
 function renderRangeButton(){
  let b=$("#rangeBtn"),menu=$("#rangeMenu");if(!b||!menu||!h?.combat)return;
- syncCombatRange();let i=combatBandIndex(),haste=h.spells?.buffs?.some(x=>x.extraAttack);
- b.textContent=haste?"📏 Change Range ⚡":"📏 Change Range";
- b.onclick=()=>{i=combatBandIndex();$("#spellMenu")?.classList.add("hide");let choices=[];if(i>0)choices.push('<button data-range-dir="closer">⬅ Closer</button>');if(i<RANGE_BANDS.length-1)choices.push('<button data-range-dir="farther">Farther ➡</button>');if(haste)choices.push('<span class="small">Haste: move up to 2 range bands</span>');menu.innerHTML=choices.join("");menu.classList.toggle("hide");$$("[data-range-dir]").forEach(x=>x.onclick=()=>changeRange(x.dataset.rangeDir))}
+ syncCombatRange();let i=combatBandIndex(),speed=rcSpeedLevel();
+ b.textContent=speed?`📏 Change Range ⚡×${2**speed}`:"📏 Change Range";
+ b.onclick=()=>{i=combatBandIndex();$("#spellMenu")?.classList.add("hide");$("#magicItemMenu")?.classList.add("hide");let choices=[];if(i>0)choices.push('<button data-range-dir="closer">⬅ Closer</button>');if(i<RANGE_BANDS.length-1)choices.push('<button data-range-dir="farther">Farther ➡</button>');if(speed)choices.push(`<span class="small">Speed: up to ${Math.min(3,2**speed)} range bands</span>`);menu.innerHTML=choices.join("");menu.classList.toggle("hide");$$("[data-range-dir]").forEach(x=>x.onclick=()=>changeRange(x.dataset.rangeDir))}
 }
 function changeRange(direction){
- if(!h?.combat)return;if(h.combat.paralyzed){clog("You cannot change range while paralyzed.");return renderCombat()}
- let i=combatBandIndex(),haste=h.spells?.buffs?.some(x=>x.extraAttack),steps=haste?2:1,ni=direction==="farther"?Math.min(RANGE_BANDS.length-1,i+steps):Math.max(0,i-steps);
+ if(!h?.combat)return;if(h.combat.paralyzed){clog("You cannot change range while incapacitated.");return renderCombat()}
+ let i=combatBandIndex(),speed=rcSpeedLevel(),steps=Math.min(3,2**speed),ni=direction==="farther"?Math.min(RANGE_BANDS.length-1,i+steps):Math.max(0,i-steps);
  if(ni===i){clog(`You are already at ${RANGE_BANDS[i].name} range.`);return renderCombat()}
- setCombatBand(ni);$("#rangeMenu")?.classList.add("hide");clog(`You move ${direction==="farther"?"farther away":"closer"}${haste?" under Haste":""}: ${h.combat.range} (${combatDistance()}').`);enemyStrike();
+ setCombatBand(ni);$("#rangeMenu")?.classList.add("hide");clog(`You move ${direction==="farther"?"farther away":"closer"}${speed?` at ×${2**speed} speed`:""}: ${h.combat.range} (${combatDistance()}').`);enemyStrike();
  if(h.combat){tickSpellBuffs();tickEnemySpellEffects();tickPlayerConditions();h.combat.round++;save();renderCombat()}
 }
 function resolveAttack(){let c=h.combat,pr=d(6),er=d(6);while(pr===er){pr=d(6);er=d(6)}clog(`Initiative: you ${pr}, enemies ${er}.`);if(pr>er){playerStrike();if(living().length)enemyStrike()}else{enemyStrike();if(h.combat&&h.hp>0&&living().length)playerStrike()}if(!h.combat)return;if(!living().length)return finishCombat();tickSpellBuffs();tickEnemySpellEffects();tickPlayerConditions();c.round++;save();renderCombat()}
