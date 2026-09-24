@@ -596,7 +596,7 @@ function buyPriceCP(item){return Math.round(gpToCP(item[1])*(1-chaBuyDiscount())
 function coinTextCP(cp){cp=Math.max(0,Math.round(cp));let gp=Math.floor(cp/100),sp=Math.floor((cp%100)/10),c=cp%10;return `${gp} GP · ${sp} SP · ${c} CP`}
 function walletCP(){return Math.round((h.gp??h.gold??0)*100)+Math.trunc(h.sp||0)*10+Math.trunc(h.cp||0)}
 function setWalletCP(cp){cp=Math.max(0,Math.round(cp));h.gp=Math.floor(cp/100);h.gold=h.gp;h.sp=Math.floor((cp%100)/10);h.cp=cp%10}
-function addCoins(gp=0,sp=0,cp=0){let r=creditWalletValueCP(Math.trunc(gp||0)*100+Math.trunc(sp||0)*10+Math.trunc(cp||0),!!h?.trip);if(r.leftCP&&h?.trip)addlog(`Carry limit: ${coinTextCP(r.leftCP)} in coins had to be left behind.`);return r}
+function addCoins(gp=0,sp=0,cp=0){return creditWalletValueCP(Math.trunc(gp||0)*100+Math.trunc(sp||0)*10+Math.trunc(cp||0),!!h?.trip)}
 function rcTreasureCashFeePct(item){
  if(Number.isFinite(Number(item?.rcCashFeePct)))return Math.max(item.rcGem?1:2,Math.min(item.rcGem?5:12,Math.trunc(Number(item.rcCashFeePct))));
  let key=`${item?.n||""}|${item?.gpValue||0}|${item?.rcQuantity||0}`,hash=0;for(let i=0;i<key.length;i++)hash=((hash<<5)-hash+key.charCodeAt(i))|0;
@@ -2184,7 +2184,7 @@ function changeMemorized(id,sl,delta){
  h.spells.memorized[sl]=a;
  save();renderSkills();
 }
-const EVENT_KEY_ITEMS=new Set(["Garlic","Holy Water","Steel Mirror","Belt Pouch","3 Stakes + Mallet","Wolfsbane","Hammer","Iron Spike","12 Iron Spikes","10-foot Pole","Small Sack","Large Sack","Quiver","Wine — 1 quart","50-foot Rope","Grappling Hook","Tinder Box","Lantern","Backpack"]);
+const EVENT_KEY_ITEMS=new Set(["Garlic","Holy Water","Steel Mirror","Belt Pouch","3 Stakes + Mallet","Wolfsbane","Hammer","Iron Spike","12 Iron Spikes","10-foot Pole","Small Sack","Large Sack","Quiver","Wine — 1 quart","50-foot Rope","Grappling Hook","Tinder Box","Lantern"]);
 function hasInventoryItem(name){return !!h?.inv?.some(x=>x.n===name)}
 function takeInventoryItem(name){let i=h?.inv?.findIndex(x=>x.n===name)??-1;if(i<0)return false;h.inv.splice(i,1);return true}
 function eventChoiceAvailable(ch){
@@ -2216,7 +2216,6 @@ const GEAR_KEY_EVENTS=[
  {id:"GEAR-015",type:"Discovery",title:"Pack on the Ledge",text:"A merchant's pack lies on a narrow ledge beyond safe reach.",choices:[{label:"Use your Grappling Hook",result:"gearKey",requiresItem:"Grappling Hook",xp:3,coins:[0,5,0]},{label:"Leave it",result:"passed"}]},
  {id:"GEAR-016",type:"Decision",title:"Cold Camp",text:"A group of exhausted travelers has dry wood but nothing that will catch a spark.",choices:[{label:"Lend your Tinder Box",result:"gearKey",requiresItem:"Tinder Box",xp:2,coins:[0,2,0]},{label:"Continue onward",result:"passed"}]},
  {id:"GEAR-017",type:"Decision",title:"The Dark Culvert",text:"A frightened traveler must pass through a long dark culvert before night closes in.",choices:[{label:"Lend your Lantern",result:"gearKey",requiresItem:"Lantern",xp:3,coins:[0,4,0]},{label:"Point out another road",result:"passed"}]},
- {id:"GEAR-018",type:"Decision",title:"The Courier's Torn Pack",text:"A courier's pack has split open and the dispatches will not survive the road loose.",choices:[{label:"Give your Backpack",result:"gearKey",requiresItem:"Backpack",consumeItem:true,xp:4,coins:[0,5,0]},{label:"Leave the courier to improvise",result:"passed"}]}
 ];
 const CLOTHING_KEY_EVENTS=[
  {id:"CLO-001",type:"Decision",title:"The Guild Supper",text:"A local guild is admitting respectable travelers to its evening supper, but the doorkeeper is turning away anyone dressed for the road.",choices:[{label:"Attend in respectable clothes",result:"gearKey",requiresAnyItem:["Middle-Class Clothes","Fine Clothes","Extravagant Clothes"],xp:3,coins:[0,5,0]},{label:"Skip the supper",result:"passed"}]},
@@ -2242,9 +2241,9 @@ function applyEventChoice(ev,ch){
  if(!eventChoiceAvailable(ch)){addlog(`${ev.title}: the required item is not available.`);return}
  if(ch?.result==="gearKey"){
    let usedItem=eventRequirementItem(ch);if(ch.consumeItem&&usedItem)takeInventoryItem(usedItem);
-   let xp=ch.xp?awardXP(ch.xp):0,coin=ch.coins||[0,0,0];if(coin)addCoins(coin[0]||0,coin[1]||0,coin[2]||0);
-   journal({id:ev.id,type:ev.type,title:ev.title,text:ev.text,choice:ch.label,result:"gearKey",xp,coins:coin,item:usedItem,consumed:!!ch.consumeItem});
-   let reward=`${xp?`+${xp} XP. `:""}${coin&&(coin[0]||coin[1]||coin[2])?`${coin[0]||0} GP, ${coin[1]||0} SP, ${coin[2]||0} CP.`:""}`;
+   let xp=ch.xp?awardXP(ch.xp):0,coin=ch.coins||[0,0,0],credit=coin?addCoins(coin[0]||0,coin[1]||0,coin[2]||0):{cpValue:0,leftCP:0},keptCoins=coinArrayFromCP(credit.cpValue);
+   journal({id:ev.id,type:ev.type,title:ev.title,text:ev.text,choice:ch.label,result:"gearKey",xp,coins:keptCoins,item:usedItem,consumed:!!ch.consumeItem,leftCoinCP:credit.leftCP||0});
+   let reward=`${xp?`+${xp} XP. `:""}${credit.cpValue?`${coinTextCP(credit.cpValue)} kept. `:""}${credit.leftCP?`${coinTextCP(credit.leftCP)} left behind at the carry limit.`:""}`.trim();
    addlog(`${ev.title}: ${ch.label}.${reward?` ${reward}`:""}`);
    h.pendingEvent=null;endTripPause();save();renderPendingEvent();if(resumeAfter)tick();return
  }
@@ -2280,13 +2279,15 @@ function applyEventChoice(ev,ch){
    addlog(`${ev.title}: ${ch.label} — ${outcome} (${test.roll} / ${test.chance}%).${xp?` +${xp} XP.`:""}`);
    h.pendingEvent=null;endTripPause();save();renderPendingEvent();if(resumeAfter)tick();return
  }
- let baseXP=ch?.xp??ev.xp??0,xp=baseXP?awardXP(baseXP):0,coin=ch?.coins??ev.coins??[0,0,0];
+ let baseXP=ch?.xp??ev.xp??0,xp=baseXP?awardXP(baseXP):0,coin=ch?.coins??ev.coins??[0,0,0],coinCredit=null;
  let result=ch?.result||"observed",rcDiscoveryTreasure=null;
  if(ev?.type==="Discovery"&&result==="search"){
    rcDiscoveryTreasure=rcRollUnguardedTreasure(h.level);rcApplyTreasure(rcDiscoveryTreasure);coin=[0,0,0]
- }else if(coin)addCoins(coin[0]||0,coin[1]||0,coin[2]||0)
- journal({id:ev.id,type:ev.type,title:ev.title,text:ev.text,choice:ch?.label||null,result,xp,coins:coin,rcTreasure:rcDiscoveryTreasure?rcTreasureSummary(rcDiscoveryTreasure):null});
- let rewardText=`${xp?`+${xp} XP. `:""}${rcDiscoveryTreasure?`RC treasure: ${rcTreasureSummary(rcDiscoveryTreasure)}.`:coin&&(coin[0]||coin[1]||coin[2])?`${coin[0]||0} GP, ${coin[1]||0} SP, ${coin[2]||0} CP.`:""}`.trim(),summary=ch?.label?`${ch.label}.${rewardText?` ${rewardText}`:""}`:(rewardText||ev.text||"Observed.");addlog(`${ev.title}: ${summary}`);
+ }else if(coin)coinCredit=addCoins(coin[0]||0,coin[1]||0,coin[2]||0);
+ let keptCoins=coinCredit?coinArrayFromCP(coinCredit.cpValue):coin;
+ journal({id:ev.id,type:ev.type,title:ev.title,text:ev.text,choice:ch?.label||null,result,xp,coins:keptCoins,leftCoinCP:coinCredit?.leftCP||0,rcTreasure:rcDiscoveryTreasure?rcTreasureSummary(rcDiscoveryTreasure):null});
+ let coinReward=coinCredit?(coinCredit.cpValue?`${coinTextCP(coinCredit.cpValue)} kept.`:"")+(coinCredit.leftCP?` ${coinTextCP(coinCredit.leftCP)} left behind at the carry limit.`:""):"";
+ let rewardText=`${xp?`+${xp} XP. `:""}${rcDiscoveryTreasure?`RC treasure: ${rcTreasureSummary(rcDiscoveryTreasure)}.`:coinReward}`.trim(),summary=ch?.label?`${ch.label}.${rewardText?` ${rewardText}`:""}`:(rewardText||ev.text||"Observed.");addlog(`${ev.title}: ${summary}`);
  if(result==="combat"){let combatContext=encounterContextFromEvent(ev);h.pendingEvent=null;renderPendingEvent();save();if(h.trip?.mode==="auto")autonomousCombat(false,combatContext);else makeCombat(false,combatContext);return}
  h.pendingEvent=null;endTripPause();save();renderPendingEvent();if(resumeAfter)tick()
 }
