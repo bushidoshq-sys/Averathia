@@ -44,9 +44,10 @@ jobs:
               h.pendingEvent=ev;
               renderPendingEvent();
               save();
-              const oldD=d;
-              d=(n)=>n===100?50:n===4?4:n===8?4:n===6?1:1;
-              window.__restoreD=()=>{d=oldD};
+              const oldRandom=Math.random;
+              const seq=[0.49,0.99,0.4,0.4,0.4,0.4,0.4,0.4,0.4,0.4,0,0];
+              Math.random=()=>seq.length?seq.shift():0;
+              window.__restoreRandom=()=>{Math.random=oldRandom};
             });
             await page.waitForSelector('#eventChoice:not(.hide)');
             const eventBefore=await page.locator('#eventChoice').innerText();
