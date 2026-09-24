@@ -56,7 +56,7 @@ jobs:
               activityBlockedUntilAT:Date.now()+864000000,
               autoRecoverAtAT:Date.now()+864000000
             });
-            localStorage.setItem('averathia-v041',JSON.stringify(save));
+            await page.evaluate(s=>localStorage.setItem('averathia-v041',JSON.stringify(s)),save);
             await page.reload({waitUntil:'networkidle'});
             await page.click('[data-page="healer"]');
 
@@ -75,7 +75,7 @@ jobs:
 
             save=JSON.parse(await page.evaluate(()=>localStorage.getItem('averathia-v041')));
             save.timedConditions=[{id:'widow-test',type:'lethalSpiderPoison',name:'Black Widow Venom',rounds:60,lethalOnExpire:true}];
-            localStorage.setItem('averathia-v041',JSON.stringify(save));
+            await page.evaluate(s=>localStorage.setItem('averathia-v041',JSON.stringify(s)),save);
             await page.reload({waitUntil:'networkidle'});
             await page.click('[data-page="healer"]');
             assert.equal(await page.locator('#curePoisonHealer').isDisabled(),false,'Spider venom must enable Cure Poison');
