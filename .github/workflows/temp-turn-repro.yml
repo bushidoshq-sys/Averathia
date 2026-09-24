@@ -39,6 +39,9 @@ jobs:
               h.rations=7;h.waterCapacity=4;h.water=4;h.lightStock={torchMinutes:600,oilMinutes:0,legacyMinutes:0};
               const now=Date.now();
               h.trip={journal:[],adventureLog:[],mission:{title:'Test',brief:'Test',bossWon:false,resolved:false},start:now,end:now+60000,half:now+30000,midBossDone:false,rcTreasureXpCP:0,mode:'present',risk:'Normal',durationMinutes:1,eventTarget:1,eventIntervalMs:60000,resourceModel:'at-elapsed-v2',resourceAt:now,forcedReturnWater:false,nextEvent:now+60000};
+              page('depart');
+              document.getElementById('departSetup').classList.add('hide');
+              document.getElementById('travel').classList.remove('hide');
               const ev=CLERIC_EVENTS[0];
               beginTripPause();
               h.pendingEvent=ev;
