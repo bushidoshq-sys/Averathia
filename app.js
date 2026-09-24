@@ -543,17 +543,20 @@ function consumeLightMinutes(minutes,obj=h){
  obj.lightMinutes=ls.torchMinutes+ls.oilMinutes+ls.legacyMinutes;
  return left<=1e-9
 }
+function journeyUsableLightMinutes(obj=h){
+ let ls=ensureLightStock(obj),hasLantern=!!obj?.inv?.some(x=>x?.n==="Lantern");
+ return ls.torchMinutes+ls.legacyMinutes+(hasLantern?ls.oilMinutes:0)
+}
 function consumeJourneyLight(minutes,obj=h){
  let ls=ensureLightStock(obj),left=Math.max(0,numOr(minutes,0)),hasLantern=!!obj?.inv?.some(x=>x?.n==="Lantern"),usedOil=0,usedTorch=0,usedLegacy=0;
- let order=hasLantern?["oilMinutes","torchMinutes","legacyMinutes"]:["torchMinutes","legacyMinutes","oilMinutes"];
+ let order=hasLantern?["oilMinutes","torchMinutes","legacyMinutes"]:["torchMinutes","legacyMinutes"];
  for(const k of order){
-  if(k==="oilMinutes"&&!hasLantern)continue;
   let use=Math.min(ls[k],left);ls[k]-=use;left-=use;
   if(k==="oilMinutes")usedOil+=use;else if(k==="torchMinutes")usedTorch+=use;else usedLegacy+=use;
   if(left<=1e-9)break
  }
  obj.lightMinutes=ls.torchMinutes+ls.oilMinutes+ls.legacyMinutes;
- return{ok:left<=1e-9,source:usedOil>0?"lamp":usedTorch>0?"torch":"light",usedOil,usedTorch,usedLegacy}
+ return{ok:left<=1e-9,source:usedOil>0?"lamp":"torch",usedOil,usedTorch,usedLegacy}
 }
 function resourceSummaryRows(cls="sheetEquipRow"){
  if(!h)return"";let rows=[],ls=ensureLightStock();
@@ -927,7 +930,7 @@ function consumeTripSurvivalResources(now=Date.now()){
  if(h.water<=0&&t<h.trip.half&&!h.trip.forcedReturnWater){h.trip.forcedReturnWater=true;returnEarly("You are out of water. You turn back toward town.");return false}
  return true
 }
-function begin(){let rb=$("#recall");if(rb){rb.disabled=false;rb.textContent="↩ Return Early"}if(!hasBackpack()){alert("You need a Backpack before beginning a Journey.");return}if(carriedBulkPoints()>maxCarryBP()+1e-9){alert(`You are carrying ${formatBP(carriedBulkPoints())}/${formatBP(maxCarryBP())} BP. Reduce your load before beginning a Journey.`);return}if(diseaseJourneyBlocked()){alert(`${journeyBlockingCondition()?.name||"Current condition"} prevents travel. You cannot begin a Journey.`);return}if(timedConditionJourneyBlocked()){alert(`${timedConditionBlockingName()} prevents travel. You cannot begin a Journey.`);return}if(h.waterCapacity<1){alert("You need at least one Waterskin.");return}let ret=retainerSelected(),mounts=plannedHorseCount(),horseAttempt=hasHouse()&&h.mounts.useOnJourney;if(horseAttempt&&!mounts){alert("Not enough Riding Horses for mounted travel with this party.");return}let needs=survivalNeedsForMinutes(mins),nw=needs.waterSkins,nf=needs.foodDays,nl=mins*2/3;if(h.water<nw){alert("Not enough water.");return}if(h.rations<nf){alert("Not enough rations.");return}if(mounts&&h.mounts.feedDays+1e-9<needs.mountFeedDays){alert("Not enough Mount Feed.");return}if(totalLightMinutes()<nl){alert("Not enough light.");return}let journeyLight=consumeJourneyLight(nl);if(!journeyLight.ok){alert("Not enough usable light.");return}let now=Date.now(),total=mins*60000,eventTarget=adventureEventTarget(mins),eventIntervalMs=Math.max(5000,total/eventTarget);h.lastAdventure=null;h.pendingEvent=null;ensureTrophies();let mission=createMission();h.trip={journal:[],adventureLog:[],mission,start:now,end:now+total,half:now+total/2,midBossDone:false,rcTreasureXpCP:0,mode,risk,durationMinutes:mins,eventTarget,eventIntervalMs,resourceModel:"at-elapsed-v2",resourceAt:now,forcedReturnWater:false,retainer:ret,mountsUsed:mounts,mountedTravel:!!mounts,nextEvent:now+Math.min(15000,Math.max(5000,total/(eventTarget+1)))};$("#departSetup").classList.add("hide");$("#travel").classList.remove("hide");$("#departedAt").textContent=clock(h.trip.start);$("#returnAt").textContent=clock(h.trip.end);$("#runner").innerHTML=spriteHTML(h.sex,h.avatar,h.className);$("#log").innerHTML="";addlog(`MISSION: ${mission.title} — ${mission.brief}`);
+function begin(){let rb=$("#recall");if(rb){rb.disabled=false;rb.textContent="↩ Return Early"}if(!hasBackpack()){alert("You need a Backpack before beginning a Journey.");return}if(carriedBulkPoints()>maxCarryBP()+1e-9){alert(`You are carrying ${formatBP(carriedBulkPoints())}/${formatBP(maxCarryBP())} BP. Reduce your load before beginning a Journey.`);return}if(diseaseJourneyBlocked()){alert(`${journeyBlockingCondition()?.name||"Current condition"} prevents travel. You cannot begin a Journey.`);return}if(timedConditionJourneyBlocked()){alert(`${timedConditionBlockingName()} prevents travel. You cannot begin a Journey.`);return}if(h.waterCapacity<1){alert("You need at least one Waterskin.");return}let ret=retainerSelected(),mounts=plannedHorseCount(),horseAttempt=hasHouse()&&h.mounts.useOnJourney;if(horseAttempt&&!mounts){alert("Not enough Riding Horses for mounted travel with this party.");return}let needs=survivalNeedsForMinutes(mins),nw=needs.waterSkins,nf=needs.foodDays,nl=mins*2/3;if(h.water<nw){alert("Not enough water.");return}if(h.rations<nf){alert("Not enough rations.");return}if(mounts&&h.mounts.feedDays+1e-9<needs.mountFeedDays){alert("Not enough Mount Feed.");return}if(journeyUsableLightMinutes()<nl){alert("Not enough usable light. A Lantern is required to use lamp oil.");return}let journeyLight=consumeJourneyLight(nl);if(!journeyLight.ok){alert("Not enough usable light.");return}let now=Date.now(),total=mins*60000,eventTarget=adventureEventTarget(mins),eventIntervalMs=Math.max(5000,total/eventTarget);h.lastAdventure=null;h.pendingEvent=null;ensureTrophies();let mission=createMission();h.trip={journal:[],adventureLog:[],mission,start:now,end:now+total,half:now+total/2,midBossDone:false,rcTreasureXpCP:0,mode,risk,durationMinutes:mins,eventTarget,eventIntervalMs,resourceModel:"at-elapsed-v2",resourceAt:now,forcedReturnWater:false,retainer:ret,mountsUsed:mounts,mountedTravel:!!mounts,nextEvent:now+Math.min(15000,Math.max(5000,total/(eventTarget+1)))};$("#departSetup").classList.add("hide");$("#travel").classList.remove("hide");$("#departedAt").textContent=clock(h.trip.start);$("#returnAt").textContent=clock(h.trip.end);$("#runner").innerHTML=spriteHTML(h.sex,h.avatar,h.className);$("#log").innerHTML="";addlog(`MISSION: ${mission.title} — ${mission.brief}`);
  let mountText=mounts===1?" Mount secured.":mounts>1?" Mounts secured.":"";
  addlog(`Destination reached.${mountText} You light your ${journeyLight.source} and venture forward.`);
  renderAdventureLog();save();tick()}
