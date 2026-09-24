@@ -1,0 +1,59 @@
+name: temp-v109c53-home-coin-storage-smoke
+on:
+  pull_request:
+    branches: [main]
+
+jobs:
+  mobile-smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Install Chromium
+        run: |
+          npm init -y >/dev/null 2>&1
+          npm install playwright@1.55.0 >/dev/null 2>&1
+          npx playwright install --with-deps chromium >/dev/null
+      - name: Run 390x844 built-in coin storage smoke
+        run: |
+          python3 -m http.server 4173 >/tmp/averathia-http.log 2>&1 &
+          cat > home-coin-smoke.mjs <<'EOF'
+          import { chromium } from 'playwright';
+          const browser=await chromium.launch({headless:true});
+          const page=await browser.newPage({viewport:{width:390,height:844}});
+          const errors=[];page.on('pageerror',e=>errors.push(String(e)));
+
+          await page.goto('http://127.0.0.1:4173/index.html',{waitUntil:'networkidle'});
+          await page.evaluate(()=>{
+            localStorage.setItem('averathia-v041',JSON.stringify({
+              name:'Coin Test',className:'Fighter',mechanicsClass:'Fighter',
+              level:1,xp:0,maxhp:8,hp:8,
+              stats:{STR:15,DEX:12,CON:14,INT:10,WIS:11,CHA:13},
+              gp:9500,gold:9500,sp:12,cp:3,
+              homeTier:1,homeCoins:{gp:0,sp:0,cp:0},homeStorage:[],inv:[]
+            }));
+          });
+          await page.reload({waitUntil:'networkidle'});
+          await page.locator('[data-page="home"]').click();
+          await page.waitForSelector('#home:not(.hide)');
+          let txt=await page.locator('#homeContent').innerText();
+          if(!txt.includes('Coin Chest')||!txt.includes('0 / 10000 coins'))throw new Error('Room chest missing: '+txt);
+
+          await page.locator('#storeHomeCoins').click();
+          let state=await page.evaluate(()=>JSON.parse(localStorage.getItem('averathia-v041')));
+          if(state.gp!==0||state.sp!==0||state.cp!==0)throw new Error('Wallet not emptied: '+JSON.stringify({gp:state.gp,sp:state.sp,cp:state.cp}));
+          if(state.homeCoins.gp!==9500||state.homeCoins.sp!==12||state.homeCoins.cp!==3)throw new Error('Stored coins wrong: '+JSON.stringify(state.homeCoins));
+
+          txt=await page.locator('#homeContent').innerText();
+          if(!txt.includes('9515 / 10000 coins'))throw new Error('Stored count UI wrong: '+txt);
+
+          const metrics=await page.evaluate(()=>({viewport:innerWidth,scrollWidth:document.documentElement.scrollWidth,homeWidth:document.getElementById('homeContent').getBoundingClientRect().width}));
+          if(metrics.scrollWidth>metrics.viewport+1)throw new Error('Horizontal overflow '+JSON.stringify(metrics));
+          if(errors.length)throw new Error('Page errors: '+errors.join(' | '));
+          console.log('PASS',JSON.stringify(metrics));
+          await browser.close();
+          EOF
+          node home-coin-smoke.mjs
