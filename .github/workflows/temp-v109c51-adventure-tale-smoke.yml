@@ -20,7 +20,7 @@ jobs:
       - name: Run 390x844 Adventure Tale smoke
         run: |
           python3 -m http.server 4173 >/tmp/averathia-http.log 2>&1 &
-          cat > /tmp/tale-smoke.mjs <<'EOF'
+          cat > tale-smoke.mjs <<'EOF'
           import { chromium } from 'playwright';
 
           const browser = await chromium.launch({headless:true});
@@ -79,4 +79,4 @@ jobs:
           console.log('PASS',JSON.stringify(metrics));
           await browser.close();
           EOF
-          node /tmp/tale-smoke.mjs
+          node tale-smoke.mjs
