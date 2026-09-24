@@ -1302,12 +1302,11 @@ const ENCOUNTER_ENVIRONMENT={
  outdoor:new Set(["FTR-061","FTR-062","FTR-063","FTR-064","FTR-066","FTR-067","FTR-068","FTR-069","FTR-070","FTR-072","FTR-075","FTR-076","FTR-077","FTR-078","FTR-079","FTR-081","FTR-083","FTR-084","FTR-085","FTR-087","FTR-088","FTR-089","FTR-090","CLE-003","CLE-010","THI-002","THI-005","THI-008","THI-009","ELF-001","ELF-002","ELF-003","ELF-004","ELF-005","ELF-006","ELF-007","ELF-008","ELF-010"])
 };
 const EXPLICIT_NIGHT_ENCOUNTERS=new Set(["FTR-068","FTR-085"]);
-function currentATDaylight(){let hour=atDate().getUTCHours();return hour>=6&&hour<18}
-function missionCombatContext(){let title=h?.trip?.mission?.title||null,environment="unknown";if(h?.className==="Dwarf")environment="underground";else if(h?.className==="Elf")environment="outdoor";else if(h?.className==="Arcanist")environment="indoor";else if(h?.className==="Fighter"&&title==="Break a threat on the road")environment="outdoor";return{eventId:null,eventTitle:title,environment,daylight:environment==="outdoor"?currentATDaylight():environment==="unknown"?null:false}}
+function missionCombatContext(){let title=h?.trip?.mission?.title||null,environment="unknown";if(h?.className==="Dwarf")environment="underground";else if(h?.className==="Elf")environment="outdoor";else if(h?.className==="Arcanist")environment="indoor";else if(h?.className==="Fighter"&&title==="Break a threat on the road")environment="outdoor";return{eventId:null,eventTitle:title,environment,daylight:(environment==="indoor"||environment==="underground")?false:null}}
 function encounterContextFromEvent(ev){
  let id=ev?.id||null,environment="unknown";
  for(const [kind,set] of Object.entries(ENCOUNTER_ENVIRONMENT))if(id&&set.has(id)){environment=kind;break}
- let daylight=EXPLICIT_NIGHT_ENCOUNTERS.has(id)?false:environment==="outdoor"?currentATDaylight():(environment==="indoor"||environment==="underground")?false:null;
+ let daylight=(environment==="indoor"||environment==="underground"||EXPLICIT_NIGHT_ENCOUNTERS.has(id))?false:null;
  return{eventId:id,eventTitle:ev?.title||null,environment,daylight}
 }
 function monsterContextAttackModifier(e){
