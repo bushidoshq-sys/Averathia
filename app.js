@@ -1,6 +1,6 @@
 const RC_AVERATHIA_SPELL_AUDIT={"Arcanist/Elf":{"1":{"NOW":["Magic Missile","Shield","Sleep","Light"],"LATER":["Charm Person","Detect Magic","Floating Disc","Hold Portal","Read Languages","Read Magic","Ventriloquism"],"NO":[]},"2":{"NOW":["Mirror Image","Web"],"LATER":["Continual Light","Detect Evil","Detect Invisible","ESP","Invisibility","Knock","Levitate","Locate Object","Wizard Lock"],"NO":[]},"3":{"NOW":["Fireball","Lightning Bolt","Haste","Slow","Hold Person","Protection from Normal Missiles"],"LATER":["Clairvoyance","Create Air","Dispel Magic","Fly","Infravision","Invisibility 10' Radius","Water Breathing"],"NO":[]}},"Cleric":{"1":{"NOW":["Cure Light Wounds","Protection from Evil","Remove Fear","Resist Cold"],"LATER":["Detect Evil","Detect Magic","Light","Purify Food and Water"],"NO":[]},"2":{"NOW":["Bless","Hold Person","Resist Fire"],"LATER":["Find Traps","Know Alignment","Silence 15' Radius","Snake Charm","Speak with Animal"],"NO":[]},"3":{"NOW":["Cure Disease","Striking"],"LATER":["Continual Light","Cure Blindness","Dispel Magic","Growth of Animals","Locate Object","Speak with the Dead"],"NO":[]}}};
 const $=s=>document.querySelector(s),$$=s=>[...document.querySelectorAll(s)],d=n=>1+Math.floor(Math.random()*n);
-let sex="Male",avatar=0,cs=[],pick=null,h=null,tab="Weapons",inventoryTab="Inventory",mode="present",risk="Normal",mins=1,timer=null,autonomousCombatRunning=false;
+let sex="Male",avatar=0,cs=[],pick=null,h=null,tab="Weapons",inventoryTab="Inventory",mode="present",risk="Normal",mins=1,timer=null,autonomousCombatRunning=false,homeCoinMode="take",homeCoinDenom="gp",homeCoinAmount="";
 const classSlug=c=>c.toLowerCase();
 function artPath(cls,sx,i,kind="full"){return `${classSlug(cls)}_${sx.toLowerCase()}_${i+1}_${kind}.png`;}
 const CLASSES=[["Fighter","⚔️","Human"],["Cleric","✦","Human"],["Arcanist","✧","Human"],["Thief","🗝️","Human"],["Elf","🏹","Race-as-class"],["Dwarf","⛏️","Race-as-class"]];
@@ -158,25 +158,32 @@ function spendFromWalletAndHome(cp){
  if(cp>0)setHomeCoinValueCP(homeCoinValueCP()-cp);
  return true
 }
-function storeCoinsAtHome(){
- if(!hasRoom()||h.trip||h.combat)return;ensureHomeState();
- let cap=homeCoinStorageSpec().capacity,space=Math.max(0,cap-homeCoinCount());if(space<1)return;
- for(const k of ["gp","sp","cp"]){
-  let held=Math.max(0,Math.trunc(Number(k==="gp"?(h.gp??h.gold):h[k])||0)),move=Math.min(held,space);
-  if(move>0){h.homeCoins[k]+=move;if(k==="gp"){h.gp=held-move;h.gold=h.gp}else h[k]=held-move;space-=move}
-  if(space<1)break
- }
- save()
+function homeWalletDenom(k){return Math.max(0,Math.trunc(Number(k==="gp"?(h.gp??h.gold):h[k])||0))}
+function setHomeWalletDenom(k,v){v=Math.max(0,Math.trunc(Number(v)||0));if(k==="gp"){h.gp=v;h.gold=v}else h[k]=v}
+function homeCoinTransferLimit(direction=homeCoinMode,k=homeCoinDenom){
+ ensureHomeState();if(!["gp","sp","cp"].includes(k))k="gp";
+ if(direction==="store")return Math.max(0,Math.min(homeWalletDenom(k),homeCoinStorageSpec().capacity-homeCoinCount()));
+ let freeBP=Math.max(0,Math.floor(maxCarryBP()-carriedBulkPoints()+1e-9));
+ return Math.max(0,Math.min(Math.max(0,Math.trunc(Number(h.homeCoins[k])||0)),freeBP))
 }
-function takeCoinsFromHome(){
+function homeCoinAmountNumber(){return Math.max(0,Math.trunc(Number(homeCoinAmount)||0))}
+function homeCoinSetPreset(kind){
+ let max=homeCoinTransferLimit(),v=kind==="all"?max:Math.max(max?1:0,Math.floor(max/2));
+ homeCoinAmount=v?String(v):"";renderHome()
+}
+function homeCoinKey(key){
+ if(key==="clear")homeCoinAmount="";
+ else if(key==="back")homeCoinAmount=homeCoinAmount.slice(0,-1);
+ else if(/^\d$/.test(key)){let next=(homeCoinAmount+key).replace(/^0+(?=\d)/,"");homeCoinAmount=next.slice(0,7)}
+ renderHome()
+}
+function transferHomeCoins(){
  if(!hasRoom()||h.trip||h.combat)return;ensureHomeState();
- let room=Math.max(0,Math.floor(maxCarryBP()-carriedBulkPoints()+1e-9));if(room<1)return;
- for(const k of ["gp","sp","cp"]){
-  let stored=Math.max(0,Math.trunc(Number(h.homeCoins[k])||0)),move=Math.min(stored,room);
-  if(move>0){h.homeCoins[k]-=move;if(k==="gp"){h.gp=Math.max(0,Math.trunc(Number(h.gp??h.gold)||0))+move;h.gold=h.gp}else h[k]=Math.max(0,Math.trunc(Number(h[k])||0))+move;room-=move}
-  if(room<1)break
- }
- save()
+ let k=homeCoinDenom,ask=homeCoinAmountNumber(),limit=homeCoinTransferLimit(),move=Math.min(ask,limit);
+ if(move<1)return;
+ if(homeCoinMode==="store"){setHomeWalletDenom(k,homeWalletDenom(k)-move);h.homeCoins[k]+=move}
+ else{h.homeCoins[k]-=move;setHomeWalletDenom(k,homeWalletDenom(k)+move)}
+ homeCoinAmount="";save()
 }
 function hasRoom(obj=h){return homeTier(obj)>=1}
 function hasHouse(obj=h){return homeTier(obj)>=2}
@@ -278,9 +285,12 @@ function renderHome(){
  if(hasRoom()){
   let stored=h.homeStorage.map(function(x,i){let cap=gpSackCapacity(x),gp=Math.max(0,Math.trunc(Number(x.storedGP)||0)),money=cap?'<div class="small">GP '+gp+'/'+cap+'</div>':'',controls=cap?'<div class="row"><button data-home-gp-store="'+i+'" '+(gp>=cap||Math.trunc(Number(h.gp??h.gold)||0)<1?'disabled':'')+'>Store GP</button><button data-home-gp-take="'+i+'" '+(gp<1?'disabled':'')+'>Take GP</button><button data-home-take="'+i+'">Take Sack</button></div>':'<button data-home-take="'+i+'">Take</button>';return '<div class="item"><span><b>'+x.n+'</b><div class="small">'+formatBP(itemBulkPoints(x))+' BP stored</div>'+money+'</span>'+controls+'</div>'}).join("")||'<div class="small">Nothing stored.</div>';
   let carry=h.inv.map(function(x,i){return '<div class="item"><span><b>'+x.n+'</b><div class="small">'+formatBP(itemBulkPoints(x))+' BP</div></span><button data-home-store="'+i+'">Store</button></div>'}).join("")||'<div class="small">No carried items.</div>';
-  let coinStore=homeCoinStorageSpec(),coinCount=homeCoinCount(),coinFree=Math.max(0,coinStore.capacity-coinCount),carriedCoins=coinBulkPoints(),takeRoom=Math.max(0,Math.floor(maxCarryBP()-carriedBulkPoints()+1e-9));
+  let coinStore=homeCoinStorageSpec(),coinCount=homeCoinCount(),den=homeCoinDenom.toUpperCase(),limit=homeCoinTransferLimit(),amount=homeCoinAmountNumber();
+  let modeButtons='<div class="homeCoinToggle"><button data-home-coin-mode="store" class="'+(homeCoinMode==="store"?"on":"")+'">Store</button><button data-home-coin-mode="take" class="'+(homeCoinMode==="take"?"on":"")+'">Take</button></div>';
+  let denomButtons='<div class="homeCoinToggle">'+["gp","sp","cp"].map(k=>'<button data-home-coin-denom="'+k+'" class="'+(homeCoinDenom===k?"on":"")+'">'+k.toUpperCase()+'</button>').join("")+'</div>';
+  let keypad='<div class="homeCoinKeypad">'+["1","2","3","4","5","6","7","8","9","clear","0","back"].map(k=>'<button data-home-coin-key="'+k+'">'+(k==="clear"?"C":k==="back"?"⌫":k)+'</button>').join("")+'</div>';
   out.push('<div class="settingsSection"><h3>🛏 Home Rest</h3><p class="small">Rest 8 Averathia hours at home.</p><button id="homeRestBtn" '+(h.restUntil?"disabled":"")+'>Rest</button></div>');
-  out.push('<div class="settingsSection"><h3>🪙 '+coinStore.name+'</h3><p class="small">Permanent coin storage included with your '+HOME_TIER_NAMES[t]+'. Coins stored here do not count toward Journey BP. Capacity is measured in physical coins.</p><p><b>'+coinCount+' / '+coinStore.capacity+' coins</b></p><div class="small">Stored: '+h.homeCoins.gp+' GP · '+h.homeCoins.sp+' SP · '+h.homeCoins.cp+' CP</div><div class="row"><button id="storeHomeCoins" '+(coinFree<1||carriedCoins<1?"disabled":"")+'>Store Coins</button><button id="takeHomeCoins" '+(coinCount<1||takeRoom<1?"disabled":"")+'>Take Coins</button></div></div>');
+  out.push('<div class="settingsSection homeCoinPanel"><h3>🪙 '+coinStore.name+'</h3><p class="small">Stored coins do not count toward Journey BP.</p><p><b>'+coinCount+' / '+coinStore.capacity+' coins</b></p><div class="small">Chest: '+h.homeCoins.gp+' GP · '+h.homeCoins.sp+' SP · '+h.homeCoins.cp+' CP</div><div class="small">Carried: '+homeWalletDenom("gp")+' GP · '+homeWalletDenom("sp")+' SP · '+homeWalletDenom("cp")+' CP · Free BP '+formatBP(Math.max(0,maxCarryBP()-carriedBulkPoints()))+'</div>'+modeButtons+denomButtons+'<label class="small" for="homeCoinAmountInput">Amount · max '+limit+' '+den+'</label><input id="homeCoinAmountInput" class="homeCoinInput" type="number" min="0" step="1" inputmode="numeric" value="'+(homeCoinAmount||"")+'" placeholder="0">'+keypad+'<div class="homeCoinActions"><button data-home-coin-preset="half" '+(limit<1?"disabled":"")+'>Half</button><button data-home-coin-preset="all" '+(limit<1?"disabled":"")+'>All</button><button id="homeCoinConfirm" class="primary" '+(amount<1||amount>limit?"disabled":"")+'>'+(homeCoinMode==="store"?"Store ":"Take ")+den+'</button></div></div>');
   out.push('<div class="settingsSection"><h3>📦 Home Storage</h3><p class="small">Stored items do not count toward Journey BP. Sacks can still be used for portable GP storage.</p><b>Stored</b>'+stored+'<b>Carried</b>'+carry+'</div>');
  }
  if(hasHouse()){
@@ -288,7 +298,13 @@ function renderHome(){
   out.push('<div class="settingsSection"><h3>🐎 Stable</h3><p>Riding Horses: <b>'+h.mounts.horses+'</b></p><div class="row"><button id="buyHorseBtn">Buy — '+coinTextCP(horseBuyPriceCP())+'</button><button id="sellHorseBtn" '+(h.mounts.horses<1?"disabled":"")+'>Sell — '+coinTextCP(horseSellPriceCP())+'</button></div><p>Mount Feed reserve: <b>'+h.mounts.feedDays.toFixed(2)+' horse-days</b></p><button id="buyFeedBtn">Mount Feed — 7 days · '+coinTextCP(feedPackPriceCP())+'</button><label class="skillCard"><input id="useMountToggle" type="checkbox" '+(h.mounts.useOnJourney?"checked":"")+'> Use horse on Journeys</label></div>');
  }
  box.innerHTML=out.join("");
- if($("#buyHomeTier"))$("#buyHomeTier").onclick=buyHomeUpgrade;if($("#homeRestBtn"))$("#homeRestBtn").onclick=startLongRest;if($("#storeHomeCoins"))$("#storeHomeCoins").onclick=storeCoinsAtHome;if($("#takeHomeCoins"))$("#takeHomeCoins").onclick=takeCoinsFromHome;
+ if($("#buyHomeTier"))$("#buyHomeTier").onclick=buyHomeUpgrade;if($("#homeRestBtn"))$("#homeRestBtn").onclick=startLongRest;
+ document.querySelectorAll("[data-home-coin-mode]").forEach(b=>b.onclick=()=>{homeCoinMode=b.dataset.homeCoinMode;homeCoinAmount="";renderHome()});
+ document.querySelectorAll("[data-home-coin-denom]").forEach(b=>b.onclick=()=>{homeCoinDenom=b.dataset.homeCoinDenom;homeCoinAmount="";renderHome()});
+ document.querySelectorAll("[data-home-coin-key]").forEach(b=>b.onclick=()=>homeCoinKey(b.dataset.homeCoinKey));
+ document.querySelectorAll("[data-home-coin-preset]").forEach(b=>b.onclick=()=>homeCoinSetPreset(b.dataset.homeCoinPreset));
+ if($("#homeCoinAmountInput"))$("#homeCoinAmountInput").oninput=e=>{homeCoinAmount=String(Math.max(0,Math.trunc(Number(e.target.value)||0))).slice(0,7);renderHome()};
+ if($("#homeCoinConfirm"))$("#homeCoinConfirm").onclick=transferHomeCoins;
  document.querySelectorAll("[data-home-store]").forEach(function(b){b.onclick=function(){storeAtHome(+b.dataset.homeStore)}});document.querySelectorAll("[data-home-take]").forEach(function(b){b.onclick=function(){takeFromHome(+b.dataset.homeTake)}});document.querySelectorAll("[data-home-gp-store]").forEach(function(b){b.onclick=function(){storeGpInHomeSack(+b.dataset.homeGpStore)}});document.querySelectorAll("[data-home-gp-take]").forEach(function(b){b.onclick=function(){takeGpFromHomeSack(+b.dataset.homeGpTake)}});
  if($("#buyHorseBtn"))$("#buyHorseBtn").onclick=buyHorse;if($("#sellHorseBtn"))$("#sellHorseBtn").onclick=sellHorse;if($("#buyFeedBtn"))$("#buyFeedBtn").onclick=function(){buyMountFeed(1)};
  if($("#useMountToggle"))$("#useMountToggle").onchange=function(e){setMountUse(e.target.checked)};
