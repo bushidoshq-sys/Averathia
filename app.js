@@ -532,7 +532,7 @@ function ageTimedBuffsClock(now=Date.now()){
  let last=Number(h.buffAgeAt);if(!Number.isFinite(last)){h.buffAgeAt=now;return 0}
  if(h.combat||h.pendingEvent||h.trip?.pauseStart){h.buffAgeAt=now;return 0}
  let dt=Math.max(0,now-last);h.buffAgeAt=now;if(!dt)return 0;
- let rounds=dt*AT_RATE/10000;if(rounds<=0)return 0,expired=[];
+ let rounds=dt*AT_RATE/10000;if(rounds<=0)return 0;let expired=[];
  for(const b of h.spells.buffs){if(Number.isFinite(Number(b.rounds))){b.rounds=Math.max(0,Number(b.rounds)-rounds);if(b.rounds<=0)expired.push(b)}}
  if(expired.length)h.spells.buffs=h.spells.buffs.filter(b=>!expired.includes(b));
  return rounds
