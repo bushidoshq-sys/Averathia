@@ -23,11 +23,11 @@ function candidate(){
  let hd=({Fighter:8,Cleric:6,Thief:4,Arcanist:4,Dwarf:8,Elf:6}[chosenClass]||8);return{stats:s,hp:hd+mod(s.CON),gold:180}
 }
 function fullName(){return FN[sex][d(FN[sex].length)-1]+" "+LN[d(LN.length)-1]}
-function chibiHTML(sx,i,big=false){return `<img src="${artPath(chosenClass,sx,i,"full")}" alt="${sx} ${chosenClass} ${i+1}">`}
+function chibiHTML(sx,i,big=false){let key=`avatar-art-${classSlug(chosenClass)}-${sx.toLowerCase()}-${i+1}`;return `<img class="avatarArt ${key}" src="${artPath(chosenClass,sx,i,"full")}" alt="${sx} ${chosenClass} ${i+1}">`}
 function spriteHTML(sx,i,cls=chosenClass){return `<img src="${artPath(cls,sx,i,"sprite")}" alt="">`}
 let chosenClass="Fighter";
 function renderClasses(){$("#classList").innerHTML=CLASSES.map(c=>`<button class="classChoice ${c[0]===chosenClass?"on":""}" data-class="${c[0]}"><b>${c[0]}</b></button>`).join("");$$("[data-class]").forEach(b=>b.onclick=()=>{chosenClass=b.dataset.class;rerollAll();renderClasses();renderAv()})}
-function renderAv(){$("#avatars").innerHTML=[0,1,2].map((a,i)=>`<button class="avatarBtn ${i===avatar?"on":""}" data-av="${i}">${chibiHTML(sex,i)}</button>`).join("");$$("[data-av]").forEach(b=>b.onclick=()=>{avatar=+b.dataset.av;renderAv()});$("#bigAvatar").innerHTML=chibiHTML(sex,avatar,true);$("#previewLabel").textContent=(($("#charName").value||"").trim()||"Selected Character")+" — "+chosenClass}
+function renderAv(){$("#avatars").innerHTML=[0,1,2].map((a,i)=>`<button class="avatarBtn ${i===avatar?"on":""}" data-av="${i}" aria-pressed="${i===avatar?"true":"false"}">${chibiHTML(sex,i)}</button>`).join("");$("[data-av]").forEach(b=>b.onclick=()=>{avatar=+b.dataset.av;renderAv()})}
 function renderCandidates(){let c=cs[0];if(!c)return;$("#selectionHint").textContent="Want different stats? Press Reroll.";$("#candidates").innerHTML=`<div class="card sel"><b>Rolled Stats</b><div class="stats">${["STR","DEX","CON","INT","WIS","CHA"].map(a=>`<div class="stat">${a}<br><b>${c.stats[a]}</b></div>`).join("")}</div><p>❤️ ${c.hp} HP · 🪙 ${c.gold} gp</p></div>`}
 function rerollAll(){cs=[candidate()];pick=0;$("#chooseCharacter").disabled=false;renderCandidates()}
 $("#male").onclick=()=>{sex="Male";avatar=0;$("#male").classList.add("on");$("#female").classList.remove("on");renderAv()};
