@@ -68,6 +68,7 @@ function gainLevel(){
  if(h.level<=9){let roll=d(r.hd),gain=Math.max(1,roll+conHPBonus());h.maxhp+=gain;h.hp+=gain;h.lastLevelGain={level:h.level,hp:gain,roll,con:conHPBonus()}}
  else{let gain={Fighter:2,Thief:2,Cleric:1,Arcanist:1,Dwarf:3,Elf:2}[h.className]??1;h.maxhp+=gain;h.hp+=gain;h.lastLevelGain={level:h.level,hp:gain,roll:null,con:0}}
  if(h.trip?.journal)journal({id:`LEVEL-${h.level}`,type:"Progression",title:`Level ${h.level}`,text:`${h.name} reached level ${h.level}.`,result:"levelUp",xp:0,coins:[0,0,0],hpGain:h.lastLevelGain.hp});
+ if(PREPARED_CASTERS.has(h.className))ensureSpellState();
  return true
 }
 function checkLevelUps(){
@@ -1986,15 +1987,17 @@ function spellSlotsFor(cls=h.className,level=h.level){
 function ensureSpellState(){
  if(!h.spells)h.spells={used:{},buffs:[],memorized:{},spentMem:[]};
  if(!h.spells.used)h.spells.used={};if(!h.spells.buffs)h.spells.buffs=[];if(!h.spells.memorized)h.spells.memorized={};if(!h.spells.spentMem)h.spells.spentMem=[];
- if(h.className==="Cleric"&&!h.spells.clericPreparedV1){
-  let slots=spellSlotsFor("Cleric",h.level),list=SPELLS.Cleric||[],spent=new Set(h.spells.spentMem||[]);
+ if(PREPARED_CASTERS.has(h.className)){
+  let slots=spellSlotsFor(h.className,h.level),list=SPELLS[h.className]||[],spent=new Set(h.spells.spentMem||[]);
   for(let sl=1;sl<=slots.length;sl++){
    let cap=slots[sl-1]||0,known=list.filter(s=>s.sl===sl),valid=new Set(known.map(s=>s.id)),mem=Array.isArray(h.spells.memorized[sl])?h.spells.memorized[sl].filter(id=>valid.has(id)).slice(0,cap):[];
-   if(cap&&known.length)while(mem.length<cap)mem.push(known[mem.length%known.length].id);
+   // Preserve existing choices. Newly gained slots start empty so the player chooses what to prepare.
    h.spells.memorized[sl]=mem;
    let used=Math.min(Number(h.spells.used[sl])||0,mem.length);for(let i=0;i<used;i++)spent.add(`${sl}:${i}`);
   }
-  h.spells.spentMem=[...spent];h.spells.used={};h.spells.clericPreparedV1=true;
+  // Drop stale spent markers that point beyond currently valid slot indexes.
+  h.spells.spentMem=[...spent].filter(k=>{let m=/^(\d+):(\d+)$/.exec(k);if(!m)return false;let sl=+m[1],i=+m[2],cap=slots[sl-1]||0;return i<cap});
+  h.spells.used={};h.spells.preparedSlotsV2=true;
  }
 }
 function availableCombatSpells(){
