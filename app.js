@@ -1297,15 +1297,17 @@ function buildEncounter(isBoss=false){
  return best?.out||[eligible[d(eligible.length)-1]];
 }
 const ENCOUNTER_ENVIRONMENT={
- underground:new Set(["FTR-073","CLE-001","CLE-004","CLE-005","CLE-006","CLE-009","DWA-001","DWA-002","DWA-003","DWA-004","DWA-005","DWA-006","DWA-007","DWA-008","DWA-009","DWA-010"]),
- indoor:new Set(["FTR-065","FTR-086","CLE-002","CLE-008","THI-003","THI-006","THI-007","THI-010","ARC-001","ARC-003","ARC-006","ARC-009"]),
- outdoor:new Set(["FTR-061","FTR-062","FTR-063","FTR-064","FTR-066","FTR-067","FTR-068","FTR-070","FTR-072","FTR-075","FTR-076","FTR-077","FTR-078","FTR-079","FTR-081","FTR-082","FTR-083","FTR-084","FTR-085","FTR-087","FTR-088","FTR-089","FTR-090","CLE-003","CLE-010","THI-002","THI-005","THI-008","THI-009","ELF-001","ELF-002","ELF-003","ELF-004","ELF-005","ELF-006","ELF-007","ELF-008","ELF-009","ELF-010"])
+ underground:new Set(["FTR-073","FTR-080","CLE-001","CLE-004","CLE-005","CLE-006","CLE-009","THI-006","ELF-009","DWA-001","DWA-002","DWA-003","DWA-004","DWA-005","DWA-006","DWA-007","DWA-008","DWA-009","DWA-010"]),
+ indoor:new Set(["FTR-065","FTR-074","FTR-086","CLE-002","CLE-007","CLE-008","THI-001","THI-003","THI-004","THI-007","THI-010","ARC-001","ARC-002","ARC-003","ARC-004","ARC-005","ARC-006","ARC-007","ARC-008","ARC-009","ARC-010"]),
+ outdoor:new Set(["FTR-061","FTR-062","FTR-063","FTR-064","FTR-066","FTR-067","FTR-068","FTR-069","FTR-070","FTR-072","FTR-075","FTR-076","FTR-077","FTR-078","FTR-079","FTR-081","FTR-083","FTR-084","FTR-085","FTR-087","FTR-088","FTR-089","FTR-090","CLE-003","CLE-010","THI-002","THI-005","THI-008","THI-009","ELF-001","ELF-002","ELF-003","ELF-004","ELF-005","ELF-006","ELF-007","ELF-008","ELF-010"])
 };
 const EXPLICIT_NIGHT_ENCOUNTERS=new Set(["FTR-068","FTR-085"]);
+function currentATDaylight(){let hour=atDate().getUTCHours();return hour>=6&&hour<18}
+function missionCombatContext(){let title=h?.trip?.mission?.title||null,environment="unknown";if(h?.className==="Dwarf")environment="underground";else if(h?.className==="Elf")environment="outdoor";else if(h?.className==="Arcanist")environment="indoor";else if(h?.className==="Fighter"&&title==="Break a threat on the road")environment="outdoor";return{eventId:null,eventTitle:title,environment,daylight:environment==="outdoor"?currentATDaylight():environment==="unknown"?null:false}}
 function encounterContextFromEvent(ev){
  let id=ev?.id||null,environment="unknown";
  for(const [kind,set] of Object.entries(ENCOUNTER_ENVIRONMENT))if(id&&set.has(id)){environment=kind;break}
- let daylight=(environment==="indoor"||environment==="underground"||EXPLICIT_NIGHT_ENCOUNTERS.has(id))?false:null;
+ let daylight=EXPLICIT_NIGHT_ENCOUNTERS.has(id)?false:environment==="outdoor"?currentATDaylight():(environment==="indoor"||environment==="underground")?false:null;
  return{eventId:id,eventTitle:ev?.title||null,environment,daylight}
 }
 function monsterContextAttackModifier(e){
@@ -1321,7 +1323,7 @@ function makeCombat(isBoss=false,context=null){
    en.push({...b,monsterId:b.id,id:i,lane:i%3,hp,maxhp:hp,damage:b.damage[0],ammo:b.rangedDamage?d(6):0,boss:isBoss,iahd:rcAdjustedHD(b)})
  }
  let total=+en.reduce((a,e)=>a+e.iahd,0).toFixed(2),tpl=rcTPL(),pct=rcChallengePct(total,tpl);
- let startBand=d(3);h.combat={round:1,enemies:en,target:0,log:[],skipNext:false,isBoss,context:context||{eventId:null,eventTitle:null,environment:"unknown",daylight:null},range:RANGE_BANDS[startBand].name,distanceFeet:RANGE_BANDS[startBand].feet,rcTPL:tpl,rcIAHD:total,rcChallengePct:pct,rcChallenge:rcChallengeName(pct),trollLesson,trollLessonDowned:false};
+ let startBand=d(3);h.combat={round:1,enemies:en,target:0,log:[],skipNext:false,isBoss,context:context||(isBoss?missionCombatContext():{eventId:null,eventTitle:null,environment:"unknown",daylight:null}),range:RANGE_BANDS[startBand].name,distanceFeet:RANGE_BANDS[startBand].feet,rcTPL:tpl,rcIAHD:total,rcChallengePct:pct,rcChallenge:rcChallengeName(pct),trollLesson,trollLessonDowned:false};
  let crabs=en.filter(e=>monsterKey(e)==="crab_spider");if(crabs.length&&d(6)<=4)h.combat.surpriseEnemyIds=crabs.map(e=>e.id);
  let names=en.map(x=>x.n).join(", ");
  clog((isBoss?`BOSS BATTLE — ${names}. `:`Encounter — ${names}. `)+`RC challenge: ${rcChallengeName(pct)} (${pct}%).`);
@@ -1346,10 +1348,10 @@ function makeUndeadGroup(){
  for(let i=0;i<count;i++){let hp=0;for(let k=0;k<b.hdDice;k++)hp+=d(8);hp=Math.max(1,hp);en.push({...b,monsterId:b.id,id:i,lane:i%3,hp,maxhp:hp})}
  return en
 }
-function startUndeadCombat(en,opening){
+function startUndeadCombat(en,opening,context=null){
  if(!en.length){addlog("No undead remain to fight.");save();page("depart");refresh();return}
  beginTripPause();en.forEach((e,i)=>e.id=i);
- h.combat={round:1,enemies:en,target:0,log:[],skipNext:false,isBoss:false,range:"Close",distanceFeet:RANGE_BANDS[1].feet};
+ h.combat={round:1,enemies:en,target:0,log:[],skipNext:false,isBoss:false,context:context||{eventId:null,eventTitle:null,environment:"unknown",daylight:null},range:"Close",distanceFeet:RANGE_BANDS[1].feet};
  clog(opening||`${en.length} undead remain and attack.`);save();
  if(h.trip?.mode==="auto")runAutonomousCombat();else renderCombat()
 }
@@ -1366,13 +1368,13 @@ function resolveTurnUndead(ev){
  journal({id:ev.id,type:ev.type,title:ev.title,text:ev.text,choice:"Turn Undead",result,xp,coins:[0,0,0],roll,target:val,affected:affected.length,remaining:remain.length});
  addlog(`${ev.title}: Turn Undead — ${result}. ${remain.length} remain.${xp?` +${xp} XP.`:""}`);
  h.pendingEvent=null;save();renderPendingEvent();
- if(remain.length)startUndeadCombat(remain,`${affected.length?affected.length+" "+type+(affected.length===1?" is":"s are")+" "+verb+". ":""}${remain.length} undead remain — combat begins.`);
+ if(remain.length)startUndeadCombat(remain,`${affected.length?affected.length+" "+type+(affected.length===1?" is":"s are")+" "+verb+". ":""}${remain.length} undead remain — combat begins.`,encounterContextFromEvent(ev));
  else{addlog("All undead are driven off. No combat remains.");endTripPause();save();page("depart");refresh();if(resumeAfter)tick()}
 }
 function startClericUndeadFight(ev){
  let en=makeUndeadGroup();h.pendingEvent=null;
  journal({id:ev.id,type:ev.type,title:ev.title,text:ev.text,choice:"Fight",result:"combat",xp:0,coins:[0,0,0],remaining:en.length});
- save();renderPendingEvent();startUndeadCombat(en,`${en.length} undead attack.`)
+ save();renderPendingEvent();startUndeadCombat(en,`${en.length} undead attack.`,encounterContextFromEvent(ev))
 }
 function autoPotionThreshold(){return{Cautious:.65,Normal:.45,Bold:.25}[h.trip?.risk||"Normal"]}
 function autoSpellScore(s){
