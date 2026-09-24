@@ -68,6 +68,7 @@ function gainLevel(){
  if(h.level<=9){let roll=d(r.hd),gain=Math.max(1,roll+conHPBonus());h.maxhp+=gain;h.hp+=gain;h.lastLevelGain={level:h.level,hp:gain,roll,con:conHPBonus()}}
  else{let gain={Fighter:2,Thief:2,Cleric:1,Arcanist:1,Dwarf:3,Elf:2}[h.className]??1;h.maxhp+=gain;h.hp+=gain;h.lastLevelGain={level:h.level,hp:gain,roll:null,con:0}}
  if(h.trip?.journal)journal({id:`LEVEL-${h.level}`,type:"Progression",title:`Level ${h.level}`,text:`${h.name} reached level ${h.level}.`,result:"levelUp",xp:0,coins:[0,0,0],hpGain:h.lastLevelGain.hp});
+ if(PREPARED_CASTERS.has(h.className))ensureSpellState();
  return true
 }
 function checkLevelUps(){
@@ -108,10 +109,30 @@ const MOUNT_FEED_WEEK_GP=10;
 const MOUNT_FEED_PACK_DAYS=7;
 const RETAINER_CARRY_BP=1600;
 const WISHING_WELL_CHANCE=100;
+const HOME_COIN_STORAGE=[
+ {name:"None",capacity:0},
+ {name:"Coin Chest",capacity:10000},
+ {name:"Strongbox",capacity:50000},
+ {name:"Vault",capacity:250000}
+];
 function ensureHomeState(obj=h){
  if(!obj)return;
  obj.homeTier=Math.max(0,Math.min(3,Math.trunc(Number(obj.homeTier)||0)));
  obj.homeStorage=Array.isArray(obj.homeStorage)?obj.homeStorage:[];
+ obj.homeCoins=obj.homeCoins&&typeof obj.homeCoins==="object"?obj.homeCoins:{};
+ obj.homeCoins.gp=Math.max(0,Math.trunc(Number(obj.homeCoins.gp)||0));
+ obj.homeCoins.sp=Math.max(0,Math.trunc(Number(obj.homeCoins.sp)||0));
+ obj.homeCoins.cp=Math.max(0,Math.trunc(Number(obj.homeCoins.cp)||0));
+ for(const x of obj.homeStorage){
+  if(!x||x.oreSack)continue;
+  let base=x.emptySackName||x.n;
+  if(x.coinSack||base==="Small Sack of GP"||base==="Large Sack of GP"){
+   if(base==="Small Sack of GP")base="Small Sack";if(base==="Large Sack of GP")base="Large Sack";
+   x.emptySackName=base==="Large Sack"?"Large Sack":"Small Sack";x.coinSack=true;x.storedGP=Math.max(0,Math.trunc(Number(x.storedGP)||0));
+   let cap=x.emptySackName==="Large Sack"?600:200;x.storedGP=Math.min(cap,x.storedGP);x.bp=(x.emptySackName==="Large Sack"?5:1)+x.storedGP;
+   x.n=x.storedGP?x.emptySackName+" of GP":x.emptySackName;x.eventKey=!x.storedGP
+  }
+ }
  obj.mounts=obj.mounts&&typeof obj.mounts==="object"?obj.mounts:{};
  obj.mounts.horses=Math.max(0,Math.trunc(Number(obj.mounts.horses)||0));
  obj.mounts.feedDays=Math.max(0,Number(obj.mounts.feedDays)||0);
@@ -123,6 +144,40 @@ function ensureHomeState(obj=h){
  if(typeof obj.retainer.autoFeed!=="boolean")obj.retainer.autoFeed=true;
 }
 function homeTier(obj=h){ensureHomeState(obj);return obj?obj.homeTier:0}
+function homeCoinStorageSpec(obj=h){let t=homeTier(obj);return HOME_COIN_STORAGE[t]||HOME_COIN_STORAGE[0]}
+function homeCoinCount(obj=h){ensureHomeState(obj);return Math.max(0,obj?.homeCoins?.gp||0)+Math.max(0,obj?.homeCoins?.sp||0)+Math.max(0,obj?.homeCoins?.cp||0)}
+function homeCoinValueCP(obj=h){ensureHomeState(obj);return Math.max(0,obj?.homeCoins?.gp||0)*100+Math.max(0,obj?.homeCoins?.sp||0)*10+Math.max(0,obj?.homeCoins?.cp||0)}
+function homeSpendableCP(){return walletCP()+homeCoinValueCP()}
+function setHomeCoinValueCP(cp){
+ ensureHomeState();cp=Math.max(0,Math.round(Number(cp)||0));
+ h.homeCoins.gp=Math.floor(cp/100);h.homeCoins.sp=Math.floor((cp%100)/10);h.homeCoins.cp=cp%10
+}
+function spendFromWalletAndHome(cp){
+ cp=Math.max(0,Math.round(Number(cp)||0));if(homeSpendableCP()<cp)return false;
+ let fromWallet=Math.min(walletCP(),cp);setWalletCP(walletCP()-fromWallet);cp-=fromWallet;
+ if(cp>0)setHomeCoinValueCP(homeCoinValueCP()-cp);
+ return true
+}
+function storeCoinsAtHome(){
+ if(!hasRoom()||h.trip||h.combat)return;ensureHomeState();
+ let cap=homeCoinStorageSpec().capacity,space=Math.max(0,cap-homeCoinCount());if(space<1)return;
+ for(const k of ["gp","sp","cp"]){
+  let held=Math.max(0,Math.trunc(Number(k==="gp"?(h.gp??h.gold):h[k])||0)),move=Math.min(held,space);
+  if(move>0){h.homeCoins[k]+=move;if(k==="gp"){h.gp=held-move;h.gold=h.gp}else h[k]=held-move;space-=move}
+  if(space<1)break
+ }
+ save()
+}
+function takeCoinsFromHome(){
+ if(!hasRoom()||h.trip||h.combat)return;ensureHomeState();
+ let room=Math.max(0,Math.floor(maxCarryBP()-carriedBulkPoints()+1e-9));if(room<1)return;
+ for(const k of ["gp","sp","cp"]){
+  let stored=Math.max(0,Math.trunc(Number(h.homeCoins[k])||0)),move=Math.min(stored,room);
+  if(move>0){h.homeCoins[k]-=move;if(k==="gp"){h.gp=Math.max(0,Math.trunc(Number(h.gp??h.gold)||0))+move;h.gold=h.gp}else h[k]=Math.max(0,Math.trunc(Number(h[k])||0))+move;room-=move}
+  if(room<1)break
+ }
+ save()
+}
 function hasRoom(obj=h){return homeTier(obj)>=1}
 function hasHouse(obj=h){return homeTier(obj)>=2}
 function hasEstate(obj=h){return homeTier(obj)>=3}
@@ -137,8 +192,8 @@ function horseSellPriceCP(){return Math.round(gpToCP(RIDING_HORSE_PRICE_GP)*.5*(
 function feedPackPriceCP(){return Math.round(gpToCP(MOUNT_FEED_WEEK_GP)*(1-chaBuyDiscount()))}
 function buyHomeUpgrade(){
  if(h.trip||h.combat)return;let t=homeTier();if(t>=3)return;let cost=homeUpgradeCostCP();
- if(walletCP()<cost){alert("Not enough money for "+HOME_TIER_NAMES[t+1]+".");return}
- setWalletCP(walletCP()-cost);h.homeTier=t+1;ensureHomeState();processTownAutomation();save()
+ if(homeSpendableCP()<cost){alert("Not enough money for "+HOME_TIER_NAMES[t+1]+".");return}
+ spendFromWalletAndHome(cost);h.homeTier=t+1;ensureHomeState();processTownAutomation();save()
 }
 function storeAtHome(i){
  if(!hasRoom()||h.trip||h.combat)return;let x=h.inv[i];if(!x)return;if(x.eq)x.eq=false;h.homeStorage.push(x);h.inv.splice(i,1);save()
@@ -147,6 +202,30 @@ function takeFromHome(i){
  if(!hasRoom()||h.trip||h.combat)return;let x=h.homeStorage[i];if(!x)return;
  if(carriedBulkPoints()+itemBulkPoints(x)>maxCarryBP()+1e-9){alert("Not enough BP to take that item with you.");return}
  h.inv.push(x);h.homeStorage.splice(i,1);save()
+}
+function gpSackBaseName(x){
+ if(!x||x.oreSack)return null;
+ let n=x.emptySackName||x.n;
+ if(n==="Small Sack of GP")n="Small Sack";if(n==="Large Sack of GP")n="Large Sack";
+ return n==="Small Sack"||n==="Large Sack"?n:null
+}
+function gpSackCapacity(x){let n=gpSackBaseName(x);return n==="Large Sack"?600:n==="Small Sack"?200:0}
+function syncGpSack(x){
+ let base=gpSackBaseName(x);if(!base)return x;
+ let cap=base==="Large Sack"?600:200,stored=Math.max(0,Math.min(cap,Math.trunc(Number(x.storedGP)||0)));
+ x.emptySackName=base;x.storedGP=stored;x.coinSack=stored>0;x.n=stored?base+" of GP":base;x.bp=(base==="Large Sack"?5:1)+stored;x.eventKey=!stored;
+ if(!stored){delete x.coinSack;delete x.storedGP;delete x.emptySackName;delete x.bp}
+ return x
+}
+function storeGpInHomeSack(i){
+ if(!hasRoom()||h.trip||h.combat)return;let x=h.homeStorage[i],cap=gpSackCapacity(x);if(!x||!cap)return;
+ let held=Math.max(0,Math.trunc(Number(h.gp??h.gold)||0)),stored=Math.max(0,Math.trunc(Number(x.storedGP)||0)),move=Math.min(held,cap-stored);
+ if(move<=0)return;
+ h.gp=held-move;h.gold=h.gp;x.emptySackName=gpSackBaseName(x);x.storedGP=stored+move;syncGpSack(x);save()
+}
+function takeGpFromHomeSack(i){
+ if(!hasRoom()||h.trip||h.combat)return;let x=h.homeStorage[i],stored=Math.max(0,Math.trunc(Number(x?.storedGP)||0));if(!x||!stored)return;
+ h.gp=Math.max(0,Math.trunc(Number(h.gp??h.gold)||0))+stored;h.gold=h.gp;x.storedGP=0;syncGpSack(x);save()
 }
 function buyHorse(){
  if(!hasHouse()||h.trip||h.combat)return;let cost=horseBuyPriceCP();if(walletCP()<cost){alert("Not enough money for a Riding Horse.");return}
@@ -197,18 +276,20 @@ function renderHome(){
  if(next)head+='<button id="buyHomeTier" class="primary">'+(t?"Upgrade to ":"Buy ")+next+" — "+coinTextCP(cost)+'</button>';else head+='<b>Maximum tier: Estate</b>';
  out.push(head+"</div>");
  if(hasRoom()){
-  let stored=h.homeStorage.map(function(x,i){return '<div class="item"><span><b>'+x.n+'</b><div class="small">'+formatBP(itemBulkPoints(x))+' BP stored</div></span><button data-home-take="'+i+'">Take</button></div>'}).join("")||'<div class="small">Nothing stored.</div>';
+  let stored=h.homeStorage.map(function(x,i){let cap=gpSackCapacity(x),gp=Math.max(0,Math.trunc(Number(x.storedGP)||0)),money=cap?'<div class="small">GP '+gp+'/'+cap+'</div>':'',controls=cap?'<div class="row"><button data-home-gp-store="'+i+'" '+(gp>=cap||Math.trunc(Number(h.gp??h.gold)||0)<1?'disabled':'')+'>Store GP</button><button data-home-gp-take="'+i+'" '+(gp<1?'disabled':'')+'>Take GP</button><button data-home-take="'+i+'">Take Sack</button></div>':'<button data-home-take="'+i+'">Take</button>';return '<div class="item"><span><b>'+x.n+'</b><div class="small">'+formatBP(itemBulkPoints(x))+' BP stored</div>'+money+'</span>'+controls+'</div>'}).join("")||'<div class="small">Nothing stored.</div>';
   let carry=h.inv.map(function(x,i){return '<div class="item"><span><b>'+x.n+'</b><div class="small">'+formatBP(itemBulkPoints(x))+' BP</div></span><button data-home-store="'+i+'">Store</button></div>'}).join("")||'<div class="small">No carried items.</div>';
+  let coinStore=homeCoinStorageSpec(),coinCount=homeCoinCount(),coinFree=Math.max(0,coinStore.capacity-coinCount),carriedCoins=coinBulkPoints(),takeRoom=Math.max(0,Math.floor(maxCarryBP()-carriedBulkPoints()+1e-9));
   out.push('<div class="settingsSection"><h3>🛏 Home Rest</h3><p class="small">Rest 8 Averathia hours at home.</p><button id="homeRestBtn" '+(h.restUntil?"disabled":"")+'>Rest</button></div>');
-  out.push('<div class="settingsSection"><h3>📦 Home Storage</h3><p class="small">Stored items do not count toward Journey BP.</p><b>Stored</b>'+stored+'<b>Carried</b>'+carry+'</div>');
+  out.push('<div class="settingsSection"><h3>🪙 '+coinStore.name+'</h3><p class="small">Permanent coin storage included with your '+HOME_TIER_NAMES[t]+'. Coins stored here do not count toward Journey BP. Capacity is measured in physical coins.</p><p><b>'+coinCount+' / '+coinStore.capacity+' coins</b></p><div class="small">Stored: '+h.homeCoins.gp+' GP · '+h.homeCoins.sp+' SP · '+h.homeCoins.cp+' CP</div><div class="row"><button id="storeHomeCoins" '+(coinFree<1||carriedCoins<1?"disabled":"")+'>Store Coins</button><button id="takeHomeCoins" '+(coinCount<1||takeRoom<1?"disabled":"")+'>Take Coins</button></div></div>');
+  out.push('<div class="settingsSection"><h3>📦 Home Storage</h3><p class="small">Stored items do not count toward Journey BP. Sacks can still be used for portable GP storage.</p><b>Stored</b>'+stored+'<b>Carried</b>'+carry+'</div>');
  }
  if(hasHouse()){
   out.push('<div class="settingsSection"><h3>'+homePlaceName()+'</h3><p class="small">A private part of the property belonging to your '+h.className+'.</p></div>');
   out.push('<div class="settingsSection"><h3>🐎 Stable</h3><p>Riding Horses: <b>'+h.mounts.horses+'</b></p><div class="row"><button id="buyHorseBtn">Buy — '+coinTextCP(horseBuyPriceCP())+'</button><button id="sellHorseBtn" '+(h.mounts.horses<1?"disabled":"")+'>Sell — '+coinTextCP(horseSellPriceCP())+'</button></div><p>Mount Feed reserve: <b>'+h.mounts.feedDays.toFixed(2)+' horse-days</b></p><button id="buyFeedBtn">Mount Feed — 7 days · '+coinTextCP(feedPackPriceCP())+'</button><label class="skillCard"><input id="useMountToggle" type="checkbox" '+(h.mounts.useOnJourney?"checked":"")+'> Use horse on Journeys</label></div>');
  }
  box.innerHTML=out.join("");
- if($("#buyHomeTier"))$("#buyHomeTier").onclick=buyHomeUpgrade;if($("#homeRestBtn"))$("#homeRestBtn").onclick=startLongRest;
- document.querySelectorAll("[data-home-store]").forEach(function(b){b.onclick=function(){storeAtHome(+b.dataset.homeStore)}});document.querySelectorAll("[data-home-take]").forEach(function(b){b.onclick=function(){takeFromHome(+b.dataset.homeTake)}});
+ if($("#buyHomeTier"))$("#buyHomeTier").onclick=buyHomeUpgrade;if($("#homeRestBtn"))$("#homeRestBtn").onclick=startLongRest;if($("#storeHomeCoins"))$("#storeHomeCoins").onclick=storeCoinsAtHome;if($("#takeHomeCoins"))$("#takeHomeCoins").onclick=takeCoinsFromHome;
+ document.querySelectorAll("[data-home-store]").forEach(function(b){b.onclick=function(){storeAtHome(+b.dataset.homeStore)}});document.querySelectorAll("[data-home-take]").forEach(function(b){b.onclick=function(){takeFromHome(+b.dataset.homeTake)}});document.querySelectorAll("[data-home-gp-store]").forEach(function(b){b.onclick=function(){storeGpInHomeSack(+b.dataset.homeGpStore)}});document.querySelectorAll("[data-home-gp-take]").forEach(function(b){b.onclick=function(){takeGpFromHomeSack(+b.dataset.homeGpTake)}});
  if($("#buyHorseBtn"))$("#buyHorseBtn").onclick=buyHorse;if($("#sellHorseBtn"))$("#sellHorseBtn").onclick=sellHorse;if($("#buyFeedBtn"))$("#buyFeedBtn").onclick=function(){buyMountFeed(1)};
  if($("#useMountToggle"))$("#useMountToggle").onchange=function(e){setMountUse(e.target.checked)};
 }
@@ -267,7 +348,7 @@ function enemyTimedAttackBonus(){return ensureTimedConditions().some(x=>x.type==
 function timedConditionHelpless(){return ensureTimedConditions().some(x=>x.type==="tarantellaDance"&&x.helpless&&(Number(x.rounds)||0)>0)}
 function timedConditionDeath(effect){
  h.timedConditions=ensureTimedConditions().filter(x=>x.id!==effect.id);
- h.lastAdventure=`FAILED — ${h.name} died from ${effect.name||"poison"}.`;recoverThrownWeapons();h.trip=null;h.pendingEvent=null;h.combat=null;h.deadUntil=Date.now()+h.level*5*60000;h.hp=0;
+ h.lastAdventureTitle=h.trip?.mission?.title||"Failed Journey";h.lastAdventure=h.trip?buildAdventureTale(h.trip,{ending:"death"}):`FAILED — ${h.name} died from ${effect.name||"poison"}.`;recoverThrownWeapons();h.trip=null;h.pendingEvent=null;h.combat=null;h.deadUntil=Date.now()+h.level*5*60000;h.hp=0;
  localStorage.setItem("averathia-v041",JSON.stringify(h));renderDeathPage();return false
 }
 function addTimedCondition(effect){
@@ -321,7 +402,7 @@ function centipedePoisonStatusText(){
 function journeyBlockingStatusText(){return[diseaseStatusText(),centipedePoisonStatusText()].filter(Boolean).join(" | ")}
 function diseaseDeath(dis){
  h.diseases=ensureDiseases().filter(x=>x.id!==dis.id);h.mummyDisease=h.diseases.some(x=>x.type==="mummy");syncDiseaseCondition();
- h.lastAdventure=`FAILED — ${h.name} died from ${dis.name||"disease"}.`;recoverThrownWeapons();h.trip=null;h.pendingEvent=null;h.combat=null;h.deadUntil=Date.now()+h.level*5*60000;h.hp=0;
+ h.lastAdventureTitle=h.trip?.mission?.title||"Failed Journey";h.lastAdventure=h.trip?buildAdventureTale(h.trip,{ending:"death"}):`FAILED — ${h.name} died from ${dis.name||"disease"}.`;recoverThrownWeapons();h.trip=null;h.pendingEvent=null;h.combat=null;h.deadUntil=Date.now()+h.level*5*60000;h.hp=0;
  localStorage.setItem("averathia-v041",JSON.stringify(h));renderDeathPage();return true
 }
 function updateDiseases(){
@@ -362,7 +443,7 @@ function ensureTrophies(){if(h&&!Array.isArray(h.trophies))h.trophies=[]}
 function unlockTrophy(name){ensureTrophies();if(!h||h.trophies.includes(name))return false;let valid=(TROPHY_COLLECTIONS[h.className]||[]).some(x=>x[0]===name);if(!valid)return false;h.trophies.push(name);save();return true}
 function renderTrophies(){let grid=$("#trophyGrid"),intro=$("#trophyIntro");if(!grid||!h)return;ensureTrophies();let list=TROPHY_COLLECTIONS[h.className]||[],got=new Set(h.trophies);intro.textContent=`${TROPHY_TITLES[h.className]||"Collection"} — ${list.filter(x=>got.has(x[0])).length}/${list.length} discovered`;grid.innerHTML=list.map(([name,kind])=>got.has(name)?`<div class="trophyCard unlocked"><div class=trophyIcon>✦</div><b>${name}</b><span>${kind}</span></div>`:`<div class="trophyCard locked"><div class=trophyIcon>?</div><b>???</b><span>Undiscovered</span></div>`).join("")}
 
-function refresh(){updateNavigationLock();if(h){ageTimedBuffsClock(Date.now());if(ageTimedConditionsClock(Date.now())===false)return;if(updateDiseases())return}if(h?.deadUntil&&Date.now()<h.deadUntil){renderDeathPage();return}renderTrophies();if(h)renderSkills();if($("#lastAdventure")){if(h?.lastAdventure){$("#lastAdventure").classList.remove("hide");$("#lastAdventureText").textContent=h.lastAdventure}else $("#lastAdventure").classList.add("hide")}renderPendingEvent();if(!h)return;updateRest();
+function refresh(){updateNavigationLock();if(h){ageTimedBuffsClock(Date.now());if(ageTimedConditionsClock(Date.now())===false)return;if(updateDiseases())return}if(h?.deadUntil&&Date.now()<h.deadUntil){renderDeathPage();return}renderTrophies();if(h)renderSkills();if($("#lastAdventure")){if(h?.lastAdventure){$("#lastAdventure").classList.remove("hide");$("#lastAdventureText").textContent=h.lastAdventure;if($("#lastAdventureSummary"))$("#lastAdventureSummary").textContent="📖 "+(h.lastAdventureTitle||"Adventure Tale")}else $("#lastAdventure").classList.add("hide")}renderPendingEvent();if(!h)return;updateRest();
  if(h.deadUntil&&Date.now()>=h.deadUntil){h.deadUntil=null;h.hp=Math.max(1,h.maxhp);h.trip=null;h.combat=null;save();page("town");return}
  if($("#worldClock"))$("#worldClock").textContent=atClockText();
  if($("#longRestBtn")){$("#longRestBtn").disabled=!!h.restUntil||!!h.deadUntil;$("#longRestBtn").onclick=()=>startLongRest()}if($("#cureDiseaseHealer")){$("#cureDiseaseHealer").textContent=`Cure Disease — ${cureDiseaseCostGP()} gp`;$("#cureDiseaseHealer").disabled=!hasCurableDisease()}if($("#curePoisonHealer")){$("#curePoisonHealer").textContent=`Cure Poison — ${curePoisonCostGP()} gp`;$("#curePoisonHealer").disabled=!hasActivePoison()}
@@ -542,6 +623,21 @@ function consumeLightMinutes(minutes,obj=h){
  for(const k of ["legacyMinutes","torchMinutes","oilMinutes"]){let use=Math.min(ls[k],left);ls[k]-=use;left-=use;if(left<=1e-9)break}
  obj.lightMinutes=ls.torchMinutes+ls.oilMinutes+ls.legacyMinutes;
  return left<=1e-9
+}
+function journeyUsableLightMinutes(obj=h){
+ let ls=ensureLightStock(obj),hasLantern=!!obj?.inv?.some(x=>x?.n==="Lantern");
+ return ls.torchMinutes+ls.legacyMinutes+(hasLantern?ls.oilMinutes:0)
+}
+function consumeJourneyLight(minutes,obj=h){
+ let ls=ensureLightStock(obj),left=Math.max(0,numOr(minutes,0)),hasLantern=!!obj?.inv?.some(x=>x?.n==="Lantern"),usedOil=0,usedTorch=0,usedLegacy=0;
+ let order=hasLantern?["oilMinutes","torchMinutes","legacyMinutes"]:["torchMinutes","legacyMinutes"];
+ for(const k of order){
+  let use=Math.min(ls[k],left);ls[k]-=use;left-=use;
+  if(k==="oilMinutes")usedOil+=use;else if(k==="torchMinutes")usedTorch+=use;else usedLegacy+=use;
+  if(left<=1e-9)break
+ }
+ obj.lightMinutes=ls.torchMinutes+ls.oilMinutes+ls.legacyMinutes;
+ return{ok:left<=1e-9,source:usedOil>0?"lamp":"torch",usedOil,usedTorch,usedLegacy}
 }
 function resourceSummaryRows(cls="sheetEquipRow"){
  if(!h)return"";let rows=[],ls=ensureLightStock();
@@ -915,8 +1011,11 @@ function consumeTripSurvivalResources(now=Date.now()){
  if(h.water<=0&&t<h.trip.half&&!h.trip.forcedReturnWater){h.trip.forcedReturnWater=true;returnEarly("You are out of water. You turn back toward town.");return false}
  return true
 }
-function begin(){let rb=$("#recall");if(rb){rb.disabled=false;rb.textContent="↩ Return Early"}if(!hasBackpack()){alert("You need a Backpack before beginning a Journey.");return}if(carriedBulkPoints()>maxCarryBP()+1e-9){alert(`You are carrying ${formatBP(carriedBulkPoints())}/${formatBP(maxCarryBP())} BP. Reduce your load before beginning a Journey.`);return}if(diseaseJourneyBlocked()){alert(`${journeyBlockingCondition()?.name||"Current condition"} prevents travel. You cannot begin a Journey.`);return}if(timedConditionJourneyBlocked()){alert(`${timedConditionBlockingName()} prevents travel. You cannot begin a Journey.`);return}if(h.waterCapacity<1){alert("You need at least one Waterskin.");return}let ret=retainerSelected(),mounts=plannedHorseCount(),horseAttempt=hasHouse()&&h.mounts.useOnJourney;if(horseAttempt&&!mounts){alert("Not enough Riding Horses for mounted travel with this party.");return}let needs=survivalNeedsForMinutes(mins),nw=needs.waterSkins,nf=needs.foodDays,nl=mins*2/3;if(h.water<nw){alert("Not enough water.");return}if(h.rations<nf){alert("Not enough rations.");return}if(mounts&&h.mounts.feedDays+1e-9<needs.mountFeedDays){alert("Not enough Mount Feed.");return}if(totalLightMinutes()<nl){alert("Not enough light.");return}consumeLightMinutes(nl);let now=Date.now(),total=mins*60000,eventTarget=adventureEventTarget(mins),eventIntervalMs=Math.max(5000,total/eventTarget);h.lastAdventure=null;h.pendingEvent=null;ensureTrophies();let mission=createMission();h.trip={journal:[],adventureLog:[],mission,start:now,end:now+total,half:now+total/2,midBossDone:false,rcTreasureXpCP:0,mode,risk,durationMinutes:mins,eventTarget,eventIntervalMs,resourceModel:"at-elapsed-v2",resourceAt:now,forcedReturnWater:false,retainer:ret,mountsUsed:mounts,mountedTravel:!!mounts,nextEvent:now+Math.min(15000,Math.max(5000,total/(eventTarget+1)))};$("#departSetup").classList.add("hide");$("#travel").classList.remove("hide");$("#departedAt").textContent=clock(h.trip.start);$("#returnAt").textContent=clock(h.trip.end);$("#runner").innerHTML=spriteHTML(h.sex,h.avatar,h.className);$("#log").innerHTML="";addlog(`MISSION: ${mission.title} — ${mission.brief}`);renderAdventureLog();save();tick()}
-function tick(){clearTimeout(timer);if(ageTimedConditionsClock(Date.now())===false)return;if(!h.trip)return;ensureTripSchedule();let now=h.trip.pauseStart||Date.now();if(!consumeTripSurvivalResources(now))return;let total=h.trip.end-h.trip.start,elapsed=Math.max(0,now-h.trip.start),pct=Math.min(1,elapsed/total),outbound=pct<=0.5,runnerPct=outbound?pct*200:(1-pct)*200;let recall=$("#recall");if(recall){recall.disabled=!outbound;recall.textContent=outbound?"↩ Return Early":"Returning…"}$("#fill").style.width="0%";$("#runner").style.left=runnerPct+"%";$("#runner").style.transform=outbound?"translate(-50%,-62%) scaleX(-1)":"translate(-50%,-62%) scaleX(1)";$("#phase").textContent=(outbound?"OUTBOUND / ADVENTURING":"RETURNING")+(h.trip.mission?` · ${h.trip.mission.title}`:"");let remaining=Math.max(0,h.trip.end-now);$("#remainingClock").textContent=`${Math.floor(remaining/60000)}:${String(Math.floor(remaining/1000)%60).padStart(2,"0")}`;$("#returnAt").textContent=clock(h.trip.end);$("#timeText").textContent=`Elapsed ${Math.floor(elapsed/60000)}:${String(Math.floor(elapsed/1000)%60).padStart(2,"0")} · Remaining ${Math.floor(remaining/60000)}:${String(Math.floor(remaining/1000)%60).padStart(2,"0")}`;if(now>=h.trip.half&&!h.trip.midBossDone&&!h.combat&&!h.pendingEvent){if(h.trip.mode==="auto")autonomousCombat(true);else makeCombat(true);if(!h.trip)return;h.trip.midBossDone=true;save()}if(now>=h.trip.nextEvent&&now<h.trip.end&&!h.combat&&!h.pendingEvent){event();if(!h.trip)return;h.trip.nextEvent+=h.trip.eventIntervalMs;save()}if(now>=h.trip.end){if(h.trip.trollLessonReturn&&!h.trollWeaknessKnown){let lesson="At the city gates, guards intercept the pursuing Troll. After bringing it down, they burn the body with torches until it stops regenerating. You now know: a fallen Troll must be finished with fire or acid.";addlog(lesson);h.trollWeaknessKnown=true;h.lastAdventure=`TROLL LORE LEARNED — ${lesson}`}addlog("Returned to town.");settleTripTreasureXP();h.trip=null;$("#travel").classList.add("hide");$("#departSetup").classList.remove("hide");home();page("town");return}timer=setTimeout(tick,500)}
+function begin(){let rb=$("#recall");if(rb){rb.disabled=false;rb.textContent="↩ Return Early"}if(!hasBackpack()){alert("You need a Backpack before beginning a Journey.");return}if(carriedBulkPoints()>maxCarryBP()+1e-9){alert(`You are carrying ${formatBP(carriedBulkPoints())}/${formatBP(maxCarryBP())} BP. Reduce your load before beginning a Journey.`);return}if(diseaseJourneyBlocked()){alert(`${journeyBlockingCondition()?.name||"Current condition"} prevents travel. You cannot begin a Journey.`);return}if(timedConditionJourneyBlocked()){alert(`${timedConditionBlockingName()} prevents travel. You cannot begin a Journey.`);return}if(h.waterCapacity<1){alert("You need at least one Waterskin.");return}let ret=retainerSelected(),mounts=plannedHorseCount(),horseAttempt=hasHouse()&&h.mounts.useOnJourney;if(horseAttempt&&!mounts){alert("Not enough Riding Horses for mounted travel with this party.");return}let needs=survivalNeedsForMinutes(mins),nw=needs.waterSkins,nf=needs.foodDays,nl=mins*2/3;if(h.water<nw){alert("Not enough water.");return}if(h.rations<nf){alert("Not enough rations.");return}if(mounts&&h.mounts.feedDays+1e-9<needs.mountFeedDays){alert("Not enough Mount Feed.");return}if(journeyUsableLightMinutes()<nl){alert("Not enough usable light. A Lantern is required to use lamp oil.");return}let journeyLight=consumeJourneyLight(nl);if(!journeyLight.ok){alert("Not enough usable light.");return}let now=Date.now(),total=mins*60000,eventTarget=adventureEventTarget(mins),eventIntervalMs=Math.max(5000,total/eventTarget);h.lastAdventure=null;h.lastAdventureTitle=null;h.pendingEvent=null;ensureTrophies();let mission=createMission();h.trip={journal:[],adventureLog:[],mission,start:now,end:now+total,half:now+total/2,midBossDone:false,rcTreasureXpCP:0,mode,risk,durationMinutes:mins,eventTarget,eventIntervalMs,resourceModel:"at-elapsed-v2",resourceAt:now,forcedReturnWater:false,retainer:ret,mountsUsed:mounts,mountedTravel:!!mounts,lightSource:journeyLight.source,nextEvent:now+Math.min(15000,Math.max(5000,total/(eventTarget+1)))};$("#departSetup").classList.add("hide");$("#travel").classList.remove("hide");$("#departedAt").textContent=clock(h.trip.start);$("#returnAt").textContent=clock(h.trip.end);$("#runner").innerHTML=spriteHTML(h.sex,h.avatar,h.className);$("#log").innerHTML="";addlog(`MISSION: ${mission.title} — ${mission.brief}`);
+ let mountText=mounts===1?" Mount secured.":mounts>1?" Mounts secured.":"";
+ addlog(`Destination reached.${mountText} You light your ${journeyLight.source} and venture forward.`);
+ renderAdventureLog();save();tick()}
+function tick(){clearTimeout(timer);if(ageTimedConditionsClock(Date.now())===false)return;if(!h.trip)return;ensureTripSchedule();let now=h.trip.pauseStart||Date.now();if(!consumeTripSurvivalResources(now))return;let total=h.trip.end-h.trip.start,elapsed=Math.max(0,now-h.trip.start),pct=Math.min(1,elapsed/total),outbound=pct<=0.5,runnerPct=outbound?pct*200:(1-pct)*200;let recall=$("#recall");if(recall){recall.disabled=!outbound;recall.textContent=outbound?"↩ Return Early":"Returning…"}$("#fill").style.width="0%";$("#runner").style.left=runnerPct+"%";$("#runner").style.transform=outbound?"translate(-50%,-62%) scaleX(-1)":"translate(-50%,-62%) scaleX(1)";$("#phase").textContent=(outbound?"OUTBOUND / ADVENTURING":"RETURNING")+(h.trip.mission?` · ${h.trip.mission.title}`:"");let remaining=Math.max(0,h.trip.end-now);$("#remainingClock").textContent=`${Math.floor(remaining/60000)}:${String(Math.floor(remaining/1000)%60).padStart(2,"0")}`;$("#returnAt").textContent=clock(h.trip.end);$("#timeText").textContent=`Elapsed ${Math.floor(elapsed/60000)}:${String(Math.floor(elapsed/1000)%60).padStart(2,"0")} · Remaining ${Math.floor(remaining/60000)}:${String(Math.floor(remaining/1000)%60).padStart(2,"0")}`;if(now>=h.trip.half&&!h.trip.midBossDone&&!h.combat&&!h.pendingEvent){if(h.trip.mode==="auto")autonomousCombat(true);else makeCombat(true);if(!h.trip)return;h.trip.midBossDone=true;save()}if(now>=h.trip.nextEvent&&now<h.trip.end&&!h.combat&&!h.pendingEvent){event();if(!h.trip)return;h.trip.nextEvent+=h.trip.eventIntervalMs;save()}if(now>=h.trip.end){if(h.trip.trollLessonReturn&&!h.trollWeaknessKnown){let lesson="At the city gates, guards intercept the pursuing Troll. After bringing it down, they burn the body with torches until it stops regenerating. You now know: a fallen Troll must be finished with fire or acid.";addlog(lesson);h.trollWeaknessKnown=true}addlog("Returned to town.");settleTripTreasureXP();h.lastAdventureTitle=h.trip?.mission?.title||"Adventure Tale";h.lastAdventure=buildAdventureTale(h.trip);h.trip=null;$("#travel").classList.add("hide");$("#departSetup").classList.remove("hide");home();page("town");return}timer=setTimeout(tick,500)}
 const FIGHTER_EVENTS=[{"id":"FTR-001","type":"Discovery","title":"Abandoned Cart","text":"An overturned merchant cart lies beside the road.","choices":[{"label":"Search","result":"search","xp":2,"coins":[0,1,0]},{"label":"Leave it","result":"leave"}],"xp":0,"coins":[0,0,0]},{"id":"FTR-002","type":"Discovery","title":"Old Milestone","text":"A weathered milestone bears marks beneath the moss.","choices":[{"label":"Search","result":"search","xp":3,"coins":[1,4,7]},{"label":"Leave it","result":"leave"}],"xp":0,"coins":[0,0,0]},{"id":"FTR-003","type":"Discovery","title":"Ruined Shrine","text":"A roofless roadside shrine stands among the weeds.","choices":[{"label":"Search","result":"search","xp":4,"coins":[2,7,14]},{"label":"Leave it","result":"leave"}],"xp":0,"coins":[0,0,0]},{"id":"FTR-004","type":"Discovery","title":"Freshwater Spring","text":"Clear water bubbles from stone beneath an oak.","choices":[{"label":"Search","result":"search","xp":5,"coins":[0,1,4]},{"label":"Leave it","result":"leave"}],"xp":0,"coins":[0,0,0]},{"id":"FTR-005","type":"Discovery","title":"Hunter's Cache","text":"A waxed bundle is wedged beneath exposed roots.","choices":[{"label":"Search","result":"search","xp":6,"coins":[1,4,11]},{"label":"Leave it","result":"leave"}],"xp":0,"coins":[0,0,0]},{"id":"FTR-006","type":"Discovery","title":"Collapsed Camp","text":"A cold campfire and torn bedrolls mark an abandoned camp.","choices":[{"label":"Search","result":"search","xp":2,"coins":[2,7,1]},{"label":"Leave it","result":"leave"}],"xp":0,"coins":[0,0,0]},{"id":"FTR-007","type":"Discovery","title":"Broken Strongbox","text":"A split wooden strongbox lies half-buried in mud.","choices":[{"label":"Search","result":"search","xp":3,"coins":[0,1,8]},{"label":"Leave it","result":"leave"}],"xp":0,"coins":[0,0,0]},{"id":"FTR-008","type":"Discovery","title":"Lost Satchel","text":"A leather satchel hangs from a thorn bush.","choices":[{"label":"Search","result":"search","xp":4,"coins":[1,4,15]},{"label":"Leave it","result":"leave"}],"xp":0,"coins":[0,0,0]},{"id":"FTR-009","type":"Discovery","title":"Ancient Cairn","text":"A low cairn of stacked stones rises beside the trail.","choices":[{"label":"Search","result":"search","xp":5,"coins":[2,7,5]},{"label":"Leave it","result":"leave"}],"xp":0,"coins":[0,0,0]},{"id":"FTR-010","type":"Discovery","title":"Charred Wagon","text":"The blackened frame of a wagon blocks part of the road.","choices":[{"label":"Search","result":"search","xp":6,"coins":[0,1,12]},{"label":"Leave it","result":"leave"}],"xp":0,"coins":[0,0,0]},{"id":"FTR-011","type":"Discovery","title":"Fallen Courier","text":"A courier's torn pouch lies near a set of hurried tracks.","choices":[{"label":"Search","result":"search","xp":2,"coins":[1,4,2]},{"label":"Leave it","result":"leave"}],"xp":0,"coins":[0,0,0]},{"id":"FTR-012","type":"Discovery","title":"Hidden Hollow","text":"A narrow hollow opens behind a curtain of ivy.","choices":[{"label":"Search","result":"search","xp":3,"coins":[2,7,9]},{"label":"Leave it","result":"leave"}],"xp":0,"coins":[0,0,0]},{"id":"FTR-013","type":"Discovery","title":"Old Well","text":"A stone well stands in a clearing, its rope still intact.","choices":[{"label":"Search","result":"search","xp":4,"coins":[0,1,16]},{"label":"Leave it","result":"leave"}],"xp":0,"coins":[0,0,0]},{"id":"FTR-014","type":"Discovery","title":"Battlefield Remains","text":"Rusting scraps and old bones lie beneath the grass.","choices":[{"label":"Search","result":"search","xp":5,"coins":[1,4,6]},{"label":"Leave it","result":"leave"}],"xp":0,"coins":[0,0,0]},{"id":"FTR-015","type":"Discovery","title":"Forgotten Pack","text":"A travel pack has been concealed under a fallen log.","choices":[{"label":"Search","result":"search","xp":6,"coins":[2,7,13]},{"label":"Leave it","result":"leave"}],"xp":0,"coins":[0,0,0]},{"id":"FTR-016","type":"Discovery","title":"River Wreckage","text":"Crates and planks have washed onto the riverbank.","choices":[{"label":"Search","result":"search","xp":2,"coins":[0,1,3]},{"label":"Leave it","result":"leave"}],"xp":0,"coins":[0,0,0]},{"id":"FTR-017","type":"Discovery","title":"Stone Marker","text":"A carved stone marker points toward an overgrown path.","choices":[{"label":"Search","result":"search","xp":3,"coins":[1,4,10]},{"label":"Leave it","result":"leave"}],"xp":0,"coins":[0,0,0]},{"id":"FTR-018","type":"Discovery","title":"Hermit's Camp","text":"A tiny camp appears recently abandoned.","choices":[{"label":"Search","result":"search","xp":4,"coins":[2,7,0]},{"label":"Leave it","result":"leave"}],"xp":0,"coins":[0,0,0]},{"id":"FTR-019","type":"Discovery","title":"Cave Mouth","text":"A shallow cave opens in the hillside.","choices":[{"label":"Search","result":"search","xp":5,"coins":[0,1,7]},{"label":"Leave it","result":"leave"}],"xp":0,"coins":[0,0,0]},{"id":"FTR-020","type":"Discovery","title":"Rope Bridge Cache","text":"Something glints beneath the far anchor of an old rope bridge.","choices":[{"label":"Search","result":"search","xp":6,"coins":[1,4,14]},{"label":"Leave it","result":"leave"}],"xp":0,"coins":[0,0,0]},{"id":"FTR-021","type":"Discovery","title":"Buried Jar","text":"Rain has exposed the rim of a clay jar in the path.","choices":[{"label":"Search","result":"search","xp":2,"coins":[2,7,4]},{"label":"Leave it","result":"leave"}],"xp":0,"coins":[0,0,0]},{"id":"FTR-022","type":"Discovery","title":"Torn Map","text":"A fragment of a hand-drawn map is caught beneath a stone.","choices":[{"label":"Search","result":"search","xp":3,"coins":[0,1,11]},{"label":"Leave it","result":"leave"}],"xp":0,"coins":[0,0,0]},{"id":"FTR-023","type":"Discovery","title":"Watchman's Post","text":"A ruined wooden watch post overlooks the road.","choices":[{"label":"Search","result":"search","xp":4,"coins":[1,4,1]},{"label":"Leave it","result":"leave"}],"xp":0,"coins":[0,0,0]},{"id":"FTR-024","type":"Discovery","title":"Smuggler's Nook","text":"Loose stones conceal a narrow storage recess.","choices":[{"label":"Search","result":"search","xp":5,"coins":[2,7,8]},{"label":"Leave it","result":"leave"}],"xp":0,"coins":[0,0,0]},{"id":"FTR-025","type":"Discovery","title":"Old Orchard","text":"Wild fruit trees surround the remains of a cottage.","choices":[{"label":"Search","result":"search","xp":6,"coins":[0,1,15]},{"label":"Leave it","result":"leave"}],"xp":0,"coins":[0,0,0]},{"id":"FTR-026","type":"Discovery","title":"Wayside Grave","text":"A lonely grave has been disturbed by recent rain.","choices":[{"label":"Search","result":"search","xp":2,"coins":[1,4,5]},{"label":"Leave it","result":"leave"}],"xp":0,"coins":[0,0,0]},{"id":"FTR-027","type":"Discovery","title":"Flooded Cellar","text":"Stone steps descend into a partially flooded cellar.","choices":[{"label":"Search","result":"search","xp":3,"coins":[2,7,12]},{"label":"Leave it","result":"leave"}],"xp":0,"coins":[0,0,0]},{"id":"FTR-028","type":"Discovery","title":"Woodcutter's Shed","text":"An unlocked shed stands deep among the trees.","choices":[{"label":"Search","result":"search","xp":4,"coins":[0,1,2]},{"label":"Leave it","result":"leave"}],"xp":0,"coins":[0,0,0]},{"id":"FTR-029","type":"Discovery","title":"Forgotten Tollhouse","text":"A ruined tollhouse leans beside an ancient road.","choices":[{"label":"Search","result":"search","xp":5,"coins":[1,4,9]},{"label":"Leave it","result":"leave"}],"xp":0,"coins":[0,0,0]},{"id":"FTR-030","type":"Discovery","title":"Moonlit Clearing","text":"A ring of pale stones surrounds a quiet clearing.","choices":[{"label":"Search","result":"search","xp":6,"coins":[2,7,16]},{"label":"Leave it","result":"leave"}],"xp":0,"coins":[0,0,0]},{"id":"FTR-031","type":"Decision","title":"Fork in the Road","text":"The trail divides around a steep wooded ridge.","choices":[{"label":"Take the ridge path","result":"risk","xp":3,"coins":[0,0,0]},{"label":"Take the valley path","result":"safe","xp":1}],"xp":0,"coins":[0,0,0]},{"id":"FTR-032","type":"Decision","title":"Distant Cry","text":"A human cry carries from somewhere beyond the trees.","choices":[{"label":"Investigate","result":"risk","xp":4,"coins":[1,2,5]},{"label":"Keep moving","result":"safe","xp":2}],"xp":0,"coins":[0,0,0]},{"id":"FTR-033","type":"Decision","title":"Suspicious Tracks","text":"Fresh boot prints leave the road toward dense brush.","choices":[{"label":"Follow them","result":"risk","xp":5,"coins":[0,4,10]},{"label":"Ignore them","result":"safe","xp":3}],"xp":0,"coins":[0,0,0]},{"id":"FTR-034","type":"Decision","title":"Blocked Bridge","text":"A fallen tree blocks the safest bridge crossing.","choices":[{"label":"Climb across","result":"risk","xp":6,"coins":[1,6,2]},{"label":"Find another route","result":"safe","xp":1}],"xp":0,"coins":[0,0,0]},{"id":"FTR-035","type":"Decision","title":"Stray Horse","text":"A saddled horse wanders alone beside the road.","choices":[{"label":"Approach it","result":"risk","xp":7,"coins":[0,1,7]},{"label":"Leave it","result":"safe","xp":2}],"xp":0,"coins":[0,0,0]},{"id":"FTR-036","type":"Decision","title":"Smoke Ahead","text":"A thin column of smoke rises beyond the next hill.","choices":[{"label":"Scout the smoke","result":"risk","xp":8,"coins":[1,3,12]},{"label":"Avoid it","result":"safe","xp":3}],"xp":0,"coins":[0,0,0]},{"id":"FTR-037","type":"Decision","title":"Locked Chest","text":"A small iron-bound chest sits beneath a dead tree.","choices":[{"label":"Force it open","result":"risk","xp":3,"coins":[0,5,4]},{"label":"Leave it","result":"safe","xp":1}],"xp":0,"coins":[0,0,0]},{"id":"FTR-038","type":"Decision","title":"Narrow Ledge","text":"The direct path crosses a narrow rocky ledge.","choices":[{"label":"Cross carefully","result":"risk","xp":4,"coins":[1,0,9]},{"label":"Take the long way","result":"safe","xp":2}],"xp":0,"coins":[0,0,0]},{"id":"FTR-039","type":"Decision","title":"Merchant in Trouble","text":"A merchant struggles with a broken wagon wheel.","choices":[{"label":"Help","result":"risk","xp":5,"coins":[0,2,1]},{"label":"Continue","result":"safe","xp":3}],"xp":0,"coins":[0,0,0]},{"id":"FTR-040","type":"Decision","title":"Old Tunnel","text":"A dark tunnel cuts through the hillside.","choices":[{"label":"Enter","result":"risk","xp":6,"coins":[1,4,6]},{"label":"Go around","result":"safe","xp":1}],"xp":0,"coins":[0,0,0]},{"id":"FTR-041","type":"Decision","title":"Flooded Ford","text":"The usual ford is running high.","choices":[{"label":"Cross now","result":"risk","xp":7,"coins":[0,6,11]},{"label":"Search upstream","result":"safe","xp":2}],"xp":0,"coins":[0,0,0]},{"id":"FTR-042","type":"Decision","title":"Howling in the Woods","text":"Several howls sound uncomfortably close.","choices":[{"label":"Stand your ground","result":"risk","xp":8,"coins":[1,1,3]},{"label":"Move quietly away","result":"safe","xp":3}],"xp":0,"coins":[0,0,0]},{"id":"FTR-043","type":"Decision","title":"Dropped Purse","text":"A coin purse lies conspicuously in the road.","choices":[{"label":"Pick it up","result":"risk","xp":3,"coins":[0,3,8]},{"label":"Leave it","result":"safe","xp":1}],"xp":0,"coins":[0,0,0]},{"id":"FTR-044","type":"Decision","title":"Wounded Traveller","text":"A wounded traveller sits against a tree.","choices":[{"label":"Offer aid","result":"risk","xp":4,"coins":[1,5,0]},{"label":"Keep distance","result":"safe","xp":2}],"xp":0,"coins":[0,0,0]},{"id":"FTR-045","type":"Decision","title":"Rope Across Trail","text":"A thin rope has been stretched across the path.","choices":[{"label":"Inspect it","result":"risk","xp":5,"coins":[0,0,5]},{"label":"Detour","result":"safe","xp":3}],"xp":0,"coins":[0,0,0]},{"id":"FTR-046","type":"Decision","title":"Unmarked Door","text":"A stone door is set into a low hillside.","choices":[{"label":"Open it","result":"risk","xp":6,"coins":[1,2,10]},{"label":"Pass by","result":"safe","xp":1}],"xp":0,"coins":[0,0,0]},{"id":"FTR-047","type":"Decision","title":"Fresh Campfire","text":"A fire still burns in an apparently empty camp.","choices":[{"label":"Call out","result":"risk","xp":7,"coins":[0,4,2]},{"label":"Avoid the camp","result":"safe","xp":2}],"xp":0,"coins":[0,0,0]},{"id":"FTR-048","type":"Decision","title":"Fallen Tree","text":"A huge tree blocks the road.","choices":[{"label":"Climb over","result":"risk","xp":8,"coins":[1,6,7]},{"label":"Go around","result":"safe","xp":3}],"xp":0,"coins":[0,0,0]},{"id":"FTR-049","type":"Decision","title":"Shallow Cave","text":"Rain begins as a shallow cave offers shelter.","choices":[{"label":"Take shelter","result":"risk","xp":3,"coins":[0,1,12]},{"label":"Press on","result":"safe","xp":1}],"xp":0,"coins":[0,0,0]},{"id":"FTR-050","type":"Decision","title":"Old Ferry","text":"An unattended ferry is tied to the near bank.","choices":[{"label":"Use it","result":"risk","xp":4,"coins":[1,3,4]},{"label":"Follow the river","result":"safe","xp":2}],"xp":0,"coins":[0,0,0]},{"id":"FTR-051","type":"Decision","title":"Footprints in Mud","text":"Small footprints circle your own trail.","choices":[{"label":"Track them","result":"risk","xp":5,"coins":[0,5,9]},{"label":"Ignore them","result":"safe","xp":3}],"xp":0,"coins":[0,0,0]},{"id":"FTR-052","type":"Decision","title":"Bell in Distance","text":"A lone bell rings somewhere off the road.","choices":[{"label":"Seek it","result":"risk","xp":6,"coins":[1,0,1]},{"label":"Stay on course","result":"safe","xp":1}],"xp":0,"coins":[0,0,0]},{"id":"FTR-053","type":"Decision","title":"Cracked Statue","text":"A warrior statue holds a stone bowl.","choices":[{"label":"Inspect the bowl","result":"risk","xp":7,"coins":[0,2,6]},{"label":"Move on","result":"safe","xp":2}],"xp":0,"coins":[0,0,0]},{"id":"FTR-054","type":"Decision","title":"Ravens Gathering","text":"Ravens cluster noisily over a nearby field.","choices":[{"label":"Investigate","result":"risk","xp":8,"coins":[1,4,11]},{"label":"Avoid","result":"safe","xp":3}],"xp":0,"coins":[0,0,0]},{"id":"FTR-055","type":"Decision","title":"Narrow Ravine","text":"A shortcut descends through a narrow ravine.","choices":[{"label":"Take shortcut","result":"risk","xp":3,"coins":[0,6,3]},{"label":"Stay high","result":"safe","xp":1}],"xp":0,"coins":[0,0,0]},{"id":"FTR-056","type":"Decision","title":"Lantern at Night","text":"A lantern moves between distant trees.","choices":[{"label":"Approach","result":"risk","xp":4,"coins":[1,1,8]},{"label":"Extinguish your light","result":"safe","xp":2}],"xp":0,"coins":[0,0,0]},{"id":"FTR-057","type":"Decision","title":"Abandoned Boat","text":"A small boat is tied beside a quiet lake.","choices":[{"label":"Search it","result":"risk","xp":5,"coins":[0,3,0]},{"label":"Leave it","result":"safe","xp":3}],"xp":0,"coins":[0,0,0]},{"id":"FTR-058","type":"Decision","title":"Old Barricade","text":"A decayed barricade spans the road.","choices":[{"label":"Pass through","result":"risk","xp":6,"coins":[1,5,5]},{"label":"Circle around","result":"safe","xp":1}],"xp":0,"coins":[0,0,0]},{"id":"FTR-059","type":"Decision","title":"Crumbling Tower","text":"A ruined tower offers a commanding view.","choices":[{"label":"Climb it","result":"risk","xp":7,"coins":[0,0,10]},{"label":"Continue","result":"safe","xp":2}],"xp":0,"coins":[0,0,0]},{"id":"FTR-060","type":"Decision","title":"Unusual Silence","text":"The forest suddenly becomes completely silent.","choices":[{"label":"Investigate cautiously","result":"risk","xp":8,"coins":[1,2,2]},{"label":"Withdraw","result":"safe","xp":3}],"xp":0,"coins":[0,0,0]},{"id":"FTR-061","type":"Encounter","title":"Roadside Ambush","text":"Movement erupts from the ditch ahead.","choices":[{"label":"Fight","result":"combat"},{"label":"Try to avoid","result":"avoid"}],"xp":0,"coins":[0,0,0]},{"id":"FTR-062","type":"Encounter","title":"Bridge Toll","text":"Armed figures step onto a narrow bridge.","choices":[{"label":"Fight","result":"combat"},{"label":"Try to avoid","result":"avoid"}],"xp":0,"coins":[0,0,0]},{"id":"FTR-063","type":"Encounter","title":"Camp Raiders","text":"Shapes move around an abandoned campsite.","choices":[{"label":"Fight","result":"combat"},{"label":"Try to avoid","result":"avoid"}],"xp":0,"coins":[0,0,0]},{"id":"FTR-064","type":"Encounter","title":"Forest Stalkers","text":"You hear footsteps matching your pace.","choices":[{"label":"Fight","result":"combat"},{"label":"Try to avoid","result":"avoid"}],"xp":0,"coins":[0,0,0]},{"id":"FTR-065","type":"Encounter","title":"Ruined Farm","text":"Something moves inside a ruined farmhouse.","choices":[{"label":"Fight","result":"combat"},{"label":"Try to avoid","result":"avoid"}],"xp":0,"coins":[0,0,0]},{"id":"FTR-066","type":"Encounter","title":"Rocky Pass","text":"A hostile silhouette blocks the pass.","choices":[{"label":"Fight","result":"combat"},{"label":"Try to avoid","result":"avoid"}],"xp":0,"coins":[0,0,0]},{"id":"FTR-067","type":"Encounter","title":"Riverbank Threat","text":"Figures emerge from reeds along the river.","choices":[{"label":"Fight","result":"combat"},{"label":"Try to avoid","result":"avoid"}],"xp":0,"coins":[0,0,0]},{"id":"FTR-068","type":"Encounter","title":"Night Intruders","text":"Branches snap just beyond the firelight.","choices":[{"label":"Fight","result":"combat"},{"label":"Try to avoid","result":"avoid"}],"xp":0,"coins":[0,0,0]},{"id":"FTR-069","type":"Encounter","title":"Old Quarry","text":"Voices echo from the quarry below.","choices":[{"label":"Fight","result":"combat"},{"label":"Try to avoid","result":"avoid"}],"xp":0,"coins":[0,0,0]},{"id":"FTR-070","type":"Encounter","title":"Hilltop Watchers","text":"Several figures watch from the ridge.","choices":[{"label":"Fight","result":"combat"},{"label":"Try to avoid","result":"avoid"}],"xp":0,"coins":[0,0,0]},{"id":"FTR-071","type":"Encounter","title":"Broken Gate","text":"Something waits beyond a broken gate.","choices":[{"label":"Fight","result":"combat"},{"label":"Try to avoid","result":"avoid"}],"xp":0,"coins":[0,0,0]},{"id":"FTR-072","type":"Encounter","title":"Marsh Movement","text":"Ripples move against the current.","choices":[{"label":"Fight","result":"combat"},{"label":"Try to avoid","result":"avoid"}],"xp":0,"coins":[0,0,0]},{"id":"FTR-073","type":"Encounter","title":"Cave Occupants","text":"A growl comes from the darkness ahead.","choices":[{"label":"Fight","result":"combat"},{"label":"Try to avoid","result":"avoid"}],"xp":0,"coins":[0,0,0]},{"id":"FTR-074","type":"Encounter","title":"Abandoned Mill","text":"The mill door swings open from within.","choices":[{"label":"Fight","result":"combat"},{"label":"Try to avoid","result":"avoid"}],"xp":0,"coins":[0,0,0]},{"id":"FTR-075","type":"Encounter","title":"Narrow Causeway","text":"Hostile shapes spread across the causeway.","choices":[{"label":"Fight","result":"combat"},{"label":"Try to avoid","result":"avoid"}],"xp":0,"coins":[0,0,0]},{"id":"FTR-076","type":"Encounter","title":"Fogbound Road","text":"A figure appears suddenly in the fog.","choices":[{"label":"Fight","result":"combat"},{"label":"Try to avoid","result":"avoid"}],"xp":0,"coins":[0,0,0]},{"id":"FTR-077","type":"Encounter","title":"Stone Circle","text":"You are not alone among the standing stones.","choices":[{"label":"Fight","result":"combat"},{"label":"Try to avoid","result":"avoid"}],"xp":0,"coins":[0,0,0]},{"id":"FTR-078","type":"Encounter","title":"Forest Crossing","text":"Armed strangers emerge at the crossing.","choices":[{"label":"Fight","result":"combat"},{"label":"Try to avoid","result":"avoid"}],"xp":0,"coins":[0,0,0]},{"id":"FTR-079","type":"Encounter","title":"Ravine Ambush","text":"Loose stones tumble from above.","choices":[{"label":"Fight","result":"combat"},{"label":"Try to avoid","result":"avoid"}],"xp":0,"coins":[0,0,0]},{"id":"FTR-080","type":"Encounter","title":"Old Mine","text":"Scratching sounds come from the mine entrance.","choices":[{"label":"Fight","result":"combat"},{"label":"Try to avoid","result":"avoid"}],"xp":0,"coins":[0,0,0]},{"id":"FTR-081","type":"Encounter","title":"Burned Village","text":"Movement flickers between ruined houses.","choices":[{"label":"Fight","result":"combat"},{"label":"Try to avoid","result":"avoid"}],"xp":0,"coins":[0,0,0]},{"id":"FTR-082","type":"Encounter","title":"Watchtower Ruin","text":"A lookout spots you from the tower.","choices":[{"label":"Fight","result":"combat"},{"label":"Try to avoid","result":"avoid"}],"xp":0,"coins":[0,0,0]},{"id":"FTR-083","type":"Encounter","title":"Mountain Trail","text":"A hostile group rounds the bend.","choices":[{"label":"Fight","result":"combat"},{"label":"Try to avoid","result":"avoid"}],"xp":0,"coins":[0,0,0]},{"id":"FTR-084","type":"Encounter","title":"Swamp Path","text":"Something follows just beneath the reeds.","choices":[{"label":"Fight","result":"combat"},{"label":"Try to avoid","result":"avoid"}],"xp":0,"coins":[0,0,0]},{"id":"FTR-085","type":"Encounter","title":"Moonlit Road","text":"Several shapes step into the road.","choices":[{"label":"Fight","result":"combat"},{"label":"Try to avoid","result":"avoid"}],"xp":0,"coins":[0,0,0]},{"id":"FTR-086","type":"Encounter","title":"Forgotten Chapel","text":"A shadow moves behind the broken altar.","choices":[{"label":"Fight","result":"combat"},{"label":"Try to avoid","result":"avoid"}],"xp":0,"coins":[0,0,0]},{"id":"FTR-087","type":"Encounter","title":"Border Stone","text":"Armed travellers refuse to yield the road.","choices":[{"label":"Fight","result":"combat"},{"label":"Try to avoid","result":"avoid"}],"xp":0,"coins":[0,0,0]},{"id":"FTR-088","type":"Encounter","title":"Wooden Palisade","text":"A crude gate opens and armed figures emerge.","choices":[{"label":"Fight","result":"combat"},{"label":"Try to avoid","result":"avoid"}],"xp":0,"coins":[0,0,0]},{"id":"FTR-089","type":"Encounter","title":"Dry Riverbed","text":"Movement appears among the boulders.","choices":[{"label":"Fight","result":"combat"},{"label":"Try to avoid","result":"avoid"}],"xp":0,"coins":[0,0,0]},{"id":"FTR-090","type":"Encounter","title":"Deep Woods","text":"A sudden rustle becomes an immediate threat.","choices":[{"label":"Fight","result":"combat"},{"label":"Try to avoid","result":"avoid"}],"xp":0,"coins":[0,0,0]},{"id":"FTR-091","type":"Quiet","title":"Clear Road","text":"For a time the road is clear and easy.","choices":[],"xp":1,"coins":[0,0,0]},{"id":"FTR-092","type":"Quiet","title":"Cold Wind","text":"A cold wind follows you across open ground.","choices":[],"xp":0,"coins":[0,0,0]},{"id":"FTR-093","type":"Quiet","title":"Passing Rain","text":"A brief shower darkens the road.","choices":[],"xp":0,"coins":[0,0,0]},{"id":"FTR-094","type":"Quiet","title":"Birdsong","text":"Birdsong returns as the woods thin.","choices":[],"xp":0,"coins":[0,0,0]},{"id":"FTR-095","type":"Quiet","title":"Long Climb","text":"The trail climbs steadily toward higher ground.","choices":[],"xp":0,"coins":[0,0,0]},{"id":"FTR-096","type":"Quiet","title":"Distant Mountains","text":"Snowy peaks appear briefly through the clouds.","choices":[],"xp":0,"coins":[0,0,0]},{"id":"FTR-097","type":"Quiet","title":"Old Road","text":"You follow worn paving stones from an older age.","choices":[],"xp":1,"coins":[0,0,0]},{"id":"FTR-098","type":"Quiet","title":"Quiet Forest","text":"Only leaves and your own footsteps break the silence.","choices":[],"xp":0,"coins":[0,0,0]},{"id":"FTR-099","type":"Quiet","title":"Open Fields","text":"The route crosses broad empty fields.","choices":[],"xp":0,"coins":[0,0,0]},{"id":"FTR-100","type":"Quiet","title":"River Road","text":"The road follows a slow river for several miles.","choices":[],"xp":0,"coins":[0,0,0]},{"id":"FTR-101","type":"Quiet","title":"Morning Mist","text":"Mist hangs low over the ground.","choices":[],"xp":0,"coins":[0,0,0]},{"id":"FTR-102","type":"Quiet","title":"Warm Sun","text":"Sunlight breaks through after a long grey stretch.","choices":[],"xp":0,"coins":[0,0,0]},{"id":"FTR-103","type":"Quiet","title":"Evening Shadows","text":"Long shadows stretch across the trail.","choices":[],"xp":1,"coins":[0,0,0]},{"id":"FTR-104","type":"Quiet","title":"Distant Thunder","text":"Thunder rolls beyond the horizon.","choices":[],"xp":0,"coins":[0,0,0]},{"id":"FTR-105","type":"Quiet","title":"Pine Ridge","text":"The scent of pine fills the cool air.","choices":[],"xp":0,"coins":[0,0,0]},{"id":"FTR-106","type":"Quiet","title":"High Meadow","text":"Wildflowers cover a high meadow.","choices":[],"xp":0,"coins":[0,0,0]},{"id":"FTR-107","type":"Quiet","title":"Stone Road","text":"Ancient stones make the walking easier.","choices":[],"xp":0,"coins":[0,0,0]},{"id":"FTR-108","type":"Quiet","title":"Wind in Grass","text":"Tall grass bends in waves around the path.","choices":[],"xp":0,"coins":[0,0,0]},{"id":"FTR-109","type":"Quiet","title":"Cloud Break","text":"A shaft of sunlight crosses the road.","choices":[],"xp":1,"coins":[0,0,0]},{"id":"FTR-110","type":"Quiet","title":"Quiet Stream","text":"A shallow stream runs beside the trail.","choices":[],"xp":0,"coins":[0,0,0]},{"id":"FTR-111","type":"Quiet","title":"Frosted Ground","text":"A thin frost crunches beneath your boots.","choices":[],"xp":0,"coins":[0,0,0]},{"id":"FTR-112","type":"Quiet","title":"Autumn Leaves","text":"Dry leaves gather in drifts along the road.","choices":[],"xp":0,"coins":[0,0,0]},{"id":"FTR-113","type":"Quiet","title":"Distant Bells","text":"Faint bells carry from far away.","choices":[],"xp":0,"coins":[0,0,0]},{"id":"FTR-114","type":"Quiet","title":"Old Oak","text":"A huge oak marks a peaceful bend in the road.","choices":[],"xp":0,"coins":[0,0,0]},{"id":"FTR-115","type":"Quiet","title":"Night Sky","text":"The clouds clear enough to reveal the stars.","choices":[],"xp":1,"coins":[0,0,0]},{"id":"FTR-116","type":"Quiet","title":"Dawn Light","text":"The horizon brightens as another day begins.","choices":[],"xp":0,"coins":[0,0,0]},{"id":"FTR-117","type":"Quiet","title":"Low Hills","text":"The road winds through gentle hills.","choices":[],"xp":0,"coins":[0,0,0]},{"id":"FTR-118","type":"Quiet","title":"Cool Shade","text":"Dense trees give welcome shade.","choices":[],"xp":0,"coins":[0,0,0]},{"id":"FTR-119","type":"Quiet","title":"Stone Bridge","text":"An old stone bridge crosses a narrow stream.","choices":[],"xp":0,"coins":[0,0,0]},{"id":"FTR-120","type":"Quiet","title":"Homeward Thoughts","text":"For a while your thoughts turn toward home.","choices":[],"xp":0,"coins":[0,0,0]}];
 // RC Chapter 16 treasure data. Staged only; not wired into live loot until the remaining integration decisions are locked.
 const RC_TREASURE_CARRIED={
@@ -1742,7 +1841,7 @@ function monsterRangeStep(e){
 function combatDeath(reason=""){
  if(reason)clog(reason);
  clog(`You are DEAD. Resurrection in ${h.level*5} minutes.`);
- h.lastAdventure=`FAILED — ${h.name} died. Adventure progress reset to zero.`;
+ h.lastAdventureTitle=h.trip?.mission?.title||"Failed Journey";h.lastAdventure=h.trip?buildAdventureTale(h.trip,{ending:"death"}):`FAILED — ${h.name} died.`;
  recoverThrownWeapons();h.trip=null;h.pendingEvent=null;h.combat=null;h.deadUntil=Date.now()+h.level*5*60000;h.hp=0;
  localStorage.setItem("averathia-v041",JSON.stringify(h));renderDeathPage();return false
 }
@@ -1888,15 +1987,17 @@ function spellSlotsFor(cls=h.className,level=h.level){
 function ensureSpellState(){
  if(!h.spells)h.spells={used:{},buffs:[],memorized:{},spentMem:[]};
  if(!h.spells.used)h.spells.used={};if(!h.spells.buffs)h.spells.buffs=[];if(!h.spells.memorized)h.spells.memorized={};if(!h.spells.spentMem)h.spells.spentMem=[];
- if(h.className==="Cleric"&&!h.spells.clericPreparedV1){
-  let slots=spellSlotsFor("Cleric",h.level),list=SPELLS.Cleric||[],spent=new Set(h.spells.spentMem||[]);
+ if(PREPARED_CASTERS.has(h.className)){
+  let slots=spellSlotsFor(h.className,h.level),list=SPELLS[h.className]||[],spent=new Set(h.spells.spentMem||[]);
   for(let sl=1;sl<=slots.length;sl++){
    let cap=slots[sl-1]||0,known=list.filter(s=>s.sl===sl),valid=new Set(known.map(s=>s.id)),mem=Array.isArray(h.spells.memorized[sl])?h.spells.memorized[sl].filter(id=>valid.has(id)).slice(0,cap):[];
-   if(cap&&known.length)while(mem.length<cap)mem.push(known[mem.length%known.length].id);
+   // Preserve existing choices. Newly gained slots start empty so the player chooses what to prepare.
    h.spells.memorized[sl]=mem;
    let used=Math.min(Number(h.spells.used[sl])||0,mem.length);for(let i=0;i<used;i++)spent.add(`${sl}:${i}`);
   }
-  h.spells.spentMem=[...spent];h.spells.used={};h.spells.clericPreparedV1=true;
+  // Drop stale spent markers that point beyond currently valid slot indexes.
+  h.spells.spentMem=[...spent].filter(k=>{let m=/^(\d+):(\d+)$/.exec(k);if(!m)return false;let sl=+m[1],i=+m[2],cap=slots[sl-1]||0;return i<cap});
+  h.spells.used={};h.spells.preparedSlotsV2=true;
  }
 }
 function availableCombatSpells(){
@@ -2267,7 +2368,7 @@ const CLASS_SPECIALS={
  Elf:[
   ["Ghoul Touch Immunity","Immune to a ghoul's paralyzing touch; other paralysis still works normally."],
   ["Infravision","Can see heat patterns in darkness where infravision applies."],
-  ["Secret Doors","Better chance to notice concealed and secret doors when the event system supports them."]
+  ["Secret Doors","1-in-3 chance to detect a secret or concealed door when actively searching a relevant location; other classes use 1-in-6."]
  ],
  Dwarf:[
   ["Infravision","Can see heat patterns in darkness where infravision applies."],
@@ -2321,6 +2422,35 @@ function hasInventoryItem(name){return !!h?.inv?.some(x=>x.n===name)}
 function takeInventoryItem(name){let i=h?.inv?.findIndex(x=>x.n===name)??-1;if(i<0)return false;h.inv.splice(i,1);return true}
 function oreFilledSackBP(ch){return ch?.oreSack==="Large Sack"?605:201}
 function oreEmptySackBP(ch){return ch?.oreSack==="Large Sack"?5:1}
+const SECRET_DOOR_SEARCH_EVENT_IDS=new Set([
+ "FTR-003","FTR-019","FTR-027","FTR-029",
+ "CLE-011","CLE-014","CLE-019","CLE-020","CLE-021","CLE-030",
+ "THI-011","THI-017","THI-019","THI-028",
+ "ARC-017","ARC-020","ARC-023",
+ "DWA-015","DWA-025","DWA-028","DWA-030",
+ "ELF-011","ELF-014","ELF-024","ELF-025"
+]);
+function secretDoorSearchChoice(ev,ch){
+ if(!ev||!ch||!SECRET_DOOR_SEARCH_EVENT_IDS.has(ev.id))return false;
+ let label=String(ch.label||"").toLowerCase();
+ return !/leave|move on|withdraw|avoid|go around|step over/.test(label)
+}
+function resolveSecretDoorSearch(ev,ch){
+ if(!secretDoorSearchChoice(ev,ch))return null;
+ let roll=d(6),target=h.className==="Elf"?2:1;
+ if(roll>target)return{searched:true,found:false,roll,target};
+ let outcome=d(6),detail="A concealed seam gives way, revealing a forgotten passage.",treasure=null,applied=null;
+ if(outcome>=4&&outcome<=5){
+  treasure=rcBlankTreasure("secret-door","small hidden cache");treasure.coins.sp=d(6)*10;applied=rcApplyTreasure(treasure);
+  detail=`Behind the secret door is a small hidden cache: ${rcTreasureSummary(treasure)}.`;
+ }else if(outcome===6){
+  treasure=rcRollUnguardedTreasure(h.level);applied=rcApplyTreasure(treasure);
+  detail=`The secret door opens into a forgotten chamber containing ${rcTreasureSummary(treasure)}.`;
+ }
+ addlog(`🚪 Secret door discovered — ${detail}`);
+ journal({id:ev.id+"-SECRET",type:"Secret Door",title:"Secret Door",text:detail,choice:ch.label,result:"secretDoor",xp:0,coins:[0,0,0],secretDoorRoll:roll,secretDoorTarget:target,rcTreasure:treasure||null});
+ return{searched:true,found:true,roll,target,outcome,treasure,applied}
+}
 function eventChoiceAvailable(ch){
  if(ch?.requiresItem&&!hasInventoryItem(ch.requiresItem))return false;
  if(Array.isArray(ch?.requiresAnyItem)&&!ch.requiresAnyItem.some(hasInventoryItem))return false;
@@ -2387,6 +2517,7 @@ function clericWisCheck(difficulty="Normal"){
 function applyEventChoice(ev,ch){
  let resumeAfter=h.pendingEvent===ev;
  if(!eventChoiceAvailable(ch)){addlog(`${ev.title}: ${eventChoiceUnavailableReason(ch)}.`);return}
+ resolveSecretDoorSearch(ev,ch);
  if(ch?.result==="gearKey"){
    let usedItem=eventRequirementItem(ch);if(ch.consumeItem&&usedItem)takeInventoryItem(usedItem);
    let xp=ch.xp?awardXP(ch.xp):0,coin=ch.coins||[0,0,0],credit=coin?addCoins(coin[0]||0,coin[1]||0,coin[2]||0):{cpValue:0,leftCP:0},keptCoins=coinArrayFromCP(credit.cpValue);
@@ -2476,13 +2607,99 @@ function renderPendingEvent(){
  box.innerHTML=`<div class=eventCard><div class=eyebrow>${ev.type}</div><h3>${ev.title}</h3><p>${ev.text}</p><div class=eventButtons>${ev.choices.map((c,i)=>{let ok=eventChoiceAvailable(c);return `<button data-choice="${i}" ${ok?"":"disabled"}>${c.label}${ok?"":` · ${eventChoiceUnavailableReason(c)}`}</button>`}).join("")}</div></div>`;
  $$("[data-choice]").forEach(b=>b.onclick=()=>applyEventChoice(ev,ev.choices[+b.dataset.choice]))
 }
+
+const MISSION_STORY_DESTINATION={
+ "Answer a challenge of arms":"the place named in the challenge",
+ "Break a threat on the road":"the threatened road",
+ "Win a deed worth remembering":"the place where the deed awaits",
+ "Recover a saint's relic":"the forgotten holy site",
+ "Cleanse a desecrated resting place":"the desecrated resting place",
+ "Seek a lost reliquary":"the site named in the old accounts",
+ "Recover a lost arcane volume":"the sealed archive",
+ "Seek a vanished scholar's manuscript":"the place indicated by the surviving fragments",
+ "Investigate an abandoned magical library":"the abandoned magical library",
+ "Steal a guarded cache":"the district where the cache is hidden",
+ "Find a legendary jewel":"the quarter named by the fence",
+ "Raid a forgotten strongroom":"the forgotten strongroom",
+ "Recover an ancestral rune":"the old workings named in the clan records",
+ "Trace a lost family inscription":"the mine named in the old records",
+ "Search a forgotten deep hall":"the forgotten deep hall",
+ "Protect the woodland":"the threatened woodland",
+ "Seek a rare seed":"the part of the wild where the rare tree is said to grow",
+ "Preserve a vanishing grove":"the fragile grove"
+};
+function taleLowerFirst(s){s=String(s||"").trim();return s?s[0].toLowerCase()+s.slice(1):""}
+function taleSentence(s){s=String(s||"").trim();if(!s)return"";return /[.!?]$/.test(s)?s:s+"."}
+function taleTreasureText(e){
+ if(e&&e.rcTreasure)return e.rcTreasure;
+ let coin=e&&e.coins||[0,0,0],parts=[];
+ if(coin[0])parts.push(coin[0]+" GP");if(coin[1])parts.push(coin[1]+" SP");if(coin[2])parts.push(coin[2]+" CP");
+ return parts.join(", ")
+}
+function taleEventScene(e,name){
+ if(!e||e.type==="Progression"||e.result==="combat")return"";
+ if(e.type==="Quiet")return taleSentence(e.text);
+ if(e.result==="secretDoor"){
+  let detail=String(e.text||"").replace(/^Behind the secret door is /,"Behind it is ").replace(/^The secret door opens into /,"It opens into ");
+  return taleSentence("A secret door is discovered. "+detail)
+ }
+ let base=taleSentence(String(e.text||"").replace(/^You\b/,name));
+ if(e.choice==="Turn Undead"){
+  let good=/^SUCCESS/.test(String(e.result||""));
+  return base+" "+name+(good?" successfully turns the undead.":" fails to turn the undead.")
+ }
+ if(e.result==="SUCCESS")return base+" The attempt to "+taleLowerFirst(e.choice)+" succeeds.";
+ if(e.result==="FAILURE")return base+" The attempt to "+taleLowerFirst(e.choice)+" fails.";
+ if(e.result==="search"){let found=taleTreasureText(e);return base+" "+name+" searches the site"+(found?" and recovers "+found:"")+"."}
+ if(["left","leave","passed","avoided","avoid"].includes(e.result))return base+" "+name+" chooses to move on.";
+ if(e.result==="gearKey")return base+" "+name+" uses "+(e.item||"carried gear")+" to deal with the situation.";
+ if(e.result==="collectOre")return base+" "+name+" fills "+(e.item?"a "+String(e.item).toLowerCase():"a sack with the ore")+".";
+ if(e.result==="blockedByBeltPouch")return base+" A would-be thief fails to reach the valuables.";
+ if(e.result==="stolen")return base+" A cutpurse gets away with "+(e.lostCP?coinTextCP(e.lostCP):"some coin")+".";
+ if(e.choice)return base+" "+name+" chooses to "+taleLowerFirst(e.choice)+".";
+ return base
+}
+function taleCombatScene(trip,name){
+ let logs=trip&&trip.adventureLog||[],starts=[];
+ for(const x of logs){
+  if(x.type!=="Combat")continue;
+  let m=/^(?:Encounter|BOSS BATTLE) — (.+?)\. RC challenge:/.exec(x.text||"");
+  if(m&&!starts.includes(m[1]))starts.push(m[1])
+ }
+ if(!starts.length)return"";
+ let shown=starts.slice(0,2),more=starts.length-shown.length;
+ let sentence="Combat breaks out against "+shown.join(" and ")+(more>0?" and "+more+" other encounter"+(more===1?"":"s"):"")+".";
+ let wins=logs.filter(x=>x.text==="Combat won.").length,boss=!!(trip&&trip.mission&&trip.mission.bossWon),escaped=logs.some(x=>/escape the encounter/i.test(x.text||""));
+ if(boss)sentence+=" The final opposition is defeated and the mission objective is secured.";
+ else if(wins)sentence+=wins>1?" The fights are won.":" The fight is won.";
+ else if(escaped)sentence+=" "+name+" escapes and continues the journey.";
+ return sentence
+}
+function buildAdventureTale(trip=h&&h.trip,opts={}){
+ if(!trip)return opts&&opts.ending==="death"?(h&&h.name||"The adventurer")+" does not return from the journey.":"Nothing noteworthy happened on this journey.";
+ let name=h&&h.name||"The adventurer",mission=trip.mission||{},title=mission.title||"Journey",destination=MISSION_STORY_DESTINATION[title]||"the destination",light=trip.lightSource==="lamp"?"lantern":"torch";
+ let opening=name+" sets out to "+taleLowerFirst(title)+" and reaches "+destination+". ";
+ if(trip.mountsUsed===1)opening+="After securing the horse, "+name+" lights the "+light+" and ventures forward.";
+ else if(trip.mountsUsed>1)opening+="After securing the horses, "+name+" lights the "+light+" and ventures forward.";
+ else opening+=name+" lights the "+light+" and ventures forward.";
+ let journal=(trip.journal||[]).filter(e=>e.type!=="Progression"&&e.result!=="combat"),important=journal.filter(e=>e.type!=="Quiet"),chosen=(important.length?important:journal).slice(0,3);
+ let middle=chosen.map(e=>taleEventScene(e,name)).filter(Boolean).join(" ");
+ let combat=taleCombatScene(trip,name),ending="";
+ if(opts.ending==="death")ending="The journey ends there; "+name+" does not return to town.";
+ else if(trip.trollLessonReturn)ending="At the city gates, guards bring down the pursuing Troll and burn the body until its regeneration stops. "+name+" returns with hard-won knowledge of how such creatures must be finished.";
+ else if(mission.bossWon)ending="With the objective secured, "+name+" returns to town.";
+ else if(trip.returnedEarly)ending="The journey ends early, and "+name+" returns to town before the objective is completed.";
+ else ending=name+" returns to town.";
+ return [opening,middle,combat,ending].filter(Boolean).join("\n\n")
+}
+
 function buildAdventureReport(){
  let j=h?.trip?.journal||[];if(!j.length)return "Nothing noteworthy happened on this journey.";
  return j.map((e,i)=>`${i+1}. ${e.title} — ${e.choice?e.choice+": ":""}${e.xp?`+${e.xp} XP; `:""}${e.coins&&(e.coins[0]||e.coins[1]||e.coins[2])?`${e.coins[0]} GP, ${e.coins[1]} SP, ${e.coins[2]} CP. `:""}${e.text}`).join("\n")
 }
 function returnEarly(msg="You decide to return early."){
  if(!h.trip)return;let rb=$("#recall");if(rb){rb.disabled=true;rb.textContent="Returning…"}
- addlog(msg);endTripPause();let now=Date.now(),away=Math.max(0,now-h.trip.start);
+ addlog(msg);h.trip.returnedEarly=true;h.trip.returnReason=msg;endTripPause();let now=Date.now(),away=Math.max(0,now-h.trip.start);
  h.trip.midBossDone=true;
  if(h.trip.mission)h.trip.mission.resolved=true;
  h.pendingEvent=null;
@@ -2520,7 +2737,7 @@ function migratePersistentCharacter(saved){
  s.sp=Math.max(0,Math.trunc(numOr(s.sp,0)));s.cp=Math.max(0,Math.trunc(numOr(s.cp,0)));
  s.inv=Array.isArray(s.inv)?s.inv.map(x=>typeof x==="string"?{n:x,kind:"gear",can:false,eq:false}:x).filter(Boolean):[];
  if(!s.clothingStarterV1){for(const x of starterClothingItems())if(!s.inv.some(i=>i.n===x.n))s.inv.push(x);s.clothingStarterV1=true}
- for(const x of s.inv)if(EVENT_KEY_ITEMS.has(x.n))x.eventKey=true;
+ for(const x of s.inv){if(x?.coinSack||/ Sack of GP$/.test(x?.n||""))syncGpSack(x);if(EVENT_KEY_ITEMS.has(x.n))x.eventKey=true}
  for(const x of s.inv)refreshRcMagicDisplayName(x);
  {let equip=[],other=[];for(const x of s.inv)(isInventoryEquipable(x)?equip:other).push(x);s.inv=[...equip,...other]}
  s.ammo=(s.ammo&&typeof s.ammo==="object"&&!Array.isArray(s.ammo))?s.ammo:{};
@@ -2531,7 +2748,7 @@ function migratePersistentCharacter(saved){
  s.water=Math.max(0,Math.min(s.waterCapacity,numOr(s.water,0)));
  ensureLightStock(s);
  s.inv=s.inv.filter(x=>!isResourceSku(x?.n));
- s.trophies=Array.isArray(s.trophies)?s.trophies:[];
+ s.trophies=Array.isArray(s.trophies)?s.trophies:[];if(s.lastAdventure&&!s.lastAdventureTitle)s.lastAdventureTitle="Adventure Tale";
  s.conditions=Array.isArray(s.conditions)?s.conditions:[];
  s.diseases=Array.isArray(s.diseases)?s.diseases:[];
  s.trollWeaknessKnown=!!s.trollWeaknessKnown;
