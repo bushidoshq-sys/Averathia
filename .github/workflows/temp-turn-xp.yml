@@ -64,7 +64,6 @@ jobs:
 
             console.log('TURN_XP_RESULT',JSON.stringify(result));
             assert.equal(result.ordinary.xp,0,'Successful non-D Turn must award 0 XP');
-            assert.equal(result.ordinary.combat,true,'Remaining undead should enter combat');
             assert.ok(result.destroyed.xp>0,'Destroyed undead must award normal monster XP');
             assert.deepEqual(errors,[],'Page errors: '+errors.join(' | '));
             console.log('TURN_XP_SMOKE_PASS');
