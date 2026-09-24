@@ -1308,12 +1308,14 @@ const ENCOUNTER_TERRAIN={
  woods:new Set(["FTR-064","FTR-078","FTR-090","ELF-001","ELF-002","ELF-003","ELF-004","ELF-006","ELF-007","ELF-008","ELF-010"])
 };
 const EXPLICIT_NIGHT_ENCOUNTERS=new Set(["FTR-068","FTR-085"]);
-function missionCombatContext(){let title=h?.trip?.mission?.title||null,environment="unknown";if(h?.className==="Dwarf")environment="underground";else if(h?.className==="Elf")environment="outdoor";else if(h?.className==="Arcanist")environment="indoor";else if(h?.className==="Fighter"&&title==="Break a threat on the road")environment="outdoor";return{eventId:null,eventTitle:title,environment,terrain:null,daylight:(environment==="indoor"||environment==="underground")?false:null}}
+function journeyProgressFraction(now=null){if(!h?.trip)return null;let start=Number(h.trip.start),end=Number(h.trip.end);if(!Number.isFinite(start)||!Number.isFinite(end)||end<=start)return null;let t=Number(now??h.trip.pauseStart??Date.now());return Math.max(0,Math.min(1,(t-start)/(end-start)))}
+function journeyDaylightNow(now=null){let p=journeyProgressFraction(now);return p!=null&&(p<1/6||p>=5/6)}
+function missionCombatContext(){let title=h?.trip?.mission?.title||null,environment="unknown";if(h?.className==="Dwarf")environment="underground";else if(h?.className==="Elf")environment="outdoor";else if(h?.className==="Arcanist")environment="indoor";else if(h?.className==="Fighter"&&title==="Break a threat on the road")environment="outdoor";return{eventId:null,eventTitle:title,environment,terrain:null,daylight:environment==="outdoor"?journeyDaylightNow():(environment==="indoor"||environment==="underground")?false:null}}
 function encounterContextFromEvent(ev){
  let id=ev?.id||null,environment="unknown";
  for(const [kind,set] of Object.entries(ENCOUNTER_ENVIRONMENT))if(id&&set.has(id)){environment=kind;break}
  let terrain=null;for(const [kind,set] of Object.entries(ENCOUNTER_TERRAIN))if(id&&set.has(id)){terrain=kind;break}
- let daylight=(environment==="indoor"||environment==="underground"||EXPLICIT_NIGHT_ENCOUNTERS.has(id))?false:null;
+ let daylight=EXPLICIT_NIGHT_ENCOUNTERS.has(id)?false:environment==="outdoor"?journeyDaylightNow():(environment==="indoor"||environment==="underground")?false:null;
  return{eventId:id,eventTitle:ev?.title||null,environment,terrain,daylight}
 }
 function monsterContextAttackModifier(e){
@@ -2083,6 +2085,7 @@ function pickEvent(){
  let pools={Fighter:FIGHTER_EVENTS,Cleric:CLERIC_EVENTS,Arcanist:ARCANIST_EVENTS,Thief:THIEF_EVENTS,Elf:ELF_EVENTS,Dwarf:DWARF_EVENTS};
  let unlockedGlobal=[...GEAR_KEY_EVENTS,...CLOTHING_KEY_EVENTS].filter(eventUnlockedByInventory),source=[...(pools[h.className]||FIGHTER_EVENTS),...unlockedGlobal],used=new Set((h.trip.journal||[]).map(x=>x.id));
  let available=source.filter(e=>!used.has(e.id));if(!available.length)available=source;
+ if(journeyDaylightNow()){let noNight=available.filter(e=>!EXPLICIT_NIGHT_ENCOUNTERS.has(e.id));if(noNight.length)available=noNight}
  let roll=d(100),wanted=roll<=40?"Encounter":roll<=60?"Decision":roll<=80?"Discovery":"Quiet";
  let typed=available.filter(e=>e.type===wanted);let pool=typed.length?typed:available;
  return pool[d(pool.length)-1]
