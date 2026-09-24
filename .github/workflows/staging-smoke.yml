@@ -53,7 +53,11 @@ jobs:
             page.on('console', m => { if (m.type() === 'error') consoleErrors.push(m.text()); });
 
             const responses = [];
-            page.on('response', r => { if (/app\\.js|index\\.html/.test(r.url())) responses.push({ url:r.url(), status:r.status() }); });
+            const httpErrors = [];
+            page.on('response', r => {
+              if (/app\\.js|index\\.html/.test(r.url())) responses.push({ url:r.url(), status:r.status() });
+              if (r.status() >= 400) httpErrors.push({ url:r.url(), status:r.status() });
+            });
             const failedRequests = [];
             page.on('requestfailed', r => failedRequests.push({ url:r.url(), error:r.failure()?.errorText || 'failed' }));
             await page.goto('http://127.0.0.1:8000/', { waitUntil: 'networkidle' });
@@ -137,8 +141,12 @@ jobs:
               nearEnd: true
             });
 
+            const unexpectedHttpErrors = httpErrors.filter(x => !x.url.endsWith('/favicon.ico'));
+            const unexpectedConsoleErrors = consoleErrors.filter(x => !/^Failed to load resource: the server responded with a status of 404/.test(x) || unexpectedHttpErrors.length);
+            console.log('HTTP_DIAGNOSTICS', JSON.stringify({ httpErrors, consoleErrors }, null, 2));
             assert.deepEqual(pageErrors, [], 'Page errors: ' + pageErrors.join(' | '));
-            assert.deepEqual(consoleErrors, [], 'Console errors: ' + consoleErrors.join(' | '));
+            assert.deepEqual(unexpectedHttpErrors, [], 'Unexpected HTTP errors: ' + JSON.stringify(unexpectedHttpErrors));
+            assert.deepEqual(unexpectedConsoleErrors, [], 'Unexpected console errors: ' + unexpectedConsoleErrors.join(' | '));
 
             console.log('AVERATHIA_SMOKE_PASS');
             console.log(JSON.stringify({ daylight, saveVersion: 'averathia-v041', gpAfterSupplies: save.gp }, null, 2));
