@@ -1,0 +1,103 @@
+name: temp-v109c46-bp-smoke
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install Chromium harness
+        run: |
+          npm init -y >/dev/null 2>&1
+          npm install playwright@1.55.0 >/dev/null 2>&1
+          npx playwright install --with-deps chromium >/dev/null 2>&1
+      - name: Run mobile BP smoke
+        run: |
+          python3 -m http.server 8000 >/tmp/averathia-http.log 2>&1 &
+          node <<'NODE'
+          const { chromium } = require('playwright');
+          const assert = (cond,msg) => { if(!cond) throw new Error(msg); };
+          (async()=>{
+            const browser=await chromium.launch({headless:true});
+            const page=await browser.newPage({viewport:{width:390,height:844}});
+            const errors=[]; page.on('pageerror',e=>errors.push(String(e)));
+            await page.goto('http://127.0.0.1:8000/',{waitUntil:'networkidle'});
+            await page.click('#chooseCharacter');
+
+            const core=await page.evaluate(()=>{
+              const caps=[12,13,16,18].map(STR=>{h.stats.STR=STR;return [STR,maxCarryBP()]});
+              const jewelry=[2500,3000,15000,20000].map(v=>[v,rcJewelryBulkPoints(v)]);
+              return {
+                caps,jewelry,
+                bp:{plate:itemBulkPoints({n:'Plate Mail'}),shield:itemBulkPoints({n:'Shield'}),backpack:itemBulkPoints({n:'Backpack'}),smallSack:itemBulkPoints({n:'Small Sack'}),largeSack:itemBulkPoints({n:'Large Sack'}),gem:itemBulkPoints({rcGem:true})},
+                keys:{small:EVENT_KEY_ITEMS.has('Small Sack'),large:EVENT_KEY_ITEMS.has('Large Sack'),backpack:EVENT_KEY_ITEMS.has('Backpack'),backpackGiveaway:GEAR_KEY_EVENTS.some(e=>(e.choices||[]).some(c=>c.requiresItem==='Backpack'&&c.consumeItem))}
+              };
+            });
+            assert(JSON.stringify(core.caps)===JSON.stringify([[12,1600],[13,1700],[16,1800],[18,1900]]),'STR capacity brackets wrong: '+JSON.stringify(core.caps));
+            assert(JSON.stringify(core.jewelry)===JSON.stringify([[2500,10],[3000,25],[15000,25],[20000,50]]),'Jewelry BP bands wrong: '+JSON.stringify(core.jewelry));
+            assert(core.bp.plate===500&&core.bp.shield===100&&core.bp.backpack===20,'Core RC BP values wrong: '+JSON.stringify(core.bp));
+            assert(core.bp.smallSack===1&&core.bp.largeSack===5&&core.bp.gem===1,'Sack/gem BP wrong: '+JSON.stringify(core.bp));
+            assert(core.keys.small&&core.keys.large&&!core.keys.backpack&&!core.keys.backpackGiveaway,'Event-key invariant wrong: '+JSON.stringify(core.keys));
+
+            const missing=await page.evaluate(()=>{
+              h.stats.STR=18;h.gp=0;h.sp=0;h.cp=0;
+              h.inv=[{n:'Plate Mail',kind:'armor',can:true,eq:true},{n:'Shield',kind:'shield',can:true,eq:true},{n:'Sword',kind:'weapon',can:true,eq:true}];
+              h.rations=7;h.waterCapacity=4;h.water=4;h.lightStock={torchMinutes:360,oilMinutes:0,legacyMinutes:0};h.lightMinutes=360;
+              h.diseases=[];h.timedConditions=[];h.trip=null;h.combat=null;refresh();
+              return {disabled:document.querySelector('#start').disabled,req:document.querySelector('#requirements').innerText,carry:carriedBulkPoints(),max:maxCarryBP()};
+            });
+            assert(missing.disabled&&missing.req.includes('Backpack: MISSING'),'Missing Backpack did not block Journey: '+JSON.stringify(missing));
+
+            const ready=await page.evaluate(()=>{
+              h.inv.push({n:'Backpack',kind:'gear',can:false,eq:false},{n:'Small Sack',kind:'gear',can:false,eq:false},{n:'Large Sack',kind:'gear',can:false,eq:false});
+              h.gp=100;h.sp=0;h.cp=0;refresh();
+              return {disabled:document.querySelector('#start').disabled,req:document.querySelector('#requirements').innerText,sheet:document.querySelector('#sheetResources').innerText,carry:carriedBulkPoints(),max:maxCarryBP()};
+            });
+            assert(!ready.disabled&&ready.req.includes('Backpack: ready'),'Valid Backpack load did not enable Journey: '+JSON.stringify(ready));
+            assert(ready.sheet.includes('/ 1900 BP'),'Character sheet does not show 1900 BP max: '+ready.sheet);
+
+            const over=await page.evaluate(()=>{h.gp=1000;h.sp=0;h.cp=0;refresh();return {disabled:document.querySelector('#start').disabled,sheet:document.querySelector('#sheetResources').innerText,carry:carriedBulkPoints(),max:maxCarryBP()};});
+            assert(over.disabled&&over.carry>over.max&&over.sheet.includes('OVER CAPACITY'),'Over-capacity load was not blocked: '+JSON.stringify(over));
+
+            const treasure=await page.evaluate(()=>{
+              h.stats.STR=18;h.gp=0;h.sp=0;h.cp=0;h.rations=0;h.waterCapacity=0;h.water=0;h.lightStock={torchMinutes:0,oilMinutes:0,legacyMinutes:0};h.lightMinutes=0;
+              h.inv=[{n:'Backpack',kind:'gear',can:false,eq:false},{n:'Test Load',kind:'treasure',rcEncumbrance:1850}];
+              h.trip={rcTreasureXpCP:0,journal:[],adventureLog:[],start:Date.now(),end:Date.now()+60000,half:Date.now()+30000,mode:'present',risk:'Normal'};
+              const t=rcBlankTreasure('smoke','bp');
+              t.jewelry=[
+                {n:'Jewel A',kind:'treasure',rcTreasure:true,rcJewelry:true,gpValue:3000,treasureValueCP:300000,rcEncumbrance:25},
+                {n:'Jewel B',kind:'treasure',rcTreasure:true,rcJewelry:true,gpValue:3000,treasureValueCP:300000,rcEncumbrance:25}
+              ];
+              const result=rcApplyTreasure(t);
+              return {result:{items:result.items,left:result.leftItems.length},carry:carriedBulkPoints(),jewels:h.inv.filter(x=>x.rcJewelry).length};
+            });
+            assert(treasure.result.items===1&&treasure.result.left===1&&treasure.jewels===1&&treasure.carry===1895,'Treasure BP cap failed: '+JSON.stringify(treasure));
+
+            const coins=await page.evaluate(()=>{
+              h.stats.STR=18;h.gp=0;h.sp=0;h.cp=0;h.rations=0;h.waterCapacity=0;h.water=0;h.lightStock={torchMinutes:0,oilMinutes:0,legacyMinutes:0};h.lightMinutes=0;
+              h.inv=[{n:'Backpack',kind:'gear',can:false,eq:false},{n:'Test Load',kind:'treasure',rcEncumbrance:1875}];
+              h.trip={rcTreasureXpCP:0,journal:[],adventureLog:[],start:Date.now(),end:Date.now()+60000,half:Date.now()+30000,mode:'present',risk:'Normal'};
+              const r=addCoins(10,0,0);
+              return {kept:r.cpValue,left:r.leftCP,gp:h.gp,carry:carriedBulkPoints()};
+            });
+            assert(coins.kept===500&&coins.left===500&&coins.gp===5&&coins.carry===1900,'Coin carry cap failed: '+JSON.stringify(coins));
+
+            const shop=await page.evaluate(()=>{
+              h.trip=null;h.stats.STR=18;h.gp=100;h.sp=0;h.cp=0;h.rations=0;h.waterCapacity=0;h.water=0;h.lightStock={torchMinutes:0,oilMinutes:0,legacyMinutes:0};h.lightMinutes=0;
+              h.inv=[{n:'Backpack',kind:'gear',can:false,eq:false},{n:'Heavy Load',kind:'treasure',rcEncumbrance:1750}];
+              tab='Armor';shopMode='buy';renderShop();
+              const rows=[...document.querySelectorAll('#shopItems .item')];const row=rows.find(x=>x.innerText.includes('Plate Mail'));const btn=row?.querySelector('button[data-buy]');
+              return {carry:carriedBulkPoints(),max:maxCarryBP(),disabled:btn?.disabled,text:row?.innerText||''};
+            });
+            assert(shop.disabled&&shop.text.includes('Too much to carry'),'Overweight shop purchase not disabled: '+JSON.stringify(shop));
+
+            assert(errors.length===0,'Page errors: '+errors.join(' | '));
+            console.log('SMOKE PASS',JSON.stringify({core,missing,ready,over,treasure,coins,shop}));
+            await browser.close();
+          })().catch(e=>{console.error(e);process.exit(1)});
+          NODE
