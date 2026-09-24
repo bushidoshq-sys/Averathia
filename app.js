@@ -399,9 +399,10 @@ function resolveRcTimedPotion(item,index){
 }
 function useRcMagicItemCombat(index){
  if(!h?.combat||h.combat.paralyzed)return false;let item=h.inv[index];if(!item||!rcMagicCombatUsable(item))return false;
+ if(!preemptiveEnemiesAct())return false;
  let k=rcMagicUseKind(item),ok=["wandFireball","wandLightning"].includes(k)?resolveRcWandAttack(item):["fireResistPotion","speedPotion","defensePotion","freedomPotion","antidotePotion"].includes(k)?resolveRcTimedPotion(item,index):resolveRcMagicHeal(item,index,true);if(!ok)return false;
  if(!living().length)return finishCombat();
- enemyStrike();if(h.combat){tickSpellBuffs();tickEnemySpellEffects();tickPlayerConditions();h.combat.round++;save();renderCombat()}return true
+ enemyStrike(e=>!e.alwaysWinInitiative);if(h.combat){tickSpellBuffs();tickEnemySpellEffects();tickPlayerConditions();h.combat.round++;save();renderCombat()}return true
 }
 function supportedRcMagicItems(){return h.inv.map((item,index)=>({item,index})).filter(x=>rcMagicUseKind(x.item))}
 function renderMagicItemButton(){
@@ -1094,7 +1095,7 @@ const RC_UNGUARDED_TREASURE=[
  {levels:[6,7],sp:"1d6x2000",gp:"1d6x500",gems:[30,"1d10"],jewelry:[15,"1d10"],magic:[15,{any:1}]},
  {levels:[8,Infinity],sp:"1d6x5000",gp:"1d6x1000",gems:[40,"1d12"],jewelry:[20,"1d12"],magic:[20,{any:1}]}
 ];
-const MONSTERS=[{"id":"kobold","n":"Kobold","saveAs":"NM","intelligence":9,"ac":7,"hdDice":0.5,"hdAdj":0,"hpDie":4,"damage":["1d4-1"],"meleeDamage":"1d4-1","rangedDamage":"1d4-1","meleeWeapon":"Dagger","rangedWeapon":"Sling","xp":5,"source":"RC-adapted","humanoid":true,"rcTreasureType":"(P) J"},{"id":"goblin","n":"Goblin","saveAs":"NM","intelligence":9,"ac":6,"hdDice":1,"hdAdj":-1,"damage":["1d6"],"meleeDamage":"1d6","rangedDamage":"1d6","meleeWeapon":"Short Sword","rangedWeapon":"Short Bow","xp":5,"source":"RC-adapted","humanoid":true,"rcTreasureType":"(R) C"},{"id":"orc","n":"Orc","saveAs":"F1","intelligence":7,"ac":6,"hdDice":1,"hdAdj":0,"damage":["1d6"],"meleeDamage":"1d6","rangedDamage":"1d6","meleeWeapon":"Spear","rangedWeapon":"Short Bow","xp":10,"source":"RC-adapted","humanoid":true,"rcTreasureType":"(P) D"},{"id":"hobgoblin","n":"Hobgoblin","saveAs":"F1","intelligence":10,"ac":6,"hdDice":1,"hdAdj":1,"damage":["1d8"],"meleeDamage":"1d8","rangedDamage":"1d6","meleeWeapon":"Sword","rangedWeapon":"Short Bow","xp":15,"source":"RC-adapted","humanoid":true,"rcTreasureType":"(Q) D"},{"id":"gnoll","n":"Gnoll","saveAs":"F2","intelligence":7,"ac":5,"hdDice":2,"hdAdj":0,"damage":["1d8+1"],"meleeDamage":"1d8+1","rangedDamage":"1d6+1","meleeWeapon":"Battle Axe","rangedWeapon":"Long Bow","xp":20,"source":"RC-adapted","humanoid":true,"rcTreasureType":"(P) D"},{"id":"skeleton","n":"Skeleton","saveAs":"F1","intelligence":1,"ac":7,"hdDice":1,"hdAdj":0,"damage":["1d6"],"xp":10,"undead":true,"source":"RC-adapted","humanoid":false,"rcTreasureType":"Nil"},{"id":"zombie","n":"Zombie","saveAs":"F1","intelligence":1,"ac":8,"hdDice":2,"hdAdj":0,"damage":["1d8"],"xp":20,"undead":true,"slow":true,"alwaysLoseInitiative":true,"source":"RC-adapted","humanoid":false,"rcTreasureType":"Nil"},{"id":"ghoul","n":"Ghoul","saveAs":"F2","intelligence":3,"ac":6,"hdDice":2,"hdAdj":0,"damage":["1d3"],"attacks":[{"name":"claw","damage":"1d3","special":"paralysis"},{"name":"claw","damage":"1d3","special":"paralysis"},{"name":"bite","damage":"1d3","special":"paralysis"}],"xp":25,"undead":true,"special":"paralysis","rcPowerBonuses":1,"rcAsterisks":1,"source":"RC-adapted","humanoid":false,"rcTreasureType":"B"},{"id":"giant_rat","n":"Giant Rat","saveAs":"NM","intelligence":2,"ac":7,"hdDice":0.5,"hdAdj":0,"hpDie":4,"damage":["1d3"],"xp":5,"special":"disease","rcPowerBonuses":1,"rcAsterisks":1,"source":"RC-adapted","humanoid":false,"rcTreasureType":"L"},{"id":"wolf","n":"Wolf","saveAs":"F1","intelligence":2,"ac":7,"hdDice":2,"hdAdj":2,"damage":["1d6"],"xp":25,"source":"RC-adapted","humanoid":false,"rcTreasureType":"Nil"},{"id":"dire_wolf","n":"Dire Wolf","saveAs":"F2","intelligence":4,"ac":6,"hdDice":4,"hdAdj":1,"damage":["2d4"],"xp":125,"source":"RC-adapted","humanoid":false,"rcTreasureType":"Nil"},{"id":"bear","n":"Black Bear","saveAs":"F2","intelligence":2,"ac":6,"hdDice":4,"hdAdj":0,"damage":["1d3"],"attacks":[{"name":"claw","damage":"1d3","claw":true},{"name":"claw","damage":"1d3","claw":true},{"name":"bite","damage":"1d6"}],"bearHug":"2d8","xp":75,"source":"RC-adapted","humanoid":false,"rcTreasureType":"U"},{"id":"giant_spider","n":"Giant Spider","saveAs":"F1","intelligence":0,"ac":6,"hdDice":2,"hdAdj":0,"damage":["1d8"],"xp":35,"special":"poison","rcPowerBonuses":1,"rcAsterisks":1,"source":"RC-adapted","humanoid":false,"rcTreasureType":"U"},{"id":"giant_centipede","n":"Giant Centipede","saveAs":"NM","intelligence":0,"ac":9,"hdDice":0.5,"hdAdj":0,"hpDie":4,"damage":["0"],"xp":6,"special":"centipedePoison","rcPowerBonuses":1,"rcAsterisks":1,"source":"RC-adapted","humanoid":false,"rcTreasureType":"Nil"},{"id":"giant_scorpion","n":"Giant Scorpion","saveAs":"F2","intelligence":0,"ac":2,"hdDice":4,"hdAdj":0,"damage":["1d10"],"attacks":[{"name":"claw","damage":"1d10","claw":true},{"name":"claw","damage":"1d10","claw":true},{"name":"sting","damage":"1d4","special":"poison","sting":true}],"xp":125,"special":"poison","rcPowerBonuses":1,"rcAsterisks":1,"source":"RC-adapted","humanoid":false,"rcTreasureType":"V"},{"id":"giant_snake","n":"Giant Snake","saveAs":"F2","intelligence":2,"ac":6,"hdDice":3,"hdAdj":0,"damage":["1d8"],"xp":50,"special":"poison","rcPowerBonuses":1,"rcAsterisks":1,"source":"RC-adapted","humanoid":false,"rcTreasureType":"Nil"},{"id":"lizard_man","n":"Lizard Man","saveAs":"F2","intelligence":6,"ac":5,"hdDice":2,"hdAdj":1,"damage":["1d6+1"],"meleeDamage":"1d6+1","rangedDamage":"1d6+1","meleeWeapon":"Spear","rangedWeapon":"Spear","swimSpeedFeet":120,"xp":25,"source":"RC-adapted","humanoid":true,"rcTreasureType":"D"},{"id":"bandit","n":"Bandit","saveAs":"T1","intelligence":11,"ac":6,"hdDice":1,"hdAdj":0,"damage":["1d6"],"meleeDamage":"1d6","rangedDamage":"1d6","meleeWeapon":"Short Sword","rangedWeapon":"Short Bow","xp":10,"source":"RC-adapted","humanoid":true,"rcTreasureType":"(U) A"},{"id":"brigand","n":"Brigand","saveAs":"F1","intelligence":11,"ac":6,"hdDice":1,"hdAdj":0,"damage":["1d6"],"meleeDamage":"1d6","rangedDamage":"1d6","meleeWeapon":"Sword","rangedWeapon":"Light Crossbow","xp":10,"source":"RC-adapted","humanoid":true,"rcTreasureType":"A"},{"id":"berserker","n":"Berserker","saveAs":"F1","intelligence":9,"ac":7,"hdDice":1,"hdAdj":1,"damage":["1d8"],"meleeDamage":"1d8","meleeWeapon":"Battle Axe","xp":19,"ferocityAttackBonus":2,"rcPowerBonuses":1,"rcAsterisks":1,"source":"RC-adapted","humanoid":true,"rcTreasureType":"(P) B"},{"id":"ogre","n":"Ogre","saveAs":"F4","intelligence":6,"ac":5,"hdDice":4,"hdAdj":1,"damage":["1d10"],"xp":125,"source":"RC-adapted","humanoid":true,"rcTreasureType":"(S x 10) S x 100 + C"},{"id":"troll","n":"Troll","saveAs":"F6","intelligence":6,"ac":4,"hdDice":6,"hdAdj":3,"damage":["1d6"],"attacks":[{"name":"claw","damage":"1d6"},{"name":"claw","damage":"1d6"},{"name":"bite","damage":"1d10"}],"xp":650,"special":"regeneration","rcPowerBonuses":1,"rcAsterisks":1,"source":"RC-adapted","humanoid":false,"rcTreasureType":"D"},{"id":"minotaur","n":"Minotaur","saveAs":"F6","intelligence":5,"ac":6,"hdDice":6,"hdAdj":0,"damage":["1d6"],"attacks":[{"name":"gore","damage":"1d6"},{"name":"bite","damage":"1d6"}],"xp":275,"source":"RC-adapted","humanoid":false,"rcTreasureType":"C"},{"id":"mummy","n":"Mummy","saveAs":"F5","intelligence":6,"ac":3,"hdDice":5,"hdAdj":1,"damage":["1d12"],"xp":575,"undead":true,"enchanted":true,"mummy":true,"special":"disease","rcPowerBonuses":2,"rcAsterisks":2,"source":"RC-adapted","humanoid":false,"rcTreasureType":"D"}];
+const MONSTERS=[{"id":"kobold","n":"Kobold","saveAs":"NM","intelligence":9,"ac":7,"hdDice":0.5,"hdAdj":0,"hpDie":4,"damage":["1d4-1"],"meleeDamage":"1d4-1","rangedDamage":"1d4-1","meleeWeapon":"Dagger","rangedWeapon":"Sling","xp":5,"source":"RC-adapted","humanoid":true,"rcTreasureType":"(P) J"},{"id":"goblin","n":"Goblin","saveAs":"NM","intelligence":9,"ac":6,"hdDice":1,"hdAdj":-1,"damage":["1d6"],"meleeDamage":"1d6","rangedDamage":"1d6","meleeWeapon":"Short Sword","rangedWeapon":"Short Bow","xp":5,"source":"RC-adapted","humanoid":true,"rcTreasureType":"(R) C"},{"id":"orc","n":"Orc","saveAs":"F1","intelligence":7,"ac":6,"hdDice":1,"hdAdj":0,"damage":["1d6"],"meleeDamage":"1d6","rangedDamage":"1d6","meleeWeapon":"Spear","rangedWeapon":"Short Bow","xp":10,"source":"RC-adapted","humanoid":true,"rcTreasureType":"(P) D"},{"id":"hobgoblin","n":"Hobgoblin","saveAs":"F1","intelligence":10,"ac":6,"hdDice":1,"hdAdj":1,"damage":["1d8"],"meleeDamage":"1d8","rangedDamage":"1d6","meleeWeapon":"Sword","rangedWeapon":"Short Bow","xp":15,"source":"RC-adapted","humanoid":true,"rcTreasureType":"(Q) D"},{"id":"gnoll","n":"Gnoll","saveAs":"F2","intelligence":7,"ac":5,"hdDice":2,"hdAdj":0,"damage":["1d8+1"],"meleeDamage":"1d8+1","rangedDamage":"1d6+1","meleeWeapon":"Battle Axe","rangedWeapon":"Long Bow","xp":20,"source":"RC-adapted","humanoid":true,"rcTreasureType":"(P) D"},{"id":"skeleton","n":"Skeleton","saveAs":"F1","intelligence":1,"ac":7,"hdDice":1,"hdAdj":0,"damage":["1d6"],"xp":10,"undead":true,"source":"RC-adapted","humanoid":false,"rcTreasureType":"Nil"},{"id":"zombie","n":"Zombie","saveAs":"F1","intelligence":1,"ac":8,"hdDice":2,"hdAdj":0,"damage":["1d8"],"xp":20,"undead":true,"slow":true,"alwaysLoseInitiative":true,"source":"RC-adapted","humanoid":false,"rcTreasureType":"Nil"},{"id":"ghoul","n":"Ghoul","saveAs":"F2","intelligence":3,"ac":6,"hdDice":2,"hdAdj":0,"damage":["1d3"],"attacks":[{"name":"claw","damage":"1d3","special":"paralysis"},{"name":"claw","damage":"1d3","special":"paralysis"},{"name":"bite","damage":"1d3","special":"paralysis"}],"xp":25,"undead":true,"special":"paralysis","rcPowerBonuses":1,"rcAsterisks":1,"source":"RC-adapted","humanoid":false,"rcTreasureType":"B"},{"id":"giant_rat","n":"Giant Rat","saveAs":"NM","intelligence":2,"ac":7,"hdDice":0.5,"hdAdj":0,"hpDie":4,"damage":["1d3"],"xp":5,"special":"disease","rcPowerBonuses":1,"rcAsterisks":1,"source":"RC-adapted","humanoid":false,"rcTreasureType":"L"},{"id":"wolf","n":"Wolf","saveAs":"F1","intelligence":2,"ac":7,"hdDice":2,"hdAdj":2,"damage":["1d6"],"xp":25,"source":"RC-adapted","humanoid":false,"rcTreasureType":"Nil"},{"id":"dire_wolf","n":"Dire Wolf","saveAs":"F2","intelligence":4,"ac":6,"hdDice":4,"hdAdj":1,"damage":["2d4"],"xp":125,"source":"RC-adapted","humanoid":false,"rcTreasureType":"Nil"},{"id":"bear","n":"Black Bear","saveAs":"F2","intelligence":2,"ac":6,"hdDice":4,"hdAdj":0,"damage":["1d3"],"attacks":[{"name":"claw","damage":"1d3","claw":true},{"name":"claw","damage":"1d3","claw":true},{"name":"bite","damage":"1d6"}],"bearHug":"2d8","xp":75,"source":"RC-adapted","humanoid":false,"rcTreasureType":"U"},{"id":"giant_spider","n":"Giant Spider","saveAs":"F1","intelligence":0,"ac":6,"hdDice":2,"hdAdj":0,"damage":["1d8"],"xp":35,"special":"poison","rcPowerBonuses":1,"rcAsterisks":1,"source":"RC-adapted","humanoid":false,"rcTreasureType":"U"},{"id":"giant_centipede","n":"Giant Centipede","saveAs":"NM","intelligence":0,"ac":9,"hdDice":0.5,"hdAdj":0,"hpDie":4,"damage":["0"],"xp":6,"special":"centipedePoison","rcPowerBonuses":1,"rcAsterisks":1,"source":"RC-adapted","humanoid":false,"rcTreasureType":"Nil"},{"id":"giant_scorpion","n":"Giant Scorpion","saveAs":"F2","intelligence":0,"ac":2,"hdDice":4,"hdAdj":0,"damage":["1d10"],"attacks":[{"name":"claw","damage":"1d10","claw":true},{"name":"claw","damage":"1d10","claw":true},{"name":"sting","damage":"1d4","special":"poison","sting":true}],"xp":125,"special":"poison","rcPowerBonuses":1,"rcAsterisks":1,"source":"RC-adapted","humanoid":false,"rcTreasureType":"V"},{"id":"giant_racer","n":"Giant Racer","saveAs":"F1","intelligence":2,"ac":5,"hdDice":2,"hdAdj":0,"damage":["1d6"],"xp":20,"source":"RC-adapted","humanoid":false,"rcTreasureType":"Nil"},{"id":"pit_viper","n":"Pit Viper","saveAs":"F1","intelligence":2,"ac":6,"hdDice":2,"hdAdj":0,"damage":["1d4"],"xp":25,"special":"poison","alwaysWinInitiative":true,"rcPowerBonuses":1,"rcAsterisks":1,"source":"RC-adapted","humanoid":false,"rcTreasureType":"Nil"},{"id":"lizard_man","n":"Lizard Man","saveAs":"F2","intelligence":6,"ac":5,"hdDice":2,"hdAdj":1,"damage":["1d6+1"],"meleeDamage":"1d6+1","rangedDamage":"1d6+1","meleeWeapon":"Spear","rangedWeapon":"Spear","swimSpeedFeet":120,"xp":25,"source":"RC-adapted","humanoid":true,"rcTreasureType":"D"},{"id":"bandit","n":"Bandit","saveAs":"T1","intelligence":11,"ac":6,"hdDice":1,"hdAdj":0,"damage":["1d6"],"meleeDamage":"1d6","rangedDamage":"1d6","meleeWeapon":"Short Sword","rangedWeapon":"Short Bow","xp":10,"source":"RC-adapted","humanoid":true,"rcTreasureType":"(U) A"},{"id":"brigand","n":"Brigand","saveAs":"F1","intelligence":11,"ac":6,"hdDice":1,"hdAdj":0,"damage":["1d6"],"meleeDamage":"1d6","rangedDamage":"1d6","meleeWeapon":"Sword","rangedWeapon":"Light Crossbow","xp":10,"source":"RC-adapted","humanoid":true,"rcTreasureType":"A"},{"id":"berserker","n":"Berserker","saveAs":"F1","intelligence":9,"ac":7,"hdDice":1,"hdAdj":1,"damage":["1d8"],"meleeDamage":"1d8","meleeWeapon":"Battle Axe","xp":19,"ferocityAttackBonus":2,"rcPowerBonuses":1,"rcAsterisks":1,"source":"RC-adapted","humanoid":true,"rcTreasureType":"(P) B"},{"id":"ogre","n":"Ogre","saveAs":"F4","intelligence":6,"ac":5,"hdDice":4,"hdAdj":1,"damage":["1d10"],"xp":125,"source":"RC-adapted","humanoid":true,"rcTreasureType":"(S x 10) S x 100 + C"},{"id":"troll","n":"Troll","saveAs":"F6","intelligence":6,"ac":4,"hdDice":6,"hdAdj":3,"damage":["1d6"],"attacks":[{"name":"claw","damage":"1d6"},{"name":"claw","damage":"1d6"},{"name":"bite","damage":"1d10"}],"xp":650,"special":"regeneration","rcPowerBonuses":1,"rcAsterisks":1,"source":"RC-adapted","humanoid":false,"rcTreasureType":"D"},{"id":"minotaur","n":"Minotaur","saveAs":"F6","intelligence":5,"ac":6,"hdDice":6,"hdAdj":0,"damage":["1d6"],"attacks":[{"name":"gore","damage":"1d6"},{"name":"bite","damage":"1d6"}],"xp":275,"source":"RC-adapted","humanoid":false,"rcTreasureType":"C"},{"id":"mummy","n":"Mummy","saveAs":"F5","intelligence":6,"ac":3,"hdDice":5,"hdAdj":1,"damage":["1d12"],"xp":575,"undead":true,"enchanted":true,"mummy":true,"special":"disease","rcPowerBonuses":2,"rcAsterisks":2,"source":"RC-adapted","humanoid":false,"rcTreasureType":"D"}];
 function rollExpr(x){let m=/(\d+)d(\d+)([+-]\d+)?/i.exec(x);if(!m)return 0;let v=0,n=+m[1];while(n--)v+=d(+m[2]);return Math.max(0,v+(+(m[3]||0)))}
 function fighterNeed(ac){let rows=CLASS_ATTACK_BASE?.Fighter||[[1,19]],base=19;for(const [lv,b] of rows)if(h.level>=lv)base=b;return base-ac}
 const SAVE_BASE={
@@ -1424,6 +1425,14 @@ function poisonProtection(){
 }
 function poisonImmuneFor(e){let p=poisonProtection();return p.limit===Infinity||(p.limit>0&&(Number(e?.hdDice)||0)<=p.limit)}
 function playerIsHumanlike(){return ["Fighter","Cleric","Arcanist","Thief","Elf","Dwarf"].includes(h?.className)}
+function preemptiveEnemiesAct(){
+ if(!h?.combat)return false;
+ let fast=living().filter(e=>e.alwaysWinInitiative&&(e.disabledRounds||0)<=0);
+ if(!fast.length)return true;
+ clog(`${fast.map(e=>e.n).join(", ")} ${fast.length===1?"takes":"take"} initiative automatically.`);
+ let ok=enemyStrike(e=>e.alwaysWinInitiative,false);
+ return ok!==false&&!!h.combat&&h.hp>0
+}
 function enemyStrike(filter=null,tickRegen=true){
  for(const e of living().filter(x=>!filter||filter(x))){
   if(e.hp<=0)continue;
@@ -1661,15 +1670,22 @@ function resolveSpellEffect(s,t=null,autonomous=false,holdMode=null,missileTarge
 }
 function castCombatSpell(id,holdMode=null,missileTargetIds=null,holdTargetIds=null){
  let s=(SPELLS[h.className]||[]).find(x=>x.id===id),c=h.combat;if(!s||!c||!availableCombatSpells().some(x=>x.id===id))return;if(s.kind==="hold"&&!holdMode)holdMode=validHoldTargets(s).length===1?"single":"group";if(c.paralyzed){clog(`${h.name} is paralyzed and cannot cast.`);return renderCombat()}if(s.enemyTarget&&Number.isFinite(s.rangeFeet)&&combatDistance()>s.rangeFeet){clog(`${s.name} is out of range: target is ${combatDistance()} ft away; spell range is ${s.rangeFeet} ft.`);return renderCombat()}
- // RC: casting is the caster's action for the round. Zombies always lose initiative and therefore cannot pre-empt/disrupt the caster.
+ // RC: the spell is committed for the round before initiative resolves. Pit Vipers act first automatically; Zombies act after the caster.
  let pr=d(6),er=d(6);while(pr===er){pr=d(6);er=d(6)}
- let delayedZombies=living().some(e=>e.alwaysLoseInitiative),normalEnemies=living().some(e=>!e.alwaysLoseInitiative);
- if(!normalEnemies)clog("Spell initiative: Zombies always lose initiative; you cast first.");
- else clog(`Spell initiative: you ${pr}, enemies ${er}.`);
+ let delayedZombies=living().some(e=>e.alwaysLoseInitiative),normalEnemies=living().some(e=>!e.alwaysLoseInitiative&&!e.alwaysWinInitiative);
  if(!consumeSpell(s))return;
+ let hpBefore=h.hp,conditionsBefore=(h.conditions||[]).length;
+ if(!preemptiveEnemiesAct())return;
+ if(h.hp<hpBefore||(h.conditions||[]).length>conditionsBefore){
+   clog(`${s.name} is disrupted and lost.`);
+   if(h.combat&&h.hp>0)enemyStrike(e=>!e.alwaysWinInitiative,true);
+   if(h.combat){tickSpellBuffs();tickEnemySpellEffects();tickPlayerConditions();c.round++;save();renderCombat()}return
+ }
+ if(!normalEnemies&&delayedZombies)clog("Spell initiative: Zombies always lose initiative; you cast before them.");
+ else if(normalEnemies)clog(`Spell initiative: you ${pr}, enemies ${er}.`);
  if(normalEnemies&&er>pr){
-   let hpBefore=h.hp,conditionsBefore=(h.conditions||[]).length;
-   enemyStrike(e=>!e.alwaysLoseInitiative,!delayedZombies);if(!h.combat)return;
+   hpBefore=h.hp;conditionsBefore=(h.conditions||[]).length;
+   enemyStrike(e=>!e.alwaysLoseInitiative&&!e.alwaysWinInitiative,!delayedZombies);if(!h.combat)return;
    if(h.hp<hpBefore||(h.conditions||[]).length>conditionsBefore){
      clog(`${s.name} is disrupted and lost.`);
      if(h.combat&&h.hp>0&&living().some(e=>e.alwaysLoseInitiative))enemyStrike(e=>e.alwaysLoseInitiative,true);
@@ -1679,7 +1695,7 @@ function castCombatSpell(id,holdMode=null,missileTargetIds=null,holdTargetIds=nu
  }
  let t=c.enemies[c.target];if(!t||t.hp<=0)t=living()[0];if(s.missilesByLevel&&!missileTargetIds&&autonomousCombatRunning)missileTargetIds=autonomousMissileTargetIds(magicMissileCount());resolveSpellEffect(s,t,autonomousCombatRunning,holdMode,missileTargetIds,holdTargetIds);
  if(!h.combat)return;if(!living().length)return finishCombat();
- if(!normalEnemies||pr>er)enemyStrike();
+ if(!normalEnemies||pr>er)enemyStrike(e=>!e.alwaysWinInitiative);
  else if(h.combat&&living().some(e=>e.alwaysLoseInitiative))enemyStrike(e=>e.alwaysLoseInitiative,true);
  else if(h.combat&&delayedZombies)tickMonsterRegeneration();
  if(h.combat){tickSpellBuffs();tickEnemySpellEffects();tickPlayerConditions();h.combat.round++;save();renderCombat()}
@@ -1777,20 +1793,23 @@ function changeRange(direction){
  if(!h?.combat)return;if(h.combat.paralyzed){clog("You cannot change range while incapacitated.");return renderCombat()}
  let i=combatBandIndex(),speed=rcSpeedLevel(),steps=Math.min(3,2**speed),ni=direction==="farther"?Math.min(RANGE_BANDS.length-1,i+steps):Math.max(0,i-steps);
  if(ni===i){clog(`You are already at ${RANGE_BANDS[i].name} range.`);return renderCombat()}
- setCombatBand(ni);$("#rangeMenu")?.classList.add("hide");clog(`You move ${direction==="farther"?"farther away":"closer"}${speed?` at ×${2**speed} speed`:""}: ${h.combat.range} (${combatDistance()}').`);enemyStrike();
+ if(!preemptiveEnemiesAct())return;
+ setCombatBand(ni);$("#rangeMenu")?.classList.add("hide");clog(`You move ${direction==="farther"?"farther away":"closer"}${speed?` at ×${2**speed} speed`:""}: ${h.combat.range} (${combatDistance()}').`);enemyStrike(e=>!e.alwaysWinInitiative);
  if(h.combat){tickSpellBuffs();tickEnemySpellEffects();tickPlayerConditions();h.combat.round++;save();renderCombat()}
 }
 function resolveAttack(){
- let c=h.combat,pr=d(6),er=d(6);while(pr===er){pr=d(6);er=d(6)}
- let delayedZombies=living().some(e=>e.alwaysLoseInitiative),normalEnemies=living().some(e=>!e.alwaysLoseInitiative);
+ let c=h.combat;if(!preemptiveEnemiesAct())return;
+ let pr=d(6),er=d(6);while(pr===er){pr=d(6);er=d(6)}
+ let delayedZombies=living().some(e=>e.alwaysLoseInitiative),normalEnemies=living().some(e=>!e.alwaysLoseInitiative&&!e.alwaysWinInitiative);
  if(!normalEnemies){
-  clog("Initiative: Zombies always lose initiative; you act first.");
-  playerStrike();if(h.combat&&living().length)enemyStrike()
+  if(delayedZombies)clog("Initiative: Zombies always lose initiative; you act before them.");
+  playerStrike();
+  if(h.combat&&h.hp>0&&living().some(e=>e.alwaysLoseInitiative))enemyStrike(e=>e.alwaysLoseInitiative,true)
  }else{
   clog(`Initiative: you ${pr}, enemies ${er}.`);
-  if(pr>er){playerStrike();if(h.combat&&living().length)enemyStrike()}
+  if(pr>er){playerStrike();if(h.combat&&living().length)enemyStrike(e=>!e.alwaysWinInitiative)}
   else{
-   enemyStrike(e=>!e.alwaysLoseInitiative,!delayedZombies);
+   enemyStrike(e=>!e.alwaysLoseInitiative&&!e.alwaysWinInitiative,!delayedZombies);
    if(h.combat&&h.hp>0&&living().length)playerStrike();
    if(h.combat&&h.hp>0&&living().some(e=>e.alwaysLoseInitiative))enemyStrike(e=>e.alwaysLoseInitiative,true);
    else if(h.combat&&delayedZombies)tickMonsterRegeneration()
@@ -1805,12 +1824,13 @@ function useHolyWaterCombat(){
  if(i<0){clog("No Holy Water.");return renderCombat()}
  if(!t?.undead){clog("Holy Water only harms undead; choose an undead target.");return renderCombat()}
  let dist=combatDistance(),ranges=WEAPON_RANGES["Holy Water"];if(dist>ranges[2]){clog("Holy Water is out of range.");return renderCombat()}
+ if(!preemptiveEnemiesAct())return;
  h.inv.splice(i,1);
  let r=d(20),atkMod=mod(h.stats.DEX)+rangeAttackMod("Holy Water"),hit=r===20||(r!==1&&r+atkMod>=characterNeed(t.ac));
  if(hit){let dmg=d(8);if(r===20)dmg*=2;t.hp=Math.max(0,t.hp-dmg);clog(`${r===20?"Critical hit! ":""}Holy Water splashes ${t.n} for ${dmg} damage.`);if(t.hp<=0){let gained=awardXP(t.xp);clog(`${t.n} defeated. +${gained} XP.`)}}
  else clog(`Holy Water misses ${t.n}; the vial shatters harmlessly.`);
  if(!living().length)return finishCombat();
- enemyStrike();if(h.combat){tickSpellBuffs();tickEnemySpellEffects();tickPlayerConditions();h.combat.round++;save();renderCombat()}
+ enemyStrike(e=>!e.alwaysWinInitiative);if(h.combat){tickSpellBuffs();tickEnemySpellEffects();tickPlayerConditions();h.combat.round++;save();renderCombat()}
 }
 function finishCombat(){
  let boss=!!h.combat?.isBoss,enemies=[...(h.combat?.enemies||[])],treasure=rcRollCombatTreasure(enemies,boss,h.level);
@@ -1821,16 +1841,17 @@ function finishCombat(){
  if(h.trip&&diseaseJourneyBlocked()){returnEarly(`${journeyBlockingCondition()?.name||"Current condition"} prevents further adventuring. You turn back toward town.`);return}
  page("depart");refresh();if(!autonomousCombatRunning)tick()
 }
-function usePotionCombat(){if(h?.combat?.paralyzed){clog(`${h.name} is paralyzed and cannot use a potion.`);return renderCombat()}let i=h.inv.findIndex(x=>x.n==="Healing Potion");if(i<0){clog("No Healing Potion.");return renderCombat()}h.inv.splice(i,1);if(magicalHealingBlockedByDisease()){clog("Healing Potion is consumed, but Tomb Rot prevents it from restoring HP.")}else{let heal=d(6)+1;h.hp=Math.min(h.maxhp,h.hp+heal);clog(`Potion restores ${heal} HP.`)}enemyStrike();if(h.combat){tickSpellBuffs();tickEnemySpellEffects();tickPlayerConditions();h.combat.round++;save();renderCombat()}}
+function usePotionCombat(){if(h?.combat?.paralyzed){clog(`${h.name} is paralyzed and cannot use a potion.`);return renderCombat()}let i=h.inv.findIndex(x=>x.n==="Healing Potion");if(i<0){clog("No Healing Potion.");return renderCombat()}if(!preemptiveEnemiesAct())return;h.inv.splice(i,1);if(magicalHealingBlockedByDisease()){clog("Healing Potion is consumed, but Tomb Rot prevents it from restoring HP.")}else{let heal=d(6)+1;h.hp=Math.min(h.maxhp,h.hp+heal);clog(`Potion restores ${heal} HP.`)}enemyStrike(e=>!e.alwaysWinInitiative);if(h.combat){tickSpellBuffs();tickEnemySpellEffects();tickPlayerConditions();h.combat.round++;save();renderCombat()}}
 function retreatCombat(){
  if(h?.combat?.paralyzed){clog(`${h.name} is paralyzed and cannot retreat.`);return renderCombat()}
+ if(!preemptiveEnemiesAct())return;
  let lessonEscape=!!(h?.combat?.trollLesson&&h.combat.trollLessonDowned);
  if(d(6)>=3){
    addlog("You escape the encounter.");recoverThrownWeapons();h.combat=null;endTripPause();
    if(lessonEscape&&h.trip){h.trip.trollLessonReturn=true;save();returnEarly("You retreat toward town. Behind you, the Troll is already beginning to move again.");return}
    save();if(h.trip&&diseaseJourneyBlocked()){returnEarly(`${journeyBlockingCondition()?.name||"Current condition"} prevents further adventuring. You turn back toward town.`);return}
    page("depart");refresh();if(!autonomousCombatRunning)tick()
- }else{clog("Retreat fails.");enemyStrike();if(h.combat){tickSpellBuffs();tickEnemySpellEffects();tickPlayerConditions();h.combat.round++;save();renderCombat()}}
+ }else{clog("Retreat fails.");enemyStrike(e=>!e.alwaysWinInitiative);if(h.combat){tickSpellBuffs();tickEnemySpellEffects();tickPlayerConditions();h.combat.round++;save();renderCombat()}}
 }
 function renderCombat(){if(!h?.combat)return;page("combat");let c=h.combat,cs=combatStats(),ac=effectiveAC(false),mac=effectiveAC(true),acText=ac===mac?`AC ${ac}`:`AC ${ac} · Missile AC ${mac}`,at=ammoTypeFor(cs.weaponItem||cs.weapon),ammo=at?` · 🎯 ${at}: ${ammoCount(at)}`:"",wr=cs.rangeText!=="—"?` · S/M/L ${cs.rangeText}`:"",reload=cs.weaponKey==="Heavy Crossbow"&&h.stats.STR<18&&c.heavyCrossbowNextRound&&c.round<c.heavyCrossbowNextRound?` · ⏳ reload → R${c.heavyCrossbowNextRound}`:"";$("#combatRound").textContent=`Round ${c.round}`;$("#combatStatus").innerHTML=`❤️ HP ${h.hp}/${h.maxhp} · 🛡 ${acText} · ⚔ ${cs.weapon} (${cs.damage})${wr}${ammo}${reload} · 📏 ${c.range||"Close"} @ ${combatDistance()}\'`;$("#combatEnemies").innerHTML=c.enemies.map(e=>`<button class="enemyCard ${c.target===e.id?"target":""}" data-target="${e.id}" ${e.hp<=0?"disabled":""}><b>${e.boss?"👑 BOSS — ":""}${e.n}</b> · HP ${e.hp}/${e.maxhp} · AC ${e.ac} · Line ${(e.lane??e.id%3)+1}</button>`).join("");$("#combatLog").innerHTML=c.log.map(x=>`<div>${x}</div>`).join("");$("#combatLog").scrollTop=$("#combatLog").scrollHeight;$$("[data-target]").forEach(b=>b.onclick=()=>{c.target=+b.dataset.target;save();renderCombat()});renderSpellButton();renderRangeButton();renderMagicItemButton();let locked=!!c.paralyzed,holy=$("#holyWaterBtn"),target=c.enemies.find(e=>e.id===c.target&&e.hp>0),hasHoly=h.inv.some(x=>x.n==="Holy Water");if(holy){holy.classList.toggle("hide",!hasHoly);holy.disabled=locked||!target?.undead||combatDistance()>50}$("#attackBtn").textContent=locked?"⏳ End Round (Paralyzed)":"⚔ Attack";for(const id of ["#spellBtn","#rangeBtn","#potionBtn","#magicItemBtn","#retreatBtn"])if($(id)&&locked)$(id).disabled=true}
 function journal(entry){h.trip.journal=h.trip.journal||[];h.trip.journal.push({time:Date.now(),...entry})}
