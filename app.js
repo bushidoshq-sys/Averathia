@@ -177,7 +177,7 @@ function recoverThrownWeapons(){
  if(restore)restore.eq=true
 }
 const TWO_HANDED=new Set(["Staff","Halberd","Pike","Polearm","Poleaxe","Bastard Sword (2H)","Two-Handed Sword","Short Bow","Long Bow","Light Crossbow","Heavy Crossbow"]);
-function weaponBaseName(itemOrName){let item=typeof itemOrName==="object"?itemOrName:null,name=item?.baseWeapon||String(itemOrName||"");return name}
+function weaponBaseName(itemOrName){let item=typeof itemOrName==="object"?itemOrName:null,name=item?.baseWeapon||String(itemOrName||"");if(!item){let m=/^(.*) \+\d(?:, .*|$)/.exec(name);if(m)name=m[1]}return name}
 function isRangedWeapon(itemOrName){return RANGED_WEAPONS.has(weaponBaseName(itemOrName))}
 function itemData(itemOrName){
  let item=typeof itemOrName==="object"?itemOrName:null,name=item?.baseWeapon||item?.baseArmor||String(itemOrName||""),bonus=Math.max(0,Number(item?.magicBonus)||0);
@@ -1153,7 +1153,7 @@ function autoSpellScore(s){
 }
 function autonomousCanHarm(target=living()[0]){
  if(!target)return true;
- let cs=combatStats(),item=cs.weaponItem,at=ammoTypeFor(cs.weapon),weaponUsable=attackModeFor(cs.weapon)!=="out-of-range"&&(!at||ammoCount(at)>0);
+ let cs=combatStats(),item=cs.weaponItem,at=ammoTypeFor(item||cs.weapon),weaponUsable=attackModeFor(item||cs.weapon)!=="out-of-range"&&(!at||ammoCount(at)>0);
  if(!target.mummy)return weaponUsable||availableCombatSpells().some(s=>["damage","area","line"].includes(s.kind));
  let weaponQualifies=weaponUsable&&(!!item?.magical||Number(item?.magicBonus)>0||item?.damageType==="fire"||h.spells?.buffs?.some(b=>b.damageBonus));
  let spellQualifies=availableCombatSpells().some(s=>["damage","area","line"].includes(s.kind)||(s.rc==="Striking"));
@@ -1177,7 +1177,7 @@ function runAutonomousCombat(){
      .sort((a,b)=>autoSpellScore(b)-autoSpellScore(a));
    if(spells.length&&autoSpellScore(spells[0])>=45){castCombatSpell(spells[0].id);continue}
    let cs=combatStats(),at=ammoTypeFor(cs.weaponItem||cs.weapon);
-   if(attackModeFor(cs.weapon)==="out-of-range"){changeRange("closer");continue}
+   if(attackModeFor(cs.weaponItem||cs.weapon)==="out-of-range"){changeRange("closer");continue}
    if((at&&ammoCount(at)<=0&&!equippedWeapons().melee)||!autonomousCanHarm()){let wi=autoRcOffensiveIndex();if(wi>=0){useRcMagicItemCombat(wi);continue}clog("Autonomous: the current fight cannot be won with available attacks; attempting retreat.");retreatCombat();continue}
    resolveAttack()
   }
@@ -1202,7 +1202,7 @@ function rcMagicWeaponOpponentBonus(item,target){
 }
 function playerStrikeSingle(){
  let c=h.combat,t=c.enemies[c.target];if(!t||t.hp<=0){t=living()[0];if(!t)return;c.target=t.id}
- let cs=combatStats(),w=cs.weapon,item=cs.weaponItem,mode=attackModeFor(w);
+ let cs=combatStats(),w=cs.weapon,item=cs.weaponItem,mode=attackModeFor(item||w);
  if(c.skipNext){clog("Critical fumble: you lose this initiative.");c.skipNext=false;return}
  let pfe=protectionFromEvilBuff();if(t.enchanted&&pfe&&!pfe.barrierBroken){pfe.barrierBroken=true;clog("You attack an enchanted creature; Protection from Evil no longer bars its touch, though its attack/save modifiers remain.")}
  if(t.sleeping&&c.range==="Hand-to-Hand"&&EDGED_WEAPONS.has(weaponBaseName(item||w))){let dmg=t.hp;t.hp=0;t.sleeping=false;t.disabledRounds=0;clog(`Sleeping ${t.n} is slain with a single edged-weapon blow (${dmg} HP).`);let gained=awardXP(t.xp);clog(`${t.n} defeated. +${gained} XP.`);return}
