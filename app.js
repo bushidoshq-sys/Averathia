@@ -50,7 +50,7 @@ function addClassStartingItems(){
  if(weapon)h.inv.push({n:weapon,kind:"weapon",can:true,eq:false,bound:true,noSell:true});
  addStarterClothing()
 }
-$("#chooseCharacter").onclick=()=>{if(!cs[0])return;let c=structuredClone(cs[0]);h={...c,maxhp:c.hp,xp:0,level:1,name:$("#charName").value.trim()||fullName(),sex,avatar,className:chosenClass,mechanicsClass:chosenClass,gp:0,sp:0,cp:0,inv:[],rations:0,water:0,waterCapacity:0,lightStock:{torchMinutes:0,oilMinutes:0,legacyMinutes:0},lightMinutes:0,buffAgeAt:Date.now(),diseases:[]};h.gp=c.gold;addClassStartingItems();$("#create").classList.add("hide");$("#game").classList.remove("hide");save();home();page("town")};
+$("#chooseCharacter").onclick=()=>{if(!cs[0])return;let c=structuredClone(cs[0]);h={...c,maxhp:c.hp,xp:0,level:1,name:$("#charName").value.trim()||fullName(),sex,avatar,className:chosenClass,mechanicsClass:chosenClass,gp:0,sp:0,cp:0,inv:[],rations:0,water:0,waterCapacity:0,lightStock:{torchMinutes:0,oilMinutes:0,legacyMinutes:0},lightMinutes:0,buffAgeAt:Date.now(),diseases:[],trollWeaknessKnown:false};h.gp=c.gold;addClassStartingItems();$("#create").classList.add("hide");$("#game").classList.remove("hide");save();home();page("town")};
 const CLASS_LEVELS={
  Fighter:{cap:36,hd:8,xp:[0,2000,4000,8000,16000,32000,64000,120000,240000,360000,480000,600000,720000,840000,960000,1080000,1200000,1320000,1440000,1560000,1680000,1800000,1920000,2040000,2160000,2280000,2400000,2520000,2640000,2760000,2880000,3000000,3120000,3240000,3360000,3480000]},
  Cleric:{cap:36,hd:6,xp:[0,1500,3000,6000,12000,25000,50000,100000,200000,300000,400000,500000,600000,700000,800000,900000,1000000,1100000,1200000,1300000,1400000,1500000,1600000,1700000,1800000,1900000,2000000,2100000,2200000,2300000,2400000,2500000,2600000,2700000,2800000,2900000]},
@@ -2071,6 +2071,7 @@ function migratePersistentCharacter(saved){
  s.trophies=Array.isArray(s.trophies)?s.trophies:[];
  s.conditions=Array.isArray(s.conditions)?s.conditions:[];
  s.diseases=Array.isArray(s.diseases)?s.diseases:[];
+ s.trollWeaknessKnown=!!s.trollWeaknessKnown;
  ensureDiseases(s);
  s.sex=s.sex==="Female"?"Female":"Male";
  s.avatar=Number.isInteger(s.avatar)&&s.avatar>=0&&s.avatar<=2?s.avatar:0;
