@@ -1,0 +1,82 @@
+name: temp-v109c51-adventure-tale-smoke
+on:
+  pull_request:
+    branches: [main]
+
+jobs:
+  mobile-smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Install Chromium
+        run: |
+          npm init -y >/dev/null 2>&1
+          npm install playwright@1.55.0 >/dev/null 2>&1
+          npx playwright install --with-deps chromium >/dev/null
+      - name: Run 390x844 Adventure Tale smoke
+        run: |
+          python3 -m http.server 4173 >/tmp/averathia-http.log 2>&1 &
+          cat > /tmp/tale-smoke.mjs <<'EOF'
+          import { chromium } from 'playwright';
+
+          const browser = await chromium.launch({headless:true});
+          const page = await browser.newPage({viewport:{width:390,height:844}});
+          const errors=[];
+          page.on('pageerror',e=>errors.push(String(e)));
+
+          await page.goto('http://127.0.0.1:4173/index.html',{waitUntil:'networkidle'});
+          await page.evaluate(()=>{
+            localStorage.setItem('averathia-v041',JSON.stringify({
+              name:'Seren Vale',
+              className:'Cleric',
+              mechanicsClass:'Cleric',
+              level:2,
+              xp:1500,
+              maxhp:8,
+              hp:8,
+              stats:{STR:13,DEX:12,CON:14,INT:11,WIS:18,CHA:15},
+              gp:180,sp:0,cp:0,
+              inv:[],
+              lastAdventureTitle:"Recover a saint's relic",
+              lastAdventure:"Seren Vale sets out to recover a saint's relic and reaches the forgotten holy site.\n\nThe crypt door yawns open and dead hands scrape against stone. Seren Vale successfully turns the undead.\n\nWith the objective secured, Seren Vale returns to town."
+            }));
+          });
+          await page.reload({waitUntil:'networkidle'});
+          await page.waitForSelector('#lastAdventure:not(.hide)');
+
+          const details=page.locator('#lastAdventureDetails');
+          const summary=page.locator('#lastAdventureSummary');
+          const text=page.locator('#lastAdventureText');
+
+          if(await details.evaluate(el=>el.open)) throw new Error('Adventure Tale must be collapsed by default');
+          const summaryText=(await summary.textContent())||'';
+          if(!summaryText.includes("Recover a saint's relic")) throw new Error('Mission-specific tale title missing');
+
+          await summary.click();
+          if(!(await details.evaluate(el=>el.open))) throw new Error('Adventure Tale did not expand');
+          const tale=(await text.textContent())||'';
+          if(!/forgotten holy site/i.test(tale)||!/crypt door/i.test(tale)) throw new Error('Journey-specific tale text missing');
+
+          const metrics=await page.evaluate(()=>{
+            const el=document.getElementById('lastAdventureText');
+            const cs=getComputedStyle(el);
+            return {
+              viewport:innerWidth,
+              scrollWidth:document.documentElement.scrollWidth,
+              fontSize:parseFloat(cs.fontSize),
+              lineHeight:parseFloat(cs.lineHeight),
+              rect:el.getBoundingClientRect().width
+            };
+          });
+          if(metrics.scrollWidth>metrics.viewport+1) throw new Error('Horizontal overflow: '+JSON.stringify(metrics));
+          if(metrics.fontSize<14) throw new Error('Tale font too small: '+JSON.stringify(metrics));
+          if(errors.length) throw new Error('Page errors: '+errors.join(' | '));
+
+          console.log('PASS',JSON.stringify(metrics));
+          await browser.close();
+          EOF
+          node /tmp/tale-smoke.mjs
