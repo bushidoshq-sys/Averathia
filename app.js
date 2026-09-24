@@ -1270,8 +1270,8 @@ function startClericUndeadFight(ev){
 }
 function autoPotionThreshold(){return{Cautious:.65,Normal:.45,Bold:.25}[h.trip?.risk||"Normal"]}
 function autoSpellScore(s){
- if(s.kind==="cleanse"){let active=(h.conditions||[]).includes(s.condition)||(s.rc==="Cure Disease"&&mummyDiseaseActive());return active?110:0}
- if(s.kind==="heal")return mummyDiseaseActive()?0:(h.hp/h.maxhp<.55?100:0);
+ if(s.kind==="cleanse"){let active=(h.conditions||[]).includes(s.condition)||(s.rc==="Cure Disease"&&hasDisease());return active?110:0}
+ if(s.kind==="heal")return magicalHealingBlockedByDisease()?0:(h.hp/h.maxhp<.55?100:0);
  if(s.rc==="Striking"&&living().some(e=>e.mummy)){let w=combatStats().weapon,dup=h.spells?.buffs?.some(b=>b.rc==="Striking"&&b.boundWeapon===w);return dup?0:95}
  if(s.kind==="buff"){let dup=h.spells?.buffs?.some(b=>b.rc===s.rc);return dup?0:(living().length>1?55:30)}
  return 40+s.sl*8;
