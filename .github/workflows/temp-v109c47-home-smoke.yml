@@ -27,7 +27,10 @@ jobs:
             const page=await browser.newPage({viewport:{width:390,height:844}});
             const errors=[]; page.on('pageerror',e=>errors.push(String(e)));
             await page.goto('http://127.0.0.1:8000/',{waitUntil:'networkidle'});
+            console.log('PRECLICK',JSON.stringify(await page.evaluate(()=>({h:!!h,cs:cs.length,disabled:document.querySelector('#chooseCharacter').disabled}))),JSON.stringify(errors));
+            if(errors.length) throw new Error('Load errors: '+errors.join(' | '));
             await page.click('#chooseCharacter');
+            console.log('POSTCLICK',JSON.stringify(await page.evaluate(()=>({h:!!h,cs:cs.length,createHidden:document.querySelector('#create').classList.contains('hide')}))),JSON.stringify(errors));
 
             const initial=await page.evaluate(()=>{
               h.stats.CHA=9;h.gp=100000;h.sp=0;h.cp=10;ensureHomeState();refresh();
