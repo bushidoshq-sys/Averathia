@@ -869,10 +869,18 @@ function rcMergeTreasure(a,b,mult=1){
  for(const k of ["gems","jewelry","special","magic"])for(const x of b[k]||[])for(let i=0;i<mult;i++)a[k].push({...x});
  return a
 }
+const RC_STARSTONE_BASES=[
+ {name:"Star Carbuncle",value:1000},{name:"Star Opal",value:1000},{name:"Star Emerald",value:5000},
+ {name:"Star Ruby",value:5000},{name:"Star Sapphire",value:5000},{name:"Star Jacinth",value:10000}
+];
+function rcSpecialGemItem(){
+ if(d(2)===1){let base=RC_STARSTONE_BASES[d(RC_STARSTONE_BASES.length)-1],value=base.value*2;return{n:`${base.name} — ${value.toLocaleString()} GP`,kind:"treasure",rcTreasure:true,rcGem:true,rcSpecialGem:"starstone",gpValue:value,treasureValueCP:gpToCP(value),rcCashFeePct:d(5)}}
+ let value=50000;return{n:`Tristal — ${value.toLocaleString()} GP`,kind:"treasure",rcTreasure:true,rcGem:true,rcSpecialGem:"tristal",gpValue:value,treasureValueCP:gpToCP(value),rcCashFeePct:d(5)}
+}
 function rcGemItem(level=h?.level||1){
  let roll=d(100);if(level<9)roll=Math.max(1,roll-10);
  let v=rcTablePick(RC_GEM_VALUE,roll);
- if(v==="special")return{n:"Special Gem (Starstone or Tristal)",kind:"treasure",rcTreasure:true,rcGem:true,treasureValueCP:null,needsRcChoice:true};
+ if(v==="special")return rcSpecialGemItem();
  return{n:`Gem — ${v.toLocaleString()} GP`,kind:"treasure",rcTreasure:true,rcGem:true,treasureValueCP:gpToCP(v),gpValue:v,rcCashFeePct:d(5)}
 }
 function rcJewelryItem(level=h?.level||1){
@@ -887,10 +895,11 @@ function rcSpecialTreasureItem(){
    let qty=rcRollScaled(row.encBottles),per=rcRollScaled(row.value);
    item.rcQuantity=qty;item.rcUnit=row.unit;item.rcEncumbrance=qty*10;item.rcValuePerGP=per;item.gpValue=qty*per;item.treasureValueCP=gpToCP(item.gpValue);return item
  }
- let enc=rcRollScaled(row.enc),value=rcRollScaled(row.value);item.rcEncumbrance=enc;
+ let enc=rcRollScaled(row.enc),value=rcRollScaled(row.value);
  if(row.quantityUnspecified){
-   item.rcUnit=row.unit;item.rcEncumbrancePerUnit=enc;item.rcValuePerGP=value;item.gpValue=null;item.treasureValueCP=null;item.needsRcQuantity=true;return item
+   let qty=d(6);item.rcQuantity=qty;item.rcUnit=row.unit;item.rcQuantityRule="Averathia 1d6 square yards";item.rcEncumbrancePerUnit=enc;item.rcValuePerGP=value;item.rcEncumbrance=qty*enc;item.gpValue=qty*value;item.treasureValueCP=gpToCP(item.gpValue);item.n=`${row.n} — ${qty} sq yd`;return item
  }
+ item.rcEncumbrance=enc;
  if(row.valuePerEnc){
    item.rcValuePerGP=value;item.rcValuePer="cn encumbrance";item.gpValue=enc*value;item.treasureValueCP=gpToCP(item.gpValue);return item
  }
