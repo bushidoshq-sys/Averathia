@@ -1405,38 +1405,42 @@ function poisonProtection(){
 function poisonImmuneFor(e){let p=poisonProtection();return p.limit===Infinity||(p.limit>0&&(Number(e?.hdDice)||0)<=p.limit)}
 function enemyStrike(){
  for(const e of living()){
+  if(e.hp<=0)continue;
   if(e.disabledRounds>0)continue;
   if(e.slowRounds>0&&h.combat.round%2===0){clog(`${e.n} is slowed and cannot act this round.`);continue}
   if(e.skipNext){clog(`${e.n} loses this initiative after its fumble.`);e.skipNext=false;continue}
   if(monsterRangeStep(e))continue;
   if((h.combat?.range||"Close")==="Hand-to-Hand"&&e.enchanted&&protectionFromEvilBarrierActive()){clog(`${e.n} cannot touch you through Protection from Evil.`);continue}
-  let r=d(20),blindPenalty=e.blindRounds>0?-6:0;
-  if(r===1){clog(`${e.n} rolls a natural 1 — critical fumble. Next initiative is lost.`);e.skipNext=true;continue}
-  let mr=h.combat?.range||"Close",dist=combatDistance(),maxR=e.rangedWeapon&&WEAPON_RANGES[e.rangedWeapon]?.[2]||Infinity,useRanged=false;if(e.rangedDamage&&mr!=="Hand-to-Hand"&&(e.ammo||0)>0&&dist<=maxR){e.damage=e.rangedDamage;e.activeWeapon=e.rangedWeapon||"Ranged weapon";e.ammo--;useRanged=true}else if(e.meleeDamage){e.damage=e.meleeDamage;e.activeWeapon=e.meleeWeapon||"Melee weapon"}let need=Math.max(2,(20-monsterHitModifier(e))-effectiveAC(useRanged));if(r===20||r+blindPenalty>=need){
-   if(h.spells?.buffs?.some(b=>b.missileWard)&&e.activeWeapon===e.rangedWeapon){clog(`${e.n}'s missile is stopped by your ward.`);continue}
-   let mirror=h.spells?.buffs?.find(b=>b.kind==="images"&&b.images>0);if(mirror){mirror.images--;clog(`${e.n} destroys a mirror image instead of hitting ${h.name}.`);continue}
-   let dmg=rollExpr(e.damage);if(r===20)dmg*=2;if(e.damageType)dmg=applyElementalResistance(dmg,e.damage,e.damageType,e.damageNature!=="normal");h.hp=Math.max(0,h.hp-dmg);
-   clog(`${e.n} hits with ${e.activeWeapon||"its attack"} for ${dmg}${r===20?" — critical":""}.`);
-   if(e.special==="poison"){
-    if(poisonImmuneFor(e))clog(`Potion of Antidote neutralizes ${e.n}'s poison.`);
-    else{let s=savingThrow("Death/Poison",poisonProtection().bonus);clog(`Poison save ${s.roll} vs ${s.target}: ${s.success?"success":"FAIL"}.`);if(!s.success){h.hp=0;clog("The poison is lethal.")}}
+  let mr=h.combat?.range||"Close",dist=combatDistance(),maxR=e.rangedWeapon&&WEAPON_RANGES[e.rangedWeapon]?.[2]||Infinity;
+  let useRanged=!!(e.rangedDamage&&mr!=="Hand-to-Hand"&&(e.ammo||0)>0&&dist<=maxR);
+  let attacks=useRanged?[{name:e.rangedWeapon||"ranged attack",damage:e.rangedDamage,ranged:true}]:(Array.isArray(e.attacks)&&e.attacks.length?e.attacks:[{name:e.meleeWeapon||"its attack",damage:e.meleeDamage||e.damage||"1"}]);
+  if(useRanged)e.ammo--;
+  let clawHits=0;
+  for(const a of attacks){
+   let r=d(20),blindPenalty=e.blindRounds>0?-6:0,attackBonus=(a.sting&&clawHits>0)?2:0,need=Math.max(2,(20-monsterHitModifier(e))-effectiveAC(!!a.ranged));
+   if(r===1){clog(`${e.n} rolls a natural 1 with ${a.name} — critical fumble. Next initiative is lost.`);e.skipNext=true;continue}
+   if(r!==20&&r+blindPenalty+attackBonus<need){clog(`${e.n} misses with ${a.name}.`);continue}
+   if(a.ranged&&h.spells?.buffs?.some(b=>b.missileWard)){clog(`${e.n} missile is stopped by your ward.`);continue}
+   let mirror=h.spells?.buffs?.find(b=>b.kind==="images"&&b.images>0);if(mirror){mirror.images--;clog(`${e.n} ${a.name} destroys a mirror image instead of hitting ${h.name}.`);continue}
+   let dmg=rollExpr(a.damage);if(r===20)dmg*=2;if(a.damageType)dmg=applyElementalResistance(dmg,a.damage,a.damageType,a.damageNature!=="normal");h.hp=Math.max(0,h.hp-dmg);
+   clog(`${e.n} hits with ${a.name} for ${dmg}${r===20?" — critical":""}${attackBonus?` (+${attackBonus} sting attack)`:""}.`);
+   if(a.claw)clawHits++;
+   let special=a.special||(!e.attacks?e.special:null);
+   if(special==="poison"){
+    if(poisonImmuneFor(e))clog(`Potion of Antidote neutralizes ${e.n} poison.`);
+    else{let sv=savingThrow("Death/Poison",poisonProtection().bonus);clog(`Poison save ${sv.roll} vs ${sv.target}: ${sv.success?"success":"FAIL"}.`);if(!sv.success){h.hp=0;clog("The poison is lethal.")}}
    }
-   if(e.special==="paralysis"){
-    if(paralysisImmune())clog(`Potion of Freedom prevents ${e.n}'s paralysis.`);
-    else if(e.id==="ghoul"&&h.className==="Elf"){clog(`${h.name}'s elven nature resists the ghoul's paralyzing touch.`)}
-    else {let s=savingThrow("Paralysis/Stone");clog(`Paralysis save ${s.roll} vs ${s.target}: ${s.success?"success":"FAIL"}.`);if(!s.success){h.combat.paralyzed=true;h.combat.paralyzedRounds=(d(4)+d(4))*RC_ROUNDS_PER_TURN;clog(`${h.name} is paralyzed for ${Math.ceil(h.combat.paralyzedRounds/RC_ROUNDS_PER_TURN)} turn(s) and cannot act.`)}}
+   if(special==="paralysis"){
+    if(paralysisImmune())clog(`Potion of Freedom prevents ${e.n} paralysis.`);
+    else if(e.id==="ghoul"&&h.className==="Elf")clog(`${h.name} elven nature resists the ghoul paralyzing touch.`);
+    else{let sv=savingThrow("Paralysis/Stone");clog(`Paralysis save ${sv.roll} vs ${sv.target}: ${sv.success?"success":"FAIL"}.`);if(!sv.success){h.combat.paralyzed=true;h.combat.paralyzedRounds=(d(4)+d(4))*RC_ROUNDS_PER_TURN;clog(`${h.name} is paralyzed for ${Math.ceil(h.combat.paralyzedRounds/RC_ROUNDS_PER_TURN)} turn(s) and cannot act.`)}}
    }
-   if(e.special==="disease"){
-    if(e.mummy)contractTombRot(e);
-    else if(e.id==="giant_rat")contractPlague(e);
-    else contractWastingFever(e.n);
-   }
-  }else clog(`${e.n} misses.`);
-  if(h.hp<=0)return combatDeath()
+   if(special==="disease"){if(e.mummy)contractTombRot(e);else if(e.id==="giant_rat")contractPlague(e);else contractWastingFever(e.n)}
+   if(h.hp<=0)return combatDeath()
+  }
+  if(e.bearHug&&clawHits>=2&&h.hp>0){let dmg=rollExpr(e.bearHug);h.hp=Math.max(0,h.hp-dmg);clog(`${e.n} catches ${h.name} in a crushing bear hug for ${dmg}.`);if(h.hp<=0)return combatDeath()}
  }
- for(const e of living())if(e.special==="regeneration"){
-  let heal=Math.min(3,e.maxhp-e.hp);if(heal>0){e.hp+=heal;clog(`${e.n} regenerates ${heal} HP.`)}
- }
+ tickMonsterRegeneration();
  return true
 }
 
