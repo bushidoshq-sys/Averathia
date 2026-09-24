@@ -1215,8 +1215,12 @@ function monsterCombatActive(e){return !!e&&!e.destroyed&&(e.hp>0||e.special==="
 function living(){return h?.combat?.enemies?.filter(monsterCombatActive)||[]}
 function applyMonsterDamage(e,dmg,type="normal"){
  dmg=Math.max(0,Math.trunc(Number(dmg)||0));if(!e||!dmg||e.destroyed)return 0;
- if(e.special==="regeneration"&&e.regenStartRound==null)e.regenStartRound=(h?.combat?.round||1)+3;
- e.lastDamageType=type||"normal";e.hp=Math.max(0,e.hp-dmg);return dmg
+ let kind=type||"normal",oldHp=Math.max(0,Number(e.hp)||0),actual=Math.min(oldHp,dmg);
+ if(e.special==="regeneration"){
+  if(e.regenStartRound==null)e.regenStartRound=(h?.combat?.round||1)+3;
+  if((kind==="fire"||kind==="acid")&&actual>0)e.regenBlockedDamage=Math.min(Math.max(0,Number(e.maxhp)||oldHp),(Number(e.regenBlockedDamage)||0)+actual)
+ }
+ e.lastDamageType=kind;e.hp=Math.max(0,oldHp-dmg);return dmg
 }
 function monsterDefeated(e){return !!e&&(e.destroyed||(e.special!=="regeneration"&&e.hp<=0))}
 function resolveMonsterDefeat(e){
@@ -1237,8 +1241,9 @@ function resolveMonsterDefeat(e){
 function tickMonsterRegeneration(){
  if(!h?.combat)return;
  for(const e of h.combat.enemies||[]){
-  if(e.special!=="regeneration"||e.destroyed||e.regenStartRound==null||h.combat.round<e.regenStartRound||e.hp>=e.maxhp)continue;
-  let wasDown=e.hp<=0,heal=Math.min(3,e.maxhp-e.hp);if(heal>0){e.hp+=heal;e.downedNotice=false;clog(wasDown?`${e.n} rises again as regeneration restores ${heal} HP.`:`${e.n} regenerates ${heal} HP.`)}
+  let regenCap=Math.max(0,(Number(e.maxhp)||0)-Math.max(0,Number(e.regenBlockedDamage)||0));
+  if(e.special!=="regeneration"||e.destroyed||e.regenStartRound==null||h.combat.round<e.regenStartRound||e.hp>=regenCap)continue;
+  let wasDown=e.hp<=0,heal=Math.min(3,regenCap-e.hp);if(heal>0){e.hp+=heal;e.downedNotice=false;clog(wasDown?`${e.n} rises again as regeneration restores ${heal} HP.`:`${e.n} regenerates ${heal} HP.`)}
  }
 }
 // RC Rules Cyclopedia, Balancing Encounters (pp.100-101): TPL -> IAHD -> challenge %.
