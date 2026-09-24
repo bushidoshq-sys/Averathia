@@ -1,0 +1,103 @@
+name: temp-v109c44-mummy-troll-smoke
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install Chromium harness
+        run: |
+          npm init -y >/dev/null 2>&1
+          npm install playwright@1.55.0 >/dev/null 2>&1
+          npx playwright install --with-deps chromium >/dev/null 2>&1
+      - name: Run mobile combat smoke
+        run: |
+          python3 -m http.server 8000 >/tmp/averathia-http.log 2>&1 &
+          node <<'NODE'
+          const { chromium } = require('playwright');
+          const assert = (cond,msg) => { if(!cond) throw new Error(msg); };
+          (async()=>{
+            const browser=await chromium.launch({headless:true});
+            const page=await browser.newPage({viewport:{width:390,height:844}});
+            const errors=[];
+            page.on('pageerror',e=>errors.push(String(e)));
+            await page.goto('http://127.0.0.1:8000/',{waitUntil:'networkidle'});
+            await page.click('#chooseCharacter');
+
+            // Mummy: mundane hit -> guaranteed WIS insight -> persistent knowledge.
+            const learned=await page.evaluate(()=>{
+              for(const x of h.inv)x.eq=x.n==="Sword";
+              h.stats.STR=18;h.hp=100;h.maxhp=100;
+              h.lightStock={torchMinutes:60,oilMinutes:0,legacyMinutes:0};h.lightMinutes=60;
+              h.mummyWeaknessKnown=false;
+              const b=MONSTERS.find(m=>m.id==="mummy");
+              h.combat={round:1,enemies:[{...b,monsterId:b.id,id:0,lane:0,hp:20,maxhp:20,damage:b.damage[0],ammo:0,boss:false,iahd:1}],target:0,log:[],skipNext:false,isBoss:false,context:{eventId:null,eventTitle:null,environment:"underground",terrain:"ruins",daylight:false},range:"Hand-to-Hand",distanceFeet:5,rcTPL:1,rcIAHD:1,rcChallengePct:100,rcChallenge:"Risky"};
+              const old=Math.random;Math.random=()=>0.999;
+              playerStrikeSingle();
+              Math.random=old;
+              renderCombat();
+              return {known:h.mummyWeaknessKnown,hp:h.combat.enemies[0].hp,log:[...h.combat.log],burnHidden:document.querySelector('#mummyBurnBtn').classList.contains('hide'),burnDisabled:document.querySelector('#mummyBurnBtn').disabled};
+            });
+            assert(learned.known,'Mummy weakness was not learned');
+            assert(learned.hp===20,'Mundane hit damaged Mummy before learning');
+            assert(learned.log.some(x=>x.includes('WIS check — automatic success')),'Guaranteed WIS insight missing');
+            assert(!learned.burnHidden&&!learned.burnDisabled,'Burn Mummy not exposed after learning');
+
+            // Manual Burn Mummy: 5 light-minutes, direct fire damage.
+            const before=await page.evaluate(()=>({light:totalLightMinutes(),hp:h.combat.enemies[0].hp}));
+            await page.evaluate(()=>{Math.random=()=>0.999});
+            await page.click('#mummyBurnBtn');
+            const burned=await page.evaluate(()=>({light:totalLightMinutes(),hp:h.combat?.enemies?.[0]?.hp??null,known:h.mummyWeaknessKnown}));
+            assert(before.light===60&&burned.light===55,'Burn Mummy did not spend exactly 5 light-minutes');
+            assert(burned.hp!==null&&burned.hp<before.hp,'Burn Mummy dealt no fire damage');
+            assert(burned.known,'Mummy knowledge did not persist through action');
+
+            // Auto must discover Mummy weakness before using Mummy-specific Holy Water priority.
+            const autoMummy=await page.evaluate(()=>{
+              window.__smokeLogs=[];const original=clog;clog=(msg)=>{window.__smokeLogs.push(String(msg));original(msg)};
+              h.mummyWeaknessKnown=false;h.hp=100;h.maxhp=100;h.lightStock={torchMinutes:0,oilMinutes:0,legacyMinutes:0};h.lightMinutes=0;
+              h.inv=h.inv.filter(x=>x.n!=="Holy Water");h.inv.push({n:"Holy Water",kind:"gear",can:false,eq:false});
+              for(const x of h.inv)if(x.kind==="weapon")x.eq=x.n==="Sword";
+              const b=MONSTERS.find(m=>m.id==="mummy");
+              h.combat={round:1,enemies:[{...b,monsterId:b.id,id:0,lane:0,hp:2,maxhp:2,damage:b.damage[0],ammo:0,boss:false,iahd:1}],target:0,log:[],skipNext:false,isBoss:false,context:{eventId:null,eventTitle:null,environment:"underground",terrain:"ruins",daylight:false},range:"Hand-to-Hand",distanceFeet:5,rcTPL:1,rcIAHD:1,rcChallengePct:100,rcChallenge:"Risky"};
+              let flip=false;Math.random=()=>{flip=!flip;return flip?.95:.05};
+              runAutonomousCombat();
+              const logs=[...window.__smokeLogs];clog=original;
+              return {logs,known:h.mummyWeaknessKnown,holyLeft:h.inv.filter(x=>x.n==="Holy Water").length};
+            });
+            const wisIndex=autoMummy.logs.findIndex(x=>x.includes('WIS check — automatic success'));
+            const holyIndex=autoMummy.logs.findIndex(x=>x.includes('Holy Water'));
+            assert(autoMummy.known,'Auto did not learn Mummy weakness');
+            assert(wisIndex>=0,'Auto Mummy WIS discovery missing');
+            assert(holyIndex>wisIndex,'Auto used Mummy-specific Holy Water before learning');
+            assert(autoMummy.holyLeft===0,'Auto did not use learned Holy Water counter');
+
+            // Known Troll at 0 HP, only 9 light-minutes and no safe fire: Auto retreats instead of looping.
+            const autoTroll=await page.evaluate(()=>{
+              window.__smokeLogs=[];const original=clog;clog=(msg)=>{window.__smokeLogs.push(String(msg));original(msg)};
+              h.trollWeaknessKnown=true;h.hp=100;h.maxhp=100;h.lightStock={torchMinutes:9,oilMinutes:0,legacyMinutes:0};h.lightMinutes=9;
+              h.inv=h.inv.filter(x=>x.n!=="Holy Water"&&!x.rcItem);
+              for(const x of h.inv)if(x.kind==="weapon")x.eq=x.n==="Sword";
+              const b=MONSTERS.find(m=>m.id==="troll");
+              h.combat={round:1,enemies:[{...b,monsterId:b.id,id:0,lane:0,hp:0,maxhp:30,damage:b.damage[0],ammo:0,boss:false,iahd:10,regenStartRound:4,regenBlockedDamage:0,lastDamageType:"normal"}],target:0,log:[],skipNext:false,isBoss:false,context:{eventId:null,eventTitle:null,environment:"outdoor",terrain:null,daylight:false},range:"Hand-to-Hand",distanceFeet:5,rcTPL:6,rcIAHD:10,rcChallengePct:166,rcChallenge:"Extremely dangerous",trollLesson:false,trollLessonDowned:false};
+              Math.random=()=>.95;
+              runAutonomousCombat();
+              const logs=[...window.__smokeLogs];clog=original;
+              return {logs,combat:!!h.combat,light:totalLightMinutes(),hp:h.hp};
+            });
+            assert(autoTroll.logs.some(x=>x.includes('regeneration cannot be stopped')&&x.includes('retreat')),'Known downed Troll Auto retreat decision missing');
+            assert(autoTroll.combat===false,'Known downed Troll Auto remained stuck in combat');
+            assert(autoTroll.light===9,'Failed Troll finisher incorrectly consumed sub-10 light');
+            assert(autoTroll.hp>0,'Troll Auto smoke killed the character');
+
+            assert(errors.length===0,'Page errors: '+errors.join(' | '));
+            console.log('SMOKE PASS',JSON.stringify({learned,burned,autoMummy:{known:autoMummy.known,wisIndex,holyIndex,holyLeft:autoMummy.holyLeft},autoTroll:{combat:autoTroll.combat,light:autoTroll.light,hp:autoTroll.hp}}));
+            await browser.close();
+          })().catch(e=>{console.error(e);process.exit(1)});
+          NODE
