@@ -2385,15 +2385,6 @@ function applyEventChoice(ev,ch){
    let usedItem=eventRequirementItem(ch),i=h.inv.findIndex(x=>x.n===usedItem);
    if(i<0){addlog(ev.title+": the required sack is not available.");return}
    let large=ch.oreSack==="Large Sack";
-   h.inv[i]={n:large?"Large Sack of Ore":"Small Sack of Ore",kind:"gear",can:false,eq:false,eventKey:false,oreSack:true,emptySackName:large?"Large Sack":"Small Sack",oreValueCP:large?1000:500};
-   journal({id:ev.id,type:ev.type,title:ev.title,text:ev.text,choice:ch.label,result:"collectOre",xp:0,coins:[0,0,0],item:h.inv[i].n});
-   addlog(ev.title+": "+ch.label+". The sack is now full and can be sold in town.");
-   h.pendingEvent=null;endTripPause();save();renderPendingEvent();if(resumeAfter)tick();return
- }
- if(ch?.result==="collectOre"){
-   let usedItem=eventRequirementItem(ch),i=h.inv.findIndex(x=>x.n===usedItem);
-   if(i<0){addlog(ev.title+": the required sack is not available.");return}
-   let large=ch.oreSack==="Large Sack";
    h.inv[i]={n:large?"Large Sack of Ore":"Small Sack of Ore",kind:"gear",can:false,eq:false,eventKey:false,oreSack:true,emptySackName:large?"Large Sack":"Small Sack",oreValueCP:large?1000:500,bp:large?5:1};
    journal({id:ev.id,type:ev.type,title:ev.title,text:ev.text,choice:ch.label,result:"collectOre",xp:0,coins:[0,0,0],item:h.inv[i].n});
    addlog(ev.title+": "+ch.label+". The sack is now full and can be sold in town.");
