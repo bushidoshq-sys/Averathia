@@ -779,7 +779,8 @@ const AVERATHIA_BANE_NAMES={
 };
 function magicTierName(bonus){return AVERATHIA_MAGIC_TIER_NAMES[Math.max(1,Math.min(5,Math.trunc(Number(bonus)||1)))]||"Enchanted"}
 function magicPropertyName(raw){let key=String(raw||"").trim().toLowerCase();return AVERATHIA_BANE_NAMES[key]||String(raw||"").trim()}
-function formatMagicBonusCounter(bonus,vsBonus=0,vs=null){let base=`+${bonus}`;return vsBonus&&vs?`(${base} / +${vsBonus} vs ${magicPropertyName(vs).replace(/ Bane$/,"")})`:`(${base})`}
+function magicCounterTarget(raw){let key=String(raw||"").trim().toLowerCase(),map={"dragonkind":"Dragonkind","giantkind":"Giantkind","lycanthropes":"Lycanthropes","regenerating monsters":"Regenerating Monsters","spellcasters":"Spellcasters","undead":"Undead"};return map[key]||String(raw||"").trim()}
+function formatMagicBonusCounter(bonus,vsBonus=0,vs=null){let base=`+${bonus}`;return vsBonus&&vs?`(${base} / +${vsBonus} vs ${magicCounterTarget(vs)})`:`(${base})`}
 function formatMagicWeaponName(base,bonus,vsBonus=0,vs=null){let prop=vs?`${magicPropertyName(vs)} `:"";return `${magicTierName(bonus)} ${prop}${base} ${formatMagicBonusCounter(bonus,vsBonus,vs)}`}
 function formatMagicArmorName(size,type,bonus,power=null,cursed=false){
  let sizePart=size&&size!=="Human"?`${size} `:"",special=power?`${magicPropertyName(power)} `:"",curse=cursed?"Cursed ":"";
