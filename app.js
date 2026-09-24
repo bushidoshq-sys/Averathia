@@ -772,6 +772,12 @@ function sell(i){
  let q=h.inv[i];if(!q||q.noSell||q.bound)return;
  let price=sellPriceCP(q);if((price<=0&&!q.starterClothing)||!canSellResource(q.n))return;
  if(q.eq)q.eq=false;
+ if(q.oreSack){
+  let empty=q.emptySackName==="Large Sack"?"Large Sack":"Small Sack";
+  h.inv[i]={n:empty,kind:"gear",can:false,eq:false,eventKey:true};
+  setWalletCP(walletCP()+price);
+  save();return
+ }
  removeSoldResource(q.n);
  h.inv.splice(i,1);
  setWalletCP(walletCP()+price);
