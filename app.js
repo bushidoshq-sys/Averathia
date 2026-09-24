@@ -1009,9 +1009,10 @@ function rcRollLairType(type,level=h?.level||1){
  if(row.magic&&rcChance(row.magic[0]))out.magic.push(...rcRollMagicSpec(row.magic[1]));
  return out
 }
+function monsterKey(m){return m?.monsterId??m?.id}
 function rcMonsterTreasureProfile(m){
  let tt=String(m?.rcTreasureType||"Nil").trim();if(!tt||tt==="Nil")return{carried:[],lair:[]};
- if(m.id==="ogre")return{carried:[{type:"S",mult:10}],lair:[{type:"S",mult:100,carriedStyle:true},{type:"C",mult:1}]};
+ if(monsterKey(m)==="ogre")return{carried:[{type:"S",mult:10}],lair:[{type:"S",mult:100,carriedStyle:true},{type:"C",mult:1}]};
  let carried=[],lair=[],paren=tt.match(/^\(([P-V])\)\s*(.*)$/);
  if(paren){carried.push({type:paren[1],mult:1});tt=paren[2].trim()}
  for(const letter of tt.match(/[A-V]/g)||[]){if(/[P-V]/.test(letter))carried.push({type:letter,mult:1});else lair.push({type:letter,mult:1})}
@@ -1068,9 +1069,9 @@ function rcTreasureSummary(t){
 }
 
 function rcRollCombatTreasure(enemies=[],isBoss=false,level=h?.level||1){
- let out=rcBlankTreasure(isBoss?"boss-combat":"combat",isBoss?"boss":"ordinary"),ogres=enemies.filter(e=>e?.id==="ogre");
+ let out=rcBlankTreasure(isBoss?"boss-combat":"combat",isBoss?"boss":"ordinary"),ogres=enemies.filter(e=>monsterKey(e)==="ogre");
  for(const e of enemies){
-  if(e?.id==="ogre")continue; // RC Ogre prose overrides generic carried notation for the encountered group.
+  if(monsterKey(e)==="ogre")continue; // RC Ogre prose overrides generic carried notation for the encountered group.
   rcMergeTreasure(out,rcRollMonsterCarried(e,level))
  }
  if(ogres.length)out.coins.gp+=d(6)*100; // RC: an ogre group encountered outside its lair carries 1d6 x 100 gp.
@@ -1257,7 +1258,7 @@ function makeCombat(isBoss=false){
  if(trollLesson)picks=[picks.find(x=>x.id==="troll")];
  for(let i=0;i<picks.length;i++){
    let b=picks[i],hp=0;if(Number.isFinite(Number(b.hpDie)))hp=d(Number(b.hpDie));else for(let k=0;k<b.hdDice;k++)hp+=d(8);hp=Math.max(1,hp+(b.hdAdj||0));
-   en.push({...b,id:i,lane:i%3,hp,maxhp:hp,damage:b.damage[0],ammo:b.rangedDamage?d(6):0,boss:isBoss,iahd:rcAdjustedHD(b)})
+   en.push({...b,monsterId:b.id,id:i,lane:i%3,hp,maxhp:hp,damage:b.damage[0],ammo:b.rangedDamage?d(6):0,boss:isBoss,iahd:rcAdjustedHD(b)})
  }
  let total=+en.reduce((a,e)=>a+e.iahd,0).toFixed(2),tpl=rcTPL(),pct=rcChallengePct(total,tpl);
  let startBand=d(3);h.combat={round:1,enemies:en,target:0,log:[],skipNext:false,isBoss,range:RANGE_BANDS[startBand].name,distanceFeet:RANGE_BANDS[startBand].feet,rcTPL:tpl,rcIAHD:total,rcChallengePct:pct,rcChallenge:rcChallengeName(pct),trollLesson,trollLessonDowned:false};
@@ -1281,7 +1282,7 @@ function turnValue(type,level){
 function makeUndeadGroup(){
  let key=h.level>=2&&d(100)<=35?"ghoul":(d(100)<=55?"zombie":"skeleton"),b=UNDEAD[key];
  let count=key==="ghoul"?d(2):d(4),en=[];
- for(let i=0;i<count;i++){let hp=0;for(let k=0;k<b.hdDice;k++)hp+=d(8);hp=Math.max(1,hp);en.push({...b,id:i,lane:i%3,hp,maxhp:hp})}
+ for(let i=0;i<count;i++){let hp=0;for(let k=0;k<b.hdDice;k++)hp+=d(8);hp=Math.max(1,hp);en.push({...b,monsterId:b.id,id:i,lane:i%3,hp,maxhp:hp})}
  return en
 }
 function startUndeadCombat(en,opening){
@@ -1453,10 +1454,10 @@ function enemyStrike(filter=null,tickRegen=true){
    }
    if(special==="paralysis"){
     if(paralysisImmune())clog(`Potion of Freedom prevents ${e.n} paralysis.`);
-    else if(e.id==="ghoul"&&h.className==="Elf")clog(`${h.name} elven nature resists the ghoul paralyzing touch.`);
+    else if(monsterKey(e)==="ghoul"&&h.className==="Elf")clog(`${h.name} elven nature resists the ghoul paralyzing touch.`);
     else{let sv=savingThrow("Paralysis/Stone");clog(`Paralysis save ${sv.roll} vs ${sv.target}: ${sv.success?"success":"FAIL"}.`);if(!sv.success){h.combat.paralyzed=true;h.combat.paralyzedRounds=(d(4)+d(4))*RC_ROUNDS_PER_TURN;clog(`${h.name} is paralyzed for ${Math.ceil(h.combat.paralyzedRounds/RC_ROUNDS_PER_TURN)} turn(s) and cannot act.`)}}
    }
-   if(special==="disease"){if(e.mummy)contractTombRot(e);else if(e.id==="giant_rat")contractPlague(e);else contractWastingFever(e.n)}
+   if(special==="disease"){if(e.mummy)contractTombRot(e);else if(monsterKey(e)==="giant_rat")contractPlague(e);else contractWastingFever(e.n)}
    if(h.hp<=0)return combatDeath()
   }
   if(e.bearHug&&clawHits>=2&&h.hp>0){let dmg=rollExpr(e.bearHug);h.hp=Math.max(0,h.hp-dmg);clog(`${e.n} catches ${h.name} in a crushing bear hug for ${dmg}.`);if(h.hp<=0)return combatDeath()}
