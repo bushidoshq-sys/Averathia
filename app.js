@@ -50,7 +50,7 @@ function addClassStartingItems(){
  if(weapon)h.inv.push({n:weapon,kind:"weapon",can:true,eq:false,bound:true,noSell:true});
  addStarterClothing()
 }
-$("#chooseCharacter").onclick=()=>{if(!cs[0])return;let c=structuredClone(cs[0]);h={...c,maxhp:c.hp,xp:0,level:1,name:$("#charName").value.trim()||fullName(),sex,avatar,className:chosenClass,mechanicsClass:chosenClass,gp:0,sp:0,cp:0,inv:[],rations:0,water:0,waterCapacity:0,lightStock:{torchMinutes:0,oilMinutes:0,legacyMinutes:0},lightMinutes:0,buffAgeAt:Date.now()};h.gp=c.gold;addClassStartingItems();$("#create").classList.add("hide");$("#game").classList.remove("hide");save();home();page("town")};
+$("#chooseCharacter").onclick=()=>{if(!cs[0])return;let c=structuredClone(cs[0]);h={...c,maxhp:c.hp,xp:0,level:1,name:$("#charName").value.trim()||fullName(),sex,avatar,className:chosenClass,mechanicsClass:chosenClass,gp:0,sp:0,cp:0,inv:[],rations:0,water:0,waterCapacity:0,lightStock:{torchMinutes:0,oilMinutes:0,legacyMinutes:0},lightMinutes:0,buffAgeAt:Date.now(),diseases:[]};h.gp=c.gold;addClassStartingItems();$("#create").classList.add("hide");$("#game").classList.remove("hide");save();home();page("town")};
 const CLASS_LEVELS={
  Fighter:{cap:36,hd:8,xp:[0,2000,4000,8000,16000,32000,64000,120000,240000,360000,480000,600000,720000,840000,960000,1080000,1200000,1320000,1440000,1560000,1680000,1800000,1920000,2040000,2160000,2280000,2400000,2520000,2640000,2760000,2880000,3000000,3120000,3240000,3360000,3480000]},
  Cleric:{cap:36,hd:6,xp:[0,1500,3000,6000,12000,25000,50000,100000,200000,300000,400000,500000,600000,700000,800000,900000,1000000,1100000,1200000,1300000,1400000,1500000,1600000,1700000,1800000,1900000,2000000,2100000,2200000,2300000,2400000,2500000,2600000,2700000,2800000,2900000]},
@@ -104,10 +104,69 @@ function startLongRest(){
  if(h.trip||h.combat||h.deadUntil)return false;
  h.restUntil=Date.now()+realMsForATHours(8);save();return true
 }
-function mummyDiseaseActive(){return !!h?.mummyDisease}
+function diseaseNowFor(obj=h){
+ if(obj===h)return averathiaNow();
+ let wc=obj?.worldClock;if(wc&&Number.isFinite(Number(wc.atAnchor))&&Number.isFinite(Number(wc.realAnchor)))return Number(wc.atAnchor)+(Date.now()-Number(wc.realAnchor))*AT_RATE;
+ return Date.now()
+}
+function syncDiseaseCondition(obj=h){
+ if(!obj)return;obj.conditions=Array.isArray(obj.conditions)?obj.conditions:[];
+ obj.conditions=obj.conditions.filter(x=>x!=="Diseased");if(Array.isArray(obj.diseases)&&obj.diseases.length)obj.conditions.push("Diseased")
+}
+function ensureDiseases(obj=h){
+ if(!obj)return[];obj.diseases=Array.isArray(obj.diseases)?obj.diseases:[];
+ if(obj.mummyDisease&&!obj.diseases.some(x=>x.type==="mummy"))obj.diseases.push({id:`legacy-tomb-rot-${Date.now()}`,type:"mummy",name:"Tomb Rot",source:"Mummy",contractedAtAT:diseaseNowFor(obj),magicalHealingBlocked:true,naturalHealingMultiplier:.1});
+ obj.mummyDisease=obj.diseases.some(x=>x.type==="mummy");syncDiseaseCondition(obj);return obj.diseases
+}
+function hasDisease(){return ensureDiseases().length>0}
+function mummyDiseaseActive(){return ensureDiseases().some(x=>x.type==="mummy")}
+function magicalHealingBlockedByDisease(){return ensureDiseases().some(x=>x.magicalHealingBlocked)}
+function diseaseNaturalHealingMultiplier(){let m=1;for(const x of ensureDiseases())if(Number.isFinite(Number(x.naturalHealingMultiplier)))m=Math.min(m,Number(x.naturalHealingMultiplier));return m}
+function diseaseBedRestUntilAT(){return ensureDiseases().reduce((m,x)=>Math.max(m,Number(x.bedRestUntilAT)||0),0)}
+function diseaseJourneyBlocked(){return diseaseBedRestUntilAT()>averathiaNow()}
+function diseaseSave(){let con=mod(h.stats.CON),sv=savingThrow("Death/Poison",con);return{...sv,conBonus:con}}
+function addDisease(dis){
+ let ds=ensureDiseases(),existing=ds.find(x=>x.type===dis.type);if(existing)return existing;
+ let item={id:dis.id||`${dis.type}-${Date.now()}-${d(100000)}`,contractedAtAT:averathiaNow(),...dis};ds.push(item);h.mummyDisease=ds.some(x=>x.type==="mummy");syncDiseaseCondition();return item
+}
+function nextDiseaseForCure(){
+ let ds=ensureDiseases();if(!ds.length)return null;
+ return [...ds].sort((a,b)=>(Number(!!b.magicalHealingBlocked)-Number(!!a.magicalHealingBlocked))||(Number(!!b.fatalAtAT)-Number(!!a.fatalAtAT))||(Number(a.contractedAtAT)||0)-(Number(b.contractedAtAT)||0))[0]
+}
+function cureOneDisease(){let target=nextDiseaseForCure();if(!target)return null;h.diseases=ensureDiseases().filter(x=>x.id!==target.id);h.mummyDisease=h.diseases.some(x=>x.type==="mummy");syncDiseaseCondition();return target}
+function diseaseTimeLeftText(until){let ms=Math.max(0,Number(until)-averathiaNow()),hours=ms/3600000;return hours<24?`${Math.max(1,Math.ceil(hours))}h`:`${Math.max(1,Math.ceil(hours/24))}d`}
+function diseaseStatusText(){
+ let now=averathiaNow();return ensureDiseases().map(x=>{let bits=[x.name||"Disease"];if(x.magicalHealingBlocked)bits.push("magical healing blocked");if(Number(x.bedRestUntilAT)>now)bits.push(`bed rest ${diseaseTimeLeftText(x.bedRestUntilAT)}`);return bits.join(" · ")}).join(" | ")
+}
+function diseaseDeath(dis){
+ h.diseases=ensureDiseases().filter(x=>x.id!==dis.id);h.mummyDisease=h.diseases.some(x=>x.type==="mummy");syncDiseaseCondition();
+ h.lastAdventure=`FAILED — ${h.name} died from ${dis.name||"disease"}.`;recoverThrownWeapons();h.trip=null;h.pendingEvent=null;h.combat=null;h.deadUntil=Date.now()+h.level*5*60000;h.hp=0;
+ localStorage.setItem("averathia-v041",JSON.stringify(h));renderDeathPage();return true
+}
+function updateDiseases(){
+ if(!h)return false;let now=averathiaNow(),changed=false;
+ for(const x of [...ensureDiseases()]){
+  if(x.fatalAtAT&&now>=x.fatalAtAT)return diseaseDeath(x);
+  if(x.autoRecoverAtAT&&now>=x.autoRecoverAtAT){h.diseases=h.diseases.filter(y=>y.id!==x.id);changed=true}
+ }
+ if(changed){h.mummyDisease=h.diseases.some(x=>x.type==="mummy");syncDiseaseCondition();localStorage.setItem("averathia-v041",JSON.stringify(h))}
+ return false
+}
+function contractWastingFever(source="Wasting Fever"){
+ let sv=diseaseSave();clog(`Wasting Fever save ${sv.roll} vs ${sv.target}${sv.conBonus?` (CON ${sv.conBonus>0?"+":""}${sv.conBonus})`:""}: ${sv.success?"success":"FAIL"}.`);if(sv.success)return false;
+ let days=d(6),until=averathiaNow()+days*86400000,fatal=d(4)===1;addDisease({type:"general",name:"Wasting Fever",source,bedRestUntilAT:until,autoRecoverAtAT:fatal?null:until,fatalAtAT:fatal?until:null});
+ clog(`Wasting Fever contracted — ${days} day(s) of complete bed rest required.`);return true
+}
+function contractPlague(e){
+ if(d(20)!==1)return false;e.xp=Math.max(Number(e.xp)||0,6);clog(`${e.n} carries Plague.`);
+ let sv=diseaseSave();clog(`Plague save ${sv.roll} vs ${sv.target}${sv.conBonus?` (CON ${sv.conBonus>0?"+":""}${sv.conBonus})`:""}: ${sv.success?"success":"FAIL"}.`);if(sv.success)return false;
+ let fatal=d(4)===1;if(fatal){let days=d(6),until=averathiaNow()+days*86400000;addDisease({type:"rat",name:"Plague",source:e.n,bedRestUntilAT:until,fatalAtAT:until});clog(`Plague contracted. Bed rest is mandatory.`)}
+ else{let until=averathiaNow()+30*86400000;addDisease({type:"rat",name:"Plague",source:e.n,bedRestUntilAT:until,autoRecoverAtAT:until});clog(`Plague contracted — one month of bed rest required.`)}return true
+}
+function contractTombRot(e){let x=addDisease({type:"mummy",name:"Tomb Rot",source:e?.n||"Mummy",magicalHealingBlocked:true,naturalHealingMultiplier:.1});clog(`Tomb Rot contracted — magical healing is blocked and natural healing is reduced until Cure Disease.`);return x}
 function updateRest(){
  if(h?.restUntil&&Date.now()>=h.restUntil){
-   h.restUntil=null;let rate=mummyDiseaseActive()?.025:.25;h.hp=Math.min(h.maxhp,h.hp+Math.ceil(h.maxhp*rate));resetDailySpells();save();return true
+   h.restUntil=null;let rate=.25*diseaseNaturalHealingMultiplier();h.hp=Math.min(h.maxhp,h.hp+Math.ceil(h.maxhp*rate));resetDailySpells();save();return true
  }return false
 }
 function save(){if(h){ensureLightStock();normalizeInventoryOrder();checkLevelUps()}localStorage.setItem("averathia-v041",JSON.stringify(h));refresh()}
@@ -122,7 +181,7 @@ function refresh(){updateNavigationLock();if(h)ageTimedBuffsClock(Date.now());if
  if($("#longRestBtn")){$("#longRestBtn").disabled=!!h.restUntil||!!h.deadUntil;$("#longRestBtn").onclick=()=>startLongRest()}
  if($("#restStatus"))$("#restStatus").textContent=h.deadUntil?`Recall: ${Math.ceil((h.deadUntil-Date.now())/60000)} min`:h.restUntil?`Resting: ${Math.max(0,Math.ceil((h.restUntil-Date.now())/60000))} min RT remaining`:"";
  let classLabel=["Elf","Dwarf"].includes(h.className)?h.className:`Human ${h.className}`;$("#top").innerHTML=`<div class="topIdentity"><b>${h.name}</b> — Level ${h.level} ${classLabel}</div><div class="topVitals">❤️ ${h.hp}/${h.maxhp} &nbsp;&nbsp; ⭐ ${h.xp} XP${h.level<classLevelData().cap?` / ${classLevelData().xp[h.level]}`:" · MAX"}</div><div class="topCoins">🪙 ${Math.trunc(h.gp ?? h.gold ?? 0)} GP &nbsp;·&nbsp; ${Math.trunc(h.sp ?? 0)} SP &nbsp;·&nbsp; ${Math.trunc(h.cp ?? 0)} CP</div>`;let av=chibiHTML(h.sex,h.avatar,true);$("#townAvatar").innerHTML=$("#sheetAvatar").innerHTML=av;let coins=`${Math.trunc(h.gp||0)} GP · ${Math.trunc(h.sp||0)} SP · ${Math.trunc(h.cp||0)} CP`;$("#sheetData").innerHTML=`<b>${h.name}</b> &nbsp; ${h.sex} · ${["Elf","Dwarf"].includes(h.className)?h.className:`Human ${h.className}`}`;let order=["STR","DEX","CON","INT","WIS","CHA"];$("#sheetStats").innerHTML=order.map(k=>`<div class=stat>${k}<br><b>${h.stats[k]}</b></div>`).join("");let ammo=`Arrows: ${ammoCount("Arrows")} · Quarrels: ${ammoCount("Quarrels")} · Sling stones: ${ammoCount("Sling Stones")}`;$("#sheetResources").innerHTML=`Rations: ${h.rations.toFixed(2)} days · Water: ${h.water.toFixed(2)}/${h.waterCapacity} skins · Light: ${(totalLightMinutes()/60).toFixed(2)} h · ${ammo}`;sheetInventory();renderShop();let needs=survivalNeedsForMinutes(mins),needLight=mins*2/3;$("#requirements").innerHTML=`<p>Needed for ${mins} min (${(mins*AT_RATE/60).toFixed(1)} AT h): food ${needs.foodDays.toFixed(3)} days · water ${needs.waterSkins.toFixed(3)} skins · light ${needLight.toFixed(1)} min (2/3 of adventure).</p>`}
-function renderDeathPage(){if(!h?.deadUntil)return;clearTimeout(timer);$$$(".page").forEach(x=>x.classList.add("hide"));let p=$("#death");if(!p)return;p.classList.remove("hide");let left=Math.max(0,h.deadUntil-Date.now()),m=Math.floor(left/60000),s=Math.floor(left/1000)%60;$("#graveName").textContent=h.name;$("#deathCountdown").textContent=`${m}:${String(s).padStart(2,"0")}`;$("#top").innerHTML=`<b>${h.name}</b> — DEAD`;timer=setTimeout(()=>{if(Date.now()>=h.deadUntil){h.deadUntil=null;h.hp=Math.max(1,h.maxhp);h.trip=null;h.combat=null;save();page("town")}else renderDeathPage()},500)}
+function renderDeathPage(){if(!h?.deadUntil)return;clearTimeout(timer);$(".page").forEach(x=>x.classList.add("hide"));let p=$("#death");if(!p)return;p.classList.remove("hide");let left=Math.max(0,h.deadUntil-Date.now()),m=Math.floor(left/60000),s=Math.floor(left/1000)%60;$("#graveName").textContent=h.name;$("#deathCountdown").textContent=`${m}:${String(s).padStart(2,"0")}`;$("#top").innerHTML=`<b>${h.name}</b> — DEAD`;timer=setTimeout(()=>{if(Date.now()>=h.deadUntil){h.deadUntil=null;h.hp=Math.max(1,h.maxhp);h.trip=null;h.combat=null;save();page("town")}else renderDeathPage()},500)}
 function updateNavigationLock(){
  let lockedTarget=h?.combat?"combat":h?.trip?"depart":null;
  $$("[data-page]").forEach(b=>{let allowed=!lockedTarget||b.dataset.page===lockedTarget;b.disabled=!allowed;b.classList.toggle("journeyLocked",!allowed)});
@@ -1964,6 +2023,8 @@ function migratePersistentCharacter(saved){
  s.inv=s.inv.filter(x=>!isResourceSku(x?.n));
  s.trophies=Array.isArray(s.trophies)?s.trophies:[];
  s.conditions=Array.isArray(s.conditions)?s.conditions:[];
+ s.diseases=Array.isArray(s.diseases)?s.diseases:[];
+ ensureDiseases(s);
  s.sex=s.sex==="Female"?"Female":"Male";
  s.avatar=Number.isInteger(s.avatar)&&s.avatar>=0&&s.avatar<=2?s.avatar:0;
  s.spells=(s.spells&&typeof s.spells==="object")?s.spells:{};
