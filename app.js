@@ -50,7 +50,7 @@ function addClassStartingItems(){
  if(weapon)h.inv.push({n:weapon,kind:"weapon",can:true,eq:false,bound:true,noSell:true});
  addStarterClothing()
 }
-$("#chooseCharacter").onclick=()=>{if(!cs[0])return;let c=structuredClone(cs[0]);h={...c,maxhp:c.hp,xp:0,level:1,name:$("#charName").value.trim()||fullName(),sex,avatar,className:chosenClass,mechanicsClass:chosenClass,gp:0,sp:0,cp:0,inv:[],rations:0,water:0,waterCapacity:0,lightStock:{torchMinutes:0,oilMinutes:0,legacyMinutes:0},lightMinutes:0};h.gp=c.gold;addClassStartingItems();$("#create").classList.add("hide");$("#game").classList.remove("hide");save();home();page("town")};
+$("#chooseCharacter").onclick=()=>{if(!cs[0])return;let c=structuredClone(cs[0]);h={...c,maxhp:c.hp,xp:0,level:1,name:$("#charName").value.trim()||fullName(),sex,avatar,className:chosenClass,mechanicsClass:chosenClass,gp:0,sp:0,cp:0,inv:[],rations:0,water:0,waterCapacity:0,lightStock:{torchMinutes:0,oilMinutes:0,legacyMinutes:0},lightMinutes:0,buffAgeAt:Date.now()};h.gp=c.gold;addClassStartingItems();$("#create").classList.add("hide");$("#game").classList.remove("hide");save();home();page("town")};
 const CLASS_LEVELS={
  Fighter:{cap:36,hd:8,xp:[0,2000,4000,8000,16000,32000,64000,120000,240000,360000,480000,600000,720000,840000,960000,1080000,1200000,1320000,1440000,1560000,1680000,1800000,1920000,2040000,2160000,2280000,2400000,2520000,2640000,2760000,2880000,3000000,3120000,3240000,3360000,3480000]},
  Cleric:{cap:36,hd:6,xp:[0,1500,3000,6000,12000,25000,50000,100000,200000,300000,400000,500000,600000,700000,800000,900000,1000000,1100000,1200000,1300000,1400000,1500000,1600000,1700000,1800000,1900000,2000000,2100000,2200000,2300000,2400000,2500000,2600000,2700000,2800000,2900000]},
@@ -116,7 +116,7 @@ function ensureTrophies(){if(h&&!Array.isArray(h.trophies))h.trophies=[]}
 function unlockTrophy(name){ensureTrophies();if(!h||h.trophies.includes(name))return false;let valid=(TROPHY_COLLECTIONS[h.className]||[]).some(x=>x[0]===name);if(!valid)return false;h.trophies.push(name);save();return true}
 function renderTrophies(){let grid=$("#trophyGrid"),intro=$("#trophyIntro");if(!grid||!h)return;ensureTrophies();let list=TROPHY_COLLECTIONS[h.className]||[],got=new Set(h.trophies);intro.textContent=`${TROPHY_TITLES[h.className]||"Collection"} — ${list.filter(x=>got.has(x[0])).length}/${list.length} discovered`;grid.innerHTML=list.map(([name,kind])=>got.has(name)?`<div class="trophyCard unlocked"><div class=trophyIcon>✦</div><b>${name}</b><span>${kind}</span></div>`:`<div class="trophyCard locked"><div class=trophyIcon>?</div><b>???</b><span>Undiscovered</span></div>`).join("")}
 
-function refresh(){updateNavigationLock();if(h?.deadUntil&&Date.now()<h.deadUntil){renderDeathPage();return}renderTrophies();if(h)renderSkills();if($("#lastAdventure")){if(h?.lastAdventure){$("#lastAdventure").classList.remove("hide");$("#lastAdventureText").textContent=h.lastAdventure}else $("#lastAdventure").classList.add("hide")}renderPendingEvent();if(!h)return;updateRest();
+function refresh(){updateNavigationLock();if(h)ageTimedBuffsClock(Date.now());if(h?.deadUntil&&Date.now()<h.deadUntil){renderDeathPage();return}renderTrophies();if(h)renderSkills();if($("#lastAdventure")){if(h?.lastAdventure){$("#lastAdventure").classList.remove("hide");$("#lastAdventureText").textContent=h.lastAdventure}else $("#lastAdventure").classList.add("hide")}renderPendingEvent();if(!h)return;updateRest();
  if(h.deadUntil&&Date.now()>=h.deadUntil){h.deadUntil=null;h.hp=Math.max(1,h.maxhp);h.trip=null;h.combat=null;save();page("town");return}
  if($("#worldClock"))$("#worldClock").textContent=atClockText();
  if($("#longRestBtn")){$("#longRestBtn").disabled=!!h.restUntil||!!h.deadUntil;$("#longRestBtn").onclick=()=>startLongRest()}
@@ -527,8 +527,18 @@ function resolveMissionBoss(){
  }else addlog(`Objective secured: ${m.title}. No rare trophy was found this time.`);
 }
 
-function beginTripPause(){if(h?.trip&&!h.trip.pauseStart)h.trip.pauseStart=Date.now()}
-function endTripPause(){if(!h?.trip?.pauseStart)return;let dt=Date.now()-h.trip.pauseStart;for(const k of ["start","end","half","nextEvent","resourceAt"])if(Number.isFinite(h.trip[k]))h.trip[k]+=dt;h.trip.pauseStart=null}
+function ageTimedBuffsClock(now=Date.now()){
+ if(!h)return 0;ensureSpellState();now=Number(now)||Date.now();
+ let last=Number(h.buffAgeAt);if(!Number.isFinite(last)){h.buffAgeAt=now;return 0}
+ if(h.combat||h.pendingEvent||h.trip?.pauseStart){h.buffAgeAt=now;return 0}
+ let dt=Math.max(0,now-last);h.buffAgeAt=now;if(!dt)return 0;
+ let rounds=dt*AT_RATE/10000;if(rounds<=0)return 0,expired=[];
+ for(const b of h.spells.buffs){if(Number.isFinite(Number(b.rounds))){b.rounds=Math.max(0,Number(b.rounds)-rounds);if(b.rounds<=0)expired.push(b)}}
+ if(expired.length)h.spells.buffs=h.spells.buffs.filter(b=>!expired.includes(b));
+ return rounds
+}
+function beginTripPause(){if(h?.trip&&!h.trip.pauseStart){ageTimedBuffsClock(Date.now());h.trip.pauseStart=Date.now();h.buffAgeAt=h.trip.pauseStart}}
+function endTripPause(){if(!h?.trip?.pauseStart)return;let now=Date.now(),dt=now-h.trip.pauseStart;for(const k of ["start","end","half","nextEvent","resourceAt"])if(Number.isFinite(h.trip[k]))h.trip[k]+=dt;h.trip.pauseStart=null;h.buffAgeAt=now}
 const ADVENTURE_EVENT_COUNTS={1:1,5:5,10:5,30:6,60:6,120:8,480:8,1440:10};
 function adventureEventTarget(minutes){
  minutes=Math.max(1,Math.round(Number(minutes)||1));
@@ -556,7 +566,7 @@ function ensureTripSchedule(trip=h?.trip){
 function consumeTripSurvivalResources(now=Date.now()){
  if(!h?.trip||!["elapsed-v1","at-elapsed-v2"].includes(h.trip.resourceModel))return true;
  let last=Number.isFinite(h.trip.resourceAt)?h.trip.resourceAt:h.trip.start,t=Math.max(last,Math.min(now,h.trip.end)),dt=Math.max(0,t-last),scale=h.trip.resourceModel==="at-elapsed-v2"?AT_RATE:1;
- if(dt>0){h.rations=Math.max(0,(h.rations||0)-scale*dt/86400000);h.water=Math.max(0,(h.water||0)-4*scale*dt/86400000);h.trip.resourceAt=t}
+ if(dt>0){ageTimedBuffsClock(t);h.rations=Math.max(0,(h.rations||0)-scale*dt/86400000);h.water=Math.max(0,(h.water||0)-4*scale*dt/86400000);h.trip.resourceAt=t}
  if(h.water<=0&&t<h.trip.half&&!h.trip.forcedReturnWater){h.trip.forcedReturnWater=true;returnEarly("You are out of water. You turn back toward town.");return false}
  return true
 }
@@ -1528,8 +1538,8 @@ function rcSpeedHitBonus(){return rcSpeedLevel()*2}
 function spellAttackBonus(){ensureSpellState();return h.spells.buffs.reduce((a,b)=>a+(b.attack||0),0)+rcSpeedHitBonus()}
 function spellACBonus(){ensureSpellState();return h.spells.buffs.reduce((a,b)=>a+(b.ac||0),0)}
 function effectiveAC(isMissile=false){let ac=combatStats().ac;for(const b of h.spells.buffs){let fixed=isMissile?b.fixedMissileAC:b.fixedAC;if(fixed!=null)ac=Math.min(ac,fixed)}return ac+spellACBonus()}
-function tickSpellBuffs(){ensureSpellState();h.spells.buffs.forEach(b=>b.rounds--);h.spells.buffs=h.spells.buffs.filter(b=>b.rounds>0)}
-function resetDailySpells(){ensureSpellState();h.spells.used={};h.spells.spentMem=[];h.spells.buffs=[]}
+function tickSpellBuffs(){ensureSpellState();h.spells.buffs.forEach(b=>b.rounds--);h.spells.buffs=h.spells.buffs.filter(b=>b.rounds>0);h.buffAgeAt=Date.now()}
+function resetDailySpells(){ensureSpellState();h.spells.used={};h.spells.spentMem=[];h.spells.buffs=[];h.buffAgeAt=Date.now()}
 function beginHoldGroupSelection(s,menu){
  let valid=validHoldTargets(s),chosen=[];
  if(valid.length<2){menu.classList.add("hide");return renderCombat()}
@@ -1917,6 +1927,8 @@ function migratePersistentCharacter(saved){
  s.spells.buffs=Array.isArray(s.spells.buffs)?s.spells.buffs:[];
  s.spells.memorized=(s.spells.memorized&&typeof s.spells.memorized==="object"&&!Array.isArray(s.spells.memorized))?s.spells.memorized:{};
  s.spells.spentMem=Array.isArray(s.spells.spentMem)?s.spells.spentMem:[];
+ s.buffAgeAt=Number.isFinite(Number(s.buffAgeAt))?Number(s.buffAgeAt):Date.now();
+ if(s.combat||s.pendingEvent||s.trip?.pauseStart)s.buffAgeAt=Date.now();
  if(s.trip&&typeof s.trip==="object"){
   let t=s.trip;
   if(!Number.isFinite(Number(t.start))||!Number.isFinite(Number(t.end))||Number(t.end)<=Number(t.start))s.trip=null;
