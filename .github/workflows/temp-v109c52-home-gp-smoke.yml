@@ -1,0 +1,73 @@
+name: temp-v109c52-home-gp-smoke
+on:
+  pull_request:
+    branches: [main]
+
+jobs:
+  mobile-smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Install Chromium
+        run: |
+          npm init -y >/dev/null 2>&1
+          npm install playwright@1.55.0 >/dev/null 2>&1
+          npx playwright install --with-deps chromium >/dev/null
+      - name: Run 390x844 Home GP sack smoke
+        run: |
+          python3 -m http.server 4173 >/tmp/averathia-http.log 2>&1 &
+          cat > home-gp-smoke.mjs <<'EOF'
+          import { chromium } from 'playwright';
+
+          const browser=await chromium.launch({headless:true});
+          const page=await browser.newPage({viewport:{width:390,height:844}});
+          const errors=[];page.on('pageerror',e=>errors.push(String(e)));
+
+          await page.goto('http://127.0.0.1:4173/index.html',{waitUntil:'networkidle'});
+          await page.evaluate(()=>{
+            localStorage.setItem('averathia-v041',JSON.stringify({
+              name:'Sack Test',className:'Fighter',mechanicsClass:'Fighter',
+              level:1,xp:0,maxhp:8,hp:8,
+              stats:{STR:15,DEX:12,CON:14,INT:10,WIS:11,CHA:13},
+              gp:250,gold:250,sp:0,cp:0,
+              homeTier:1,
+              homeStorage:[
+                {n:'Small Sack',kind:'gear',can:false,eq:false,eventKey:true},
+                {n:'Large Sack',kind:'gear',can:false,eq:false,eventKey:true}
+              ],
+              inv:[]
+            }));
+          });
+          await page.reload({waitUntil:'networkidle'});
+          await page.locator('[data-page="home"]').click();
+          await page.waitForSelector('#home:not(.hide)');
+
+          let text=await page.locator('#homeContent').innerText();
+          if(!text.includes('GP 0/200')||!text.includes('GP 0/600'))throw new Error('Sack capacity UI missing: '+text);
+
+          await page.locator('[data-home-gp-store="0"]').click();
+          text=await page.locator('#homeContent').innerText();
+          if(!text.includes('Small Sack of GP')||!text.includes('201 BP stored')||!text.includes('GP 200/200'))throw new Error('Small sack fill wrong: '+text);
+
+          let state=await page.evaluate(()=>JSON.parse(localStorage.getItem('averathia-v041')));
+          if(state.gp!==50||state.homeStorage[0].storedGP!==200||state.homeStorage[0].eventKey!==false)throw new Error('Small sack state wrong: '+JSON.stringify(state.homeStorage[0])+' gp='+state.gp);
+
+          await page.locator('[data-home-gp-store="1"]').click();
+          text=await page.locator('#homeContent').innerText();
+          if(!text.includes('GP 50/600')||!text.includes('55 BP stored'))throw new Error('Partial large sack wrong: '+text);
+
+          await page.locator('[data-home-gp-take="0"]').click();
+          state=await page.evaluate(()=>JSON.parse(localStorage.getItem('averathia-v041')));
+          if(state.gp!==200||state.homeStorage[0].n!=='Small Sack'||state.homeStorage[0].eventKey!==true)throw new Error('Take GP restore wrong: '+JSON.stringify(state.homeStorage[0])+' gp='+state.gp);
+
+          const metrics=await page.evaluate(()=>({viewport:innerWidth,scrollWidth:document.documentElement.scrollWidth,homeWidth:document.getElementById('homeContent').getBoundingClientRect().width}));
+          if(metrics.scrollWidth>metrics.viewport+1)throw new Error('Horizontal overflow '+JSON.stringify(metrics));
+          if(errors.length)throw new Error('Page errors: '+errors.join(' | '));
+          console.log('PASS',JSON.stringify(metrics));
+          await browser.close();
+          EOF
+          node home-gp-smoke.mjs
