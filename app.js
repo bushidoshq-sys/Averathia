@@ -1661,17 +1661,27 @@ function resolveSpellEffect(s,t=null,autonomous=false,holdMode=null,missileTarge
 }
 function castCombatSpell(id,holdMode=null,missileTargetIds=null,holdTargetIds=null){
  let s=(SPELLS[h.className]||[]).find(x=>x.id===id),c=h.combat;if(!s||!c||!availableCombatSpells().some(x=>x.id===id))return;if(s.kind==="hold"&&!holdMode)holdMode=validHoldTargets(s).length===1?"single":"group";if(c.paralyzed){clog(`${h.name} is paralyzed and cannot cast.`);return renderCombat()}if(s.enemyTarget&&Number.isFinite(s.rangeFeet)&&combatDistance()>s.rangeFeet){clog(`${s.name} is out of range: target is ${combatDistance()} ft away; spell range is ${s.rangeFeet} ft.`);return renderCombat()}
- // RC: casting is the caster's action for the round. If the enemy wins initiative and disturbs the caster, the spell is lost.
- let pr=d(6),er=d(6);while(pr===er){pr=d(6);er=d(6)}clog(`Spell initiative: you ${pr}, enemies ${er}.`);
+ // RC: casting is the caster's action for the round. Zombies always lose initiative and therefore cannot pre-empt/disrupt the caster.
+ let pr=d(6),er=d(6);while(pr===er){pr=d(6);er=d(6)}
+ let delayedZombies=living().some(e=>e.alwaysLoseInitiative),normalEnemies=living().some(e=>!e.alwaysLoseInitiative);
+ if(!normalEnemies)clog("Spell initiative: Zombies always lose initiative; you cast first.");
+ else clog(`Spell initiative: you ${pr}, enemies ${er}.`);
  if(!consumeSpell(s))return;
- if(er>pr){
+ if(normalEnemies&&er>pr){
    let hpBefore=h.hp,conditionsBefore=(h.conditions||[]).length;
-   enemyStrike();if(!h.combat)return;
-   if(h.hp<hpBefore||(h.conditions||[]).length>conditionsBefore){clog(`${s.name} is disrupted and lost.`);tickSpellBuffs();tickEnemySpellEffects();tickPlayerConditions();c.round++;save();renderCombat();return}
+   enemyStrike(e=>!e.alwaysLoseInitiative,!delayedZombies);if(!h.combat)return;
+   if(h.hp<hpBefore||(h.conditions||[]).length>conditionsBefore){
+     clog(`${s.name} is disrupted and lost.`);
+     if(h.combat&&h.hp>0&&living().some(e=>e.alwaysLoseInitiative))enemyStrike(e=>e.alwaysLoseInitiative,true);
+     else if(h.combat&&delayedZombies)tickMonsterRegeneration();
+     if(h.combat){tickSpellBuffs();tickEnemySpellEffects();tickPlayerConditions();c.round++;save();renderCombat()}return
+   }
  }
  let t=c.enemies[c.target];if(!t||t.hp<=0)t=living()[0];if(s.missilesByLevel&&!missileTargetIds&&autonomousCombatRunning)missileTargetIds=autonomousMissileTargetIds(magicMissileCount());resolveSpellEffect(s,t,autonomousCombatRunning,holdMode,missileTargetIds,holdTargetIds);
  if(!h.combat)return;if(!living().length)return finishCombat();
- if(pr>er)enemyStrike();
+ if(!normalEnemies||pr>er)enemyStrike();
+ else if(h.combat&&living().some(e=>e.alwaysLoseInitiative))enemyStrike(e=>e.alwaysLoseInitiative,true);
+ else if(h.combat&&delayedZombies)tickMonsterRegeneration();
  if(h.combat){tickSpellBuffs();tickEnemySpellEffects();tickPlayerConditions();h.combat.round++;save();renderCombat()}
 }
 function tickEnemySpellEffects(){if(!h.combat)return;for(const e of living()){if(e.disabledRounds>0)e.disabledRounds--;if(e.disabledRounds<=0&&e.webbed){e.webbed=false;clog(`${e.n} breaks free of the web.`)}if(e.disabledRounds<=0&&e.sleeping){e.sleeping=false;clog(`${e.n} awakens.`)}if(e.disabledRounds<=0&&e.held){e.held=false;clog(`${e.n} is no longer held.`)}if(e.slowRounds>0)e.slowRounds--;if(e.blindRounds>0){e.blindRounds--;if(e.blindRounds<=0){e.blindMoveTicks=0;clog(`${e.n} can see again.`)}}}}
