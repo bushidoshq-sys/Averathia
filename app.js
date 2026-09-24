@@ -1245,7 +1245,7 @@ function buildEncounter(isBoss=false){
 }
 function makeCombat(isBoss=false){
  beginTripPause();
- let picks=buildEncounter(isBoss),trollLesson=!h.trollWeaknessKnown&&picks.some(x=>x.id==="troll"),en=[];
+ let picks=buildEncounter(isBoss),trollLesson=!isBoss&&!h.trollWeaknessKnown&&picks.some(x=>x.id==="troll"),en=[];
  if(trollLesson)picks=[picks.find(x=>x.id==="troll")];
  for(let i=0;i<picks.length;i++){
    let b=picks[i],hp=0;for(let k=0;k<b.hdDice;k++)hp+=d(8);hp=Math.max(1,hp+(b.hdAdj||0));
