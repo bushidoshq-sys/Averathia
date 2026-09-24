@@ -2319,10 +2319,19 @@ function changeMemorized(id,sl,delta){
 const EVENT_KEY_ITEMS=new Set(["Garlic","Holy Water","Steel Mirror","Belt Pouch","3 Stakes + Mallet","Wolfsbane","Hammer","Iron Spike","12 Iron Spikes","10-foot Pole","Small Sack","Large Sack","Quiver","Wine — 1 quart","50-foot Rope","Grappling Hook","Tinder Box","Lantern"]);
 function hasInventoryItem(name){return !!h?.inv?.some(x=>x.n===name)}
 function takeInventoryItem(name){let i=h?.inv?.findIndex(x=>x.n===name)??-1;if(i<0)return false;h.inv.splice(i,1);return true}
+function oreFilledSackBP(ch){return ch?.oreSack==="Large Sack"?605:201}
+function oreEmptySackBP(ch){return ch?.oreSack==="Large Sack"?5:1}
 function eventChoiceAvailable(ch){
- if(ch?.requiresItem)return hasInventoryItem(ch.requiresItem);
- if(Array.isArray(ch?.requiresAnyItem))return ch.requiresAnyItem.some(hasInventoryItem);
+ if(ch?.requiresItem&&!hasInventoryItem(ch.requiresItem))return false;
+ if(Array.isArray(ch?.requiresAnyItem)&&!ch.requiresAnyItem.some(hasInventoryItem))return false;
+ if(ch?.result==="collectOre"&&!canCarryAdditionalBP(oreFilledSackBP(ch)-oreEmptySackBP(ch)))return false;
  return true
+}
+function eventChoiceUnavailableReason(ch){
+ if(ch?.requiresItem&&!hasInventoryItem(ch.requiresItem))return "Requires "+ch.requiresItem;
+ if(Array.isArray(ch?.requiresAnyItem)&&!ch.requiresAnyItem.some(hasInventoryItem))return "Requires "+ch.requiresAnyItem.join(" / ");
+ if(ch?.result==="collectOre"&&!canCarryAdditionalBP(oreFilledSackBP(ch)-oreEmptySackBP(ch)))return "Needs "+formatBP(oreFilledSackBP(ch)-oreEmptySackBP(ch))+" free BP";
+ return "Unavailable"
 }
 function eventRequirementItem(ch){
  if(ch?.requiresItem)return ch.requiresItem;
@@ -2357,14 +2366,19 @@ const CLOTHING_KEY_EVENTS=[
  {id:"CLO-003",type:"Decision",title:"The Noble Reception",text:"A minor noble is receiving petitioners tonight. Road clothes will not get past the steward.",choices:[{label:"Enter in Fine Clothes",result:"gearKey",requiresAnyItem:["Fine Clothes","Extravagant Clothes"],xp:4,coins:[1,0,0]},{label:"Leave the matter for another day",result:"passed"}]},
  {id:"CLO-004",type:"Decision",title:"The Grand Banquet",text:"An invitation has appeared for a lavish banquet where appearance matters almost as much as a name.",choices:[{label:"Attend in Extravagant Clothes",result:"gearKey",requiresItem:"Extravagant Clothes",xp:6,coins:[2,0,0]},{label:"Ignore the invitation",result:"passed"}]}
 ];
+function eventCanStartCombat(ev){return ev?.type==="Encounter"&&(ev.choices||[]).some(c=>c?.result==="combat"||c?.result==="clericTurn")}
 function pickEvent(){
  let pools={Fighter:FIGHTER_EVENTS,Cleric:CLERIC_EVENTS,Arcanist:ARCANIST_EVENTS,Thief:THIEF_EVENTS,Elf:ELF_EVENTS,Dwarf:DWARF_EVENTS};
  let unlockedGlobal=[...GEAR_KEY_EVENTS,...CLOTHING_KEY_EVENTS].filter(eventUnlockedByInventory),source=[...(pools[h.className]||FIGHTER_EVENTS),...unlockedGlobal],used=new Set((h.trip.journal||[]).map(x=>x.id));
  let available=source.filter(e=>!used.has(e.id));if(!available.length)available=source;
  if(journeyDaylightNow()){let noNight=available.filter(e=>!EXPLICIT_NIGHT_ENCOUNTERS.has(e.id));if(noNight.length)available=noNight}
- let roll=d(100),mounted=!!h.trip?.mountedTravel,wanted=mounted?(roll<=20?"Encounter":roll<=40?"Decision":roll<=60?"Discovery":"Quiet"):(roll<=40?"Encounter":roll<=60?"Decision":roll<=80?"Discovery":"Quiet");
- let typed=available.filter(e=>e.type===wanted);let pool=typed.length?typed:available;
- return pool[d(pool.length)-1]
+ let roll=d(100),wanted=roll<=40?"Encounter":roll<=60?"Decision":roll<=80?"Discovery":"Quiet";
+ let typed=available.filter(e=>e.type===wanted),pool=typed.length?typed:available,picked=pool[d(pool.length)-1];
+ if(h.trip?.mountedTravel&&eventCanStartCombat(picked)&&d(100)<=50){
+  let nonCombat=available.filter(e=>!eventCanStartCombat(e));
+  if(nonCombat.length)picked=nonCombat[d(nonCombat.length)-1]
+ }
+ return picked
 }
 function clericWisCheck(difficulty="Normal"){
  let adj=difficulty==="Easy"?4:difficulty==="Hard"?-4:0,target=Math.max(1,Math.min(19,h.stats.WIS+adj)),roll=d(20);
@@ -2372,7 +2386,7 @@ function clericWisCheck(difficulty="Normal"){
 }
 function applyEventChoice(ev,ch){
  let resumeAfter=h.pendingEvent===ev;
- if(!eventChoiceAvailable(ch)){addlog(`${ev.title}: the required item is not available.`);return}
+ if(!eventChoiceAvailable(ch)){addlog(`${ev.title}: ${eventChoiceUnavailableReason(ch)}.`);return}
  if(ch?.result==="gearKey"){
    let usedItem=eventRequirementItem(ch);if(ch.consumeItem&&usedItem)takeInventoryItem(usedItem);
    let xp=ch.xp?awardXP(ch.xp):0,coin=ch.coins||[0,0,0],credit=coin?addCoins(coin[0]||0,coin[1]||0,coin[2]||0):{cpValue:0,leftCP:0},keptCoins=coinArrayFromCP(credit.cpValue);
@@ -2385,7 +2399,7 @@ function applyEventChoice(ev,ch){
    let usedItem=eventRequirementItem(ch),i=h.inv.findIndex(x=>x.n===usedItem);
    if(i<0){addlog(ev.title+": the required sack is not available.");return}
    let large=ch.oreSack==="Large Sack";
-   h.inv[i]={n:large?"Large Sack of Ore":"Small Sack of Ore",kind:"gear",can:false,eq:false,eventKey:false,oreSack:true,emptySackName:large?"Large Sack":"Small Sack",oreValueCP:large?1000:500,bp:large?5:1};
+   h.inv[i]={n:large?"Large Sack of Ore":"Small Sack of Ore",kind:"gear",can:false,eq:false,eventKey:false,oreSack:true,emptySackName:large?"Large Sack":"Small Sack",oreValueCP:large?1000:500,bp:large?605:201};
    journal({id:ev.id,type:ev.type,title:ev.title,text:ev.text,choice:ch.label,result:"collectOre",xp:0,coins:[0,0,0],item:h.inv[i].n});
    addlog(ev.title+": "+ch.label+". The sack is now full and can be sold in town.");
    h.pendingEvent=null;endTripPause();save();renderPendingEvent();if(resumeAfter)tick();return
@@ -2459,7 +2473,7 @@ function renderPendingEvent(){
  let box=$("#eventChoice");if(!box)return;
  let ev=h?.pendingEvent;if(!ev){box.classList.add("hide");box.innerHTML="";return}
  box.classList.remove("hide");
- box.innerHTML=`<div class=eventCard><div class=eyebrow>${ev.type}</div><h3>${ev.title}</h3><p>${ev.text}</p><div class=eventButtons>${ev.choices.map((c,i)=>`<button data-choice="${i}" ${eventChoiceAvailable(c)?"":"disabled"}>${c.label}${!eventChoiceAvailable(c)?` · Requires ${c.requiresItem||c.requiresAnyItem?.join(" / ")||"item"}`:""}</button>`).join("")}</div></div>`;
+ box.innerHTML=`<div class=eventCard><div class=eyebrow>${ev.type}</div><h3>${ev.title}</h3><p>${ev.text}</p><div class=eventButtons>${ev.choices.map((c,i)=>{let ok=eventChoiceAvailable(c);return `<button data-choice="${i}" ${ok?"":"disabled"}>${c.label}${ok?"":` · ${eventChoiceUnavailableReason(c)}`}</button>`}).join("")}</div></div>`;
  $$("[data-choice]").forEach(b=>b.onclick=()=>applyEventChoice(ev,ev.choices[+b.dataset.choice]))
 }
 function buildAdventureReport(){
