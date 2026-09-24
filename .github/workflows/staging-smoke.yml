@@ -4,6 +4,9 @@ on:
   push:
     branches:
       - rc-treasure-stage-20260923
+  pull_request:
+    branches:
+      - main
 
 jobs:
   browser-smoke:
