@@ -1232,7 +1232,7 @@ function resolveMonsterDefeat(e){
   }
   if(h.trollWeaknessKnown){
    if(e.lastDamageType==="fire"||e.lastDamageType==="acid"){e.destroyed=true;clog(`The ${e.lastDamageType} damage finishes the fallen Troll before it can regenerate.`)}
-   else{let ls=ensureLightStock();if(ls.torchMinutes>=60){addLightStock("torch",-60);e.destroyed=true;clog("You use one full Torch to burn the fallen Troll thoroughly, preventing its regeneration.")}else{if(!e.downedNotice){e.downedNotice=true;clog("The Troll is down, but you have no full Torch left to finish it. Its wounds are already closing.")}return false}}
+   else{const burnLight=10;if(totalLightMinutes()>=burnLight){consumeLightMinutes(burnLight);e.destroyed=true;clog(`You spend ${burnLight} light-minutes scorching the fallen Troll's wounds, preventing its regeneration.`)}else{if(!e.downedNotice){e.downedNotice=true;clog(`The Troll is down, but you need ${burnLight} light-minutes from Torch or Lamp Oil to scorch its wounds before they close.`)}return false}}
   }else return false
  }
  if(monsterDefeated(e)){e.xpAwarded=true;let gained=awardXP(e.xp);clog(`${e.n} defeated. +${gained} XP.`);return true}
