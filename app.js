@@ -112,6 +112,16 @@ function ensureHomeState(obj=h){
  if(!obj)return;
  obj.homeTier=Math.max(0,Math.min(3,Math.trunc(Number(obj.homeTier)||0)));
  obj.homeStorage=Array.isArray(obj.homeStorage)?obj.homeStorage:[];
+ for(const x of obj.homeStorage){
+  if(!x||x.oreSack)continue;
+  let base=x.emptySackName||x.n;
+  if(x.coinSack||base==="Small Sack of GP"||base==="Large Sack of GP"){
+   if(base==="Small Sack of GP")base="Small Sack";if(base==="Large Sack of GP")base="Large Sack";
+   x.emptySackName=base==="Large Sack"?"Large Sack":"Small Sack";x.coinSack=true;x.storedGP=Math.max(0,Math.trunc(Number(x.storedGP)||0));
+   let cap=x.emptySackName==="Large Sack"?600:200;x.storedGP=Math.min(cap,x.storedGP);x.bp=(x.emptySackName==="Large Sack"?5:1)+x.storedGP;
+   x.n=x.storedGP?x.emptySackName+" of GP":x.emptySackName;x.eventKey=!x.storedGP
+  }
+ }
  obj.mounts=obj.mounts&&typeof obj.mounts==="object"?obj.mounts:{};
  obj.mounts.horses=Math.max(0,Math.trunc(Number(obj.mounts.horses)||0));
  obj.mounts.feedDays=Math.max(0,Number(obj.mounts.feedDays)||0);
@@ -147,6 +157,30 @@ function takeFromHome(i){
  if(!hasRoom()||h.trip||h.combat)return;let x=h.homeStorage[i];if(!x)return;
  if(carriedBulkPoints()+itemBulkPoints(x)>maxCarryBP()+1e-9){alert("Not enough BP to take that item with you.");return}
  h.inv.push(x);h.homeStorage.splice(i,1);save()
+}
+function gpSackBaseName(x){
+ if(!x||x.oreSack)return null;
+ let n=x.emptySackName||x.n;
+ if(n==="Small Sack of GP")n="Small Sack";if(n==="Large Sack of GP")n="Large Sack";
+ return n==="Small Sack"||n==="Large Sack"?n:null
+}
+function gpSackCapacity(x){let n=gpSackBaseName(x);return n==="Large Sack"?600:n==="Small Sack"?200:0}
+function syncGpSack(x){
+ let base=gpSackBaseName(x);if(!base)return x;
+ let cap=base==="Large Sack"?600:200,stored=Math.max(0,Math.min(cap,Math.trunc(Number(x.storedGP)||0)));
+ x.emptySackName=base;x.storedGP=stored;x.coinSack=stored>0;x.n=stored?base+" of GP":base;x.bp=(base==="Large Sack"?5:1)+stored;x.eventKey=!stored;
+ if(!stored){delete x.coinSack;delete x.storedGP;delete x.emptySackName;delete x.bp}
+ return x
+}
+function storeGpInHomeSack(i){
+ if(!hasRoom()||h.trip||h.combat)return;let x=h.homeStorage[i],cap=gpSackCapacity(x);if(!x||!cap)return;
+ let held=Math.max(0,Math.trunc(Number(h.gp??h.gold)||0)),stored=Math.max(0,Math.trunc(Number(x.storedGP)||0)),move=Math.min(held,cap-stored);
+ if(move<=0)return;
+ h.gp=held-move;h.gold=h.gp;x.emptySackName=gpSackBaseName(x);x.storedGP=stored+move;syncGpSack(x);save()
+}
+function takeGpFromHomeSack(i){
+ if(!hasRoom()||h.trip||h.combat)return;let x=h.homeStorage[i],stored=Math.max(0,Math.trunc(Number(x?.storedGP)||0));if(!x||!stored)return;
+ h.gp=Math.max(0,Math.trunc(Number(h.gp??h.gold)||0))+stored;h.gold=h.gp;x.storedGP=0;syncGpSack(x);save()
 }
 function buyHorse(){
  if(!hasHouse()||h.trip||h.combat)return;let cost=horseBuyPriceCP();if(walletCP()<cost){alert("Not enough money for a Riding Horse.");return}
@@ -197,7 +231,7 @@ function renderHome(){
  if(next)head+='<button id="buyHomeTier" class="primary">'+(t?"Upgrade to ":"Buy ")+next+" — "+coinTextCP(cost)+'</button>';else head+='<b>Maximum tier: Estate</b>';
  out.push(head+"</div>");
  if(hasRoom()){
-  let stored=h.homeStorage.map(function(x,i){return '<div class="item"><span><b>'+x.n+'</b><div class="small">'+formatBP(itemBulkPoints(x))+' BP stored</div></span><button data-home-take="'+i+'">Take</button></div>'}).join("")||'<div class="small">Nothing stored.</div>';
+  let stored=h.homeStorage.map(function(x,i){let cap=gpSackCapacity(x),gp=Math.max(0,Math.trunc(Number(x.storedGP)||0)),money=cap?'<div class="small">GP '+gp+'/'+cap+'</div>':'',controls=cap?'<div class="row"><button data-home-gp-store="'+i+'" '+(gp>=cap||Math.trunc(Number(h.gp??h.gold)||0)<1?'disabled':'')+'>Store GP</button><button data-home-gp-take="'+i+'" '+(gp<1?'disabled':'')+'>Take GP</button><button data-home-take="'+i+'">Take Sack</button></div>':'<button data-home-take="'+i+'">Take</button>';return '<div class="item"><span><b>'+x.n+'</b><div class="small">'+formatBP(itemBulkPoints(x))+' BP stored</div>'+money+'</span>'+controls+'</div>'}).join("")||'<div class="small">Nothing stored.</div>';
   let carry=h.inv.map(function(x,i){return '<div class="item"><span><b>'+x.n+'</b><div class="small">'+formatBP(itemBulkPoints(x))+' BP</div></span><button data-home-store="'+i+'">Store</button></div>'}).join("")||'<div class="small">No carried items.</div>';
   out.push('<div class="settingsSection"><h3>🛏 Home Rest</h3><p class="small">Rest 8 Averathia hours at home.</p><button id="homeRestBtn" '+(h.restUntil?"disabled":"")+'>Rest</button></div>');
   out.push('<div class="settingsSection"><h3>📦 Home Storage</h3><p class="small">Stored items do not count toward Journey BP.</p><b>Stored</b>'+stored+'<b>Carried</b>'+carry+'</div>');
@@ -208,7 +242,7 @@ function renderHome(){
  }
  box.innerHTML=out.join("");
  if($("#buyHomeTier"))$("#buyHomeTier").onclick=buyHomeUpgrade;if($("#homeRestBtn"))$("#homeRestBtn").onclick=startLongRest;
- document.querySelectorAll("[data-home-store]").forEach(function(b){b.onclick=function(){storeAtHome(+b.dataset.homeStore)}});document.querySelectorAll("[data-home-take]").forEach(function(b){b.onclick=function(){takeFromHome(+b.dataset.homeTake)}});
+ document.querySelectorAll("[data-home-store]").forEach(function(b){b.onclick=function(){storeAtHome(+b.dataset.homeStore)}});document.querySelectorAll("[data-home-take]").forEach(function(b){b.onclick=function(){takeFromHome(+b.dataset.homeTake)}});document.querySelectorAll("[data-home-gp-store]").forEach(function(b){b.onclick=function(){storeGpInHomeSack(+b.dataset.homeGpStore)}});document.querySelectorAll("[data-home-gp-take]").forEach(function(b){b.onclick=function(){takeGpFromHomeSack(+b.dataset.homeGpTake)}});
  if($("#buyHorseBtn"))$("#buyHorseBtn").onclick=buyHorse;if($("#sellHorseBtn"))$("#sellHorseBtn").onclick=sellHorse;if($("#buyFeedBtn"))$("#buyFeedBtn").onclick=function(){buyMountFeed(1)};
  if($("#useMountToggle"))$("#useMountToggle").onchange=function(e){setMountUse(e.target.checked)};
 }
@@ -2654,7 +2688,7 @@ function migratePersistentCharacter(saved){
  s.sp=Math.max(0,Math.trunc(numOr(s.sp,0)));s.cp=Math.max(0,Math.trunc(numOr(s.cp,0)));
  s.inv=Array.isArray(s.inv)?s.inv.map(x=>typeof x==="string"?{n:x,kind:"gear",can:false,eq:false}:x).filter(Boolean):[];
  if(!s.clothingStarterV1){for(const x of starterClothingItems())if(!s.inv.some(i=>i.n===x.n))s.inv.push(x);s.clothingStarterV1=true}
- for(const x of s.inv)if(EVENT_KEY_ITEMS.has(x.n))x.eventKey=true;
+ for(const x of s.inv){if(x?.coinSack||/ Sack of GP$/.test(x?.n||""))syncGpSack(x);if(EVENT_KEY_ITEMS.has(x.n))x.eventKey=true}
  for(const x of s.inv)refreshRcMagicDisplayName(x);
  {let equip=[],other=[];for(const x of s.inv)(isInventoryEquipable(x)?equip:other).push(x);s.inv=[...equip,...other]}
  s.ammo=(s.ammo&&typeof s.ammo==="object"&&!Array.isArray(s.ammo))?s.ammo:{};
