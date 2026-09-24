@@ -733,11 +733,13 @@ function rcTreasureSalePriceCP(item){
  return 0
 }
 function sellPriceCP(item){
+ if(item?.oreSack)return Math.max(0,Math.trunc(Number(item.oreValueCP)||0));
  if(item?.rcTreasure)return rcTreasureSalePriceCP(item);
  if(item?.starterClothing)return (h?.stats?.CHA||0)>=16?1:0;
  let d=shopData(item.n);if(!d)return 0;return Math.round(gpToCP(d[1])*.5*(1+chaSellBonus()))
 }
 function sellDescriptor(item){
+ if(item?.oreSack)return "Ore value · empty sack returned";
  if(item?.rcGem)return `RC gem cashing fee ${rcTreasureCashFeePct(item)}%`;
  if(item?.rcJewelry)return `RC jewelry cashing fee ${rcTreasureCashFeePct(item)}%`;
  if(item?.rcSpecial)return "RC market value";
