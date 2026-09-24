@@ -1145,31 +1145,35 @@ function clog(s){
  let box=$("#combatLog");if(box){box.insertAdjacentHTML("beforeend",`<div>${s}</div>`);box.scrollTop=box.scrollHeight}
  adventureLog(s,"Combat")
 }
-function monsterCombatActive(e){return !!e&&!e.destroyed&&(e.hp>0||(e.special==="regeneration"&&Number(e.nonRegenDamage||0)<Number(e.maxhp||0)))}
+function monsterCombatActive(e){return !!e&&!e.destroyed&&(e.hp>0||e.special==="regeneration")}
 function living(){return h?.combat?.enemies?.filter(monsterCombatActive)||[]}
 function applyMonsterDamage(e,dmg,type="normal"){
  dmg=Math.max(0,Math.trunc(Number(dmg)||0));if(!e||!dmg||e.destroyed)return 0;
- if(e.special==="regeneration"){
-  if(e.regenStartRound==null)e.regenStartRound=(h?.combat?.round||1)+3;
-  if(type==="fire"||type==="acid"){e.nonRegenDamage=Math.min(e.maxhp,Number(e.nonRegenDamage||0)+dmg);e.hp=Math.max(0,e.hp-dmg);if(e.nonRegenDamage>=e.maxhp){e.destroyed=true;e.hp=0}}
-  else e.hp=Math.max(0,e.hp-dmg);
-  return dmg
- }
+ if(e.special==="regeneration"&&e.regenStartRound==null)e.regenStartRound=(h?.combat?.round||1)+3;
  e.hp=Math.max(0,e.hp-dmg);return dmg
 }
 function monsterDefeated(e){return !!e&&(e.destroyed||(e.special!=="regeneration"&&e.hp<=0))}
 function resolveMonsterDefeat(e){
  if(!e||e.xpAwarded)return false;
+ if(e.special==="regeneration"&&e.hp<=0&&!e.destroyed){
+  if(h?.combat?.trollLesson&&!h.trollWeaknessKnown){
+   if(!h.combat.trollLessonDowned){h.combat.trollLessonDowned=true;clog("The Troll crashes down — then torn flesh starts knitting itself together. It is not staying dead. RETREAT is strongly recommended.")}
+   return false
+  }
+  if(h.trollWeaknessKnown){
+   let ls=ensureLightStock();
+   if(ls.torchMinutes>=60){addLightStock("torch",-60);e.destroyed=true;clog("You use one full torch to burn the fallen Troll thoroughly, preventing its regeneration.")}
+   else{if(!e.downedNotice){e.downedNotice=true;clog("The Troll is down, but you have no full Torch left to finish it. Its wounds are already closing.")}return false}
+  }else return false
+ }
  if(monsterDefeated(e)){e.xpAwarded=true;let gained=awardXP(e.xp);clog(`${e.n} defeated. +${gained} XP.`);return true}
- if(e.special==="regeneration"&&e.hp<=0)clog(`${e.n} collapses, but its flesh is still regenerating.`);
  return false
 }
 function tickMonsterRegeneration(){
  if(!h?.combat)return;
  for(const e of h.combat.enemies||[]){
-  if(e.special!=="regeneration"||e.destroyed||e.regenStartRound==null)continue;
-  let ceiling=Math.max(0,e.maxhp-Number(e.nonRegenDamage||0));
-  if(h.combat.round>=e.regenStartRound&&e.hp<ceiling){let heal=Math.min(3,ceiling-e.hp);if(heal>0){e.hp+=heal;clog(`${e.n} regenerates ${heal} HP.`)}}
+  if(e.special!=="regeneration"||e.destroyed||e.regenStartRound==null||h.combat.round<e.regenStartRound||e.hp>=e.maxhp)continue;
+  let wasDown=e.hp<=0,heal=Math.min(3,e.maxhp-e.hp);if(heal>0){e.hp+=heal;e.downedNotice=false;clog(wasDown?`${e.n} rises again as regeneration restores ${heal} HP.`:`${e.n} regenerates ${heal} HP.`)}
  }
 }
 // RC Rules Cyclopedia, Balancing Encounters (pp.100-101): TPL -> IAHD -> challenge %.
@@ -1351,7 +1355,7 @@ function rcMagicWeaponOpponentBonus(item,target){
  return 0
 }
 function playerStrikeSingle(){
- let c=h.combat,t=c.enemies[c.target];if(!t||t.hp<=0){t=living()[0];if(!t)return;c.target=t.id}
+ let c=h.combat,t=c.enemies[c.target];if(!monsterCombatActive(t)){t=living()[0];if(!t)return;c.target=t.id}
  let cs=combatStats(),w=cs.weapon,item=cs.weaponItem,mode=attackModeFor(item||w);
  if(c.skipNext){clog("Critical fumble: you lose this initiative.");c.skipNext=false;return}
  let pfe=protectionFromEvilBuff();if(t.enchanted&&pfe&&!pfe.barrierBroken){pfe.barrierBroken=true;clog("You attack an enchanted creature; Protection from Evil no longer bars its touch, though its attack/save modifiers remain.")}
@@ -1366,10 +1370,10 @@ function playerStrikeSingle(){
  if(r===1){clog("Natural 1 — critical fumble. Next initiative is lost.");c.skipNext=true}
  else if(r===20||r+atkMod+spellAttackBonus()+((isMissile||isThrown)?rangeAttackMod(w):0)>=characterNeed(t.ac+(t.blindRounds>0?4:0))){
   let extra=h.spells?.buffs?.filter(b=>b.damageBonus&&(!b.boundWeapon||b.boundWeapon===w)).reduce((n,b)=>n+rollExpr(b.damageBonus),0)||0,flat=h.spells?.buffs?.reduce((n,b)=>n+(b.flatDamageBonus||0),0)||0;
-  let base=Math.max(1,rollExpr(cs.damage)+dmgMod+flat),dmg=base+extra;if(r===20){base*=2;extra*=2;dmg=base+extra}if(t.mummy){let magical=!!item?.magical||Number(item?.magicBonus)>0,fire=item?.damageType==="fire";dmg=magical||fire?Math.floor(dmg/2):Math.floor(extra/2);if(dmg<=0){clog(`${w} cannot harm ${t.n}; only spells, fire, or magical weapons can damage it.`);return}clog(`${t.n} resists the attack; only half qualifying damage gets through.`)}t.hp=Math.max(0,t.hp-dmg);
+  let base=Math.max(1,rollExpr(cs.damage)+dmgMod+flat),dmg=base+extra;if(r===20){base*=2;extra*=2;dmg=base+extra}if(t.mummy){let magical=!!item?.magical||Number(item?.magicBonus)>0,fire=item?.damageType==="fire";dmg=magical||fire?Math.floor(dmg/2):Math.floor(extra/2);if(dmg<=0){clog(`${w} cannot harm ${t.n}; only spells, fire, or magical weapons can damage it.`);return}clog(`${t.n} resists the attack; only half qualifying damage gets through.`)}applyMonsterDamage(t,dmg,item?.damageType||"normal");
   clog(`${r===20?"Critical hit! ":""}You ${isThrown?"throw "+w+" and ":""}hit ${t.n} for ${dmg}.`);
   if(t.sleeping&&t.hp>0){t.sleeping=false;t.disabledRounds=0;clog(`${t.n} awakens from the blow.`)}
-  if(t.hp<=0){let gained=awardXP(t.xp);clog(`${t.n} defeated. +${gained} XP.`)}
+  if(t.hp<=0)resolveMonsterDefeat(t)
  }else clog(`You ${isThrown?"throw "+w+" and ":""}miss ${t.n}.`)
 }
 function blindMovementDelayed(e){
