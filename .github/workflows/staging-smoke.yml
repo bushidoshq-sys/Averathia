@@ -1,0 +1,138 @@
+name: Averathia staging browser smoke
+
+on:
+  push:
+    branches:
+      - rc-treasure-stage-20260923
+
+jobs:
+  browser-smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Install browser driver
+        run: npm install --no-save playwright-core
+
+      - name: Start local app server
+        run: |
+          python3 -m http.server 8000 > /tmp/averathia-http.log 2>&1 &
+          echo $! > /tmp/averathia-http.pid
+          sleep 2
+          curl --fail http://127.0.0.1:8000/index.html > /dev/null
+
+      - name: Run Chromium integration smoke
+        run: |
+          cat > /tmp/averathia-smoke.cjs <<'NODE'
+          const { chromium } = require('playwright-core');
+          const assert = require('node:assert/strict');
+          const fs = require('node:fs');
+
+          (async () => {
+            const candidates = ['/usr/bin/google-chrome', '/usr/bin/google-chrome-stable', '/usr/bin/chromium', '/usr/bin/chromium-browser'];
+            const executablePath = candidates.find(fs.existsSync);
+            assert.ok(executablePath, 'No Chromium/Chrome executable found on runner');
+
+            const browser = await chromium.launch({
+              executablePath,
+              headless: true,
+              args: ['--no-sandbox', '--disable-dev-shm-usage']
+            });
+            const page = await browser.newPage({ viewport: { width: 390, height: 844 } });
+            const pageErrors = [];
+            const consoleErrors = [];
+            page.on('pageerror', e => pageErrors.push(String(e)));
+            page.on('console', m => { if (m.type() === 'error') consoleErrors.push(m.text()); });
+
+            await page.goto('http://127.0.0.1:8000/', { waitUntil: 'networkidle' });
+            assert.equal(await page.title(), 'Averathia');
+            assert.equal(await page.locator('[data-class]').count(), 6, 'Expected six class choices');
+            assert.equal(await page.locator('[data-av]').count(), 3, 'Expected three avatar choices');
+
+            await page.fill('#charName', 'Smoke Tester');
+            await page.click('[data-class="Fighter"]');
+            await page.click('[data-av="0"]');
+            await page.click('#chooseCharacter');
+            await page.waitForSelector('#game:not(.hide)');
+
+            let save = JSON.parse(await page.evaluate(() => localStorage.getItem('averathia-v041')));
+            assert.equal(save.name, 'Smoke Tester');
+            assert.equal(save.className, 'Fighter');
+            assert.equal(save.gp, 180);
+            assert.equal(save.level, 1);
+            assert.equal(save.inv.some(x => x.n === 'Sword'), true);
+            assert.equal(save.inv.some(x => x.n === 'Basic Canvas Shoes'), true);
+
+            await page.click('[data-page="shop"]');
+            await page.click('[data-tab="Gear"]');
+
+            async function buyNamed(name) {
+              const row = page.locator('#shopItems .item').filter({ hasText: name }).first();
+              await row.getByRole('button', { name: 'Buy' }).click();
+            }
+
+            await buyNamed('Rations — 7 days');
+            await buyNamed('Waterskin');
+            await buyNamed('Torch');
+
+            save = JSON.parse(await page.evaluate(() => localStorage.getItem('averathia-v041')));
+            assert.equal(save.rations, 7);
+            assert.equal(save.waterCapacity, 1);
+            assert.equal(save.water, 1);
+            assert.equal(save.lightStock.torchMinutes, 60);
+
+            await page.reload({ waitUntil: 'networkidle' });
+            await page.waitForSelector('#game:not(.hide)');
+            assert.match(await page.locator('#top').innerText(), /Smoke Tester/);
+            save = JSON.parse(await page.evaluate(() => localStorage.getItem('averathia-v041')));
+            assert.equal(save.gp, 173, 'Expected 7 GP spent on rations + waterskin + torch');
+
+            await page.click('[data-page="depart"]');
+            await page.click('[data-min="1"]');
+            assert.match(await page.locator('#requirements').innerText(), /light 0\.7 min \(2\/3 of adventure\)/i);
+            assert.equal(await page.locator('#start').isDisabled(), false);
+
+            await page.click('#start');
+            await page.waitForSelector('#travel:not(.hide)');
+            save = JSON.parse(await page.evaluate(() => localStorage.getItem('averathia-v041')));
+            assert.ok(save.trip && Number.isFinite(save.trip.start) && Number.isFinite(save.trip.end), 'Trip was not persisted');
+            assert.ok(save.lightStock.torchMinutes > 59 && save.lightStock.torchMinutes < 60, 'Expected 2/3 minute of torch light consumed');
+
+            const daylight = await page.evaluate(() => {
+              const raw = JSON.parse(localStorage.getItem('averathia-v041'));
+              const start = raw.trip.start, end = raw.trip.end, span = end - start;
+              return {
+                start: window.journeyDaylightNow(start),
+                beforeFirstBoundary: window.journeyDaylightNow(start + span / 12),
+                firstBoundary: window.journeyDaylightNow(start + span / 6),
+                middle: window.journeyDaylightNow(start + span / 2),
+                finalBoundary: window.journeyDaylightNow(start + span * 5 / 6),
+                nearEnd: window.journeyDaylightNow(start + span * 11 / 12)
+              };
+            });
+            assert.deepEqual(daylight, {
+              start: true,
+              beforeFirstBoundary: true,
+              firstBoundary: false,
+              middle: false,
+              finalBoundary: true,
+              nearEnd: true
+            });
+
+            assert.deepEqual(pageErrors, [], 'Page errors: ' + pageErrors.join(' | '));
+            assert.deepEqual(consoleErrors, [], 'Console errors: ' + consoleErrors.join(' | '));
+
+            console.log('AVERATHIA_SMOKE_PASS');
+            console.log(JSON.stringify({ daylight, saveVersion: 'averathia-v041', gpAfterSupplies: save.gp }, null, 2));
+            await browser.close();
+          })().catch(err => {
+            console.error(err);
+            process.exit(1);
+          });
+          NODE
+          node /tmp/averathia-smoke.cjs
