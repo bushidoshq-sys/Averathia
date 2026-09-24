@@ -772,6 +772,25 @@ function rcArmorBonusFor(type){
  return rcTablePick(cuts,r)
 }
 const RC_SUPPORTED_MAGIC_WEAPON_BASES=new Set(["Short Sword","Sword","Two-Handed Sword","Battle Axe","Hand Axe","Dagger","Throwing Hammer","War Hammer","Mace","Polearm","Spear","Staff","Short Bow","Long Bow","Light Crossbow","Heavy Crossbow","Sling"]);
+const AVERATHIA_MAGIC_TIER_NAMES={1:"Gilded",2:"Etched",3:"Runed",4:"Touched",5:"Blessed"};
+const AVERATHIA_BANE_NAMES={
+ "dragonkind":"Dragon Bane","giantkind":"Giant Bane","lycanthropes":"Lycanthrope Bane",
+ "regenerating monsters":"Regeneration Bane","spellcasters":"Spellcaster Bane","undead":"Undead Bane"
+};
+function magicTierName(bonus){return AVERATHIA_MAGIC_TIER_NAMES[Math.max(1,Math.min(5,Math.trunc(Number(bonus)||1)))]||"Enchanted"}
+function magicPropertyName(raw){let key=String(raw||"").trim().toLowerCase();return AVERATHIA_BANE_NAMES[key]||String(raw||"").trim()}
+function formatMagicBonusCounter(bonus,vsBonus=0,vs=null){let base=`+${bonus}`;return vsBonus&&vs?`(${base} / +${vsBonus} vs ${magicPropertyName(vs).replace(/ Bane$/,"")})`:`(${base})`}
+function formatMagicWeaponName(base,bonus,vsBonus=0,vs=null){let prop=vs?`${magicPropertyName(vs)} `:"";return `${magicTierName(bonus)} ${prop}${base} ${formatMagicBonusCounter(bonus,vsBonus,vs)}`}
+function formatMagicArmorName(size,type,bonus,power=null,cursed=false){
+ let sizePart=size&&size!=="Human"?`${size} `:"",special=power?`${magicPropertyName(power)} `:"",curse=cursed?"Cursed ":"";
+ return `${magicTierName(bonus)} ${curse}${special}${sizePart}${type} (+${bonus})`
+}
+function refreshRcMagicDisplayName(item){
+ if(!item?.rcMagic)return item;
+ if(item.kind==="weapon"&&item.baseWeapon&&item.magicBonus){item.n=formatMagicWeaponName(item.baseWeapon,item.magicBonus,item.rcVsBonus,item.rcVs);return item}
+ if(["armor","shield"].includes(item.kind)&&item.baseArmor&&item.magicBonus){item.n=formatMagicArmorName(item.rcSize,item.baseArmor,item.magicBonus,item.rcSpecialPower,item.cursed);return item}
+ return item
+}
 function rcParseMagicWeaponName(name){
  let m=/^(.*) \+(\d)(?:, \+(\d) vs (.+))?$/.exec(String(name||""));if(!m)return null;
  let base=m[1],bonus=+m[2],vsBonus=m[3]?+m[3]:0,vs=m[4]||null;
@@ -780,13 +799,14 @@ function rcParseMagicWeaponName(name){
 }
 function rcMagicWeaponItem(category,name){
  let p=rcParseMagicWeaponName(name);if(!p)return{n:name,kind:"gear",can:false,eq:false,rcMagic:true,rcCategory:category,rcItem:name,unsupportedMagic:true,rcWeaponGeneration:"simple"};
- return{n:name,kind:"weapon",can:true,eq:false,rcMagic:true,magical:true,rcCategory:category,rcItem:name,baseWeapon:p.base,magicBonus:p.bonus,rcVsBonus:p.vsBonus,rcVs:p.vs,unsupportedMagic:!!p.vs,partialMagic:!!p.vs,rcWeaponGeneration:"simple"}
+ let item={n:formatMagicWeaponName(p.base,p.bonus,p.vsBonus,p.vs),kind:"weapon",can:true,eq:false,rcMagic:true,magical:true,rcCategory:category,rcItem:name,baseWeapon:p.base,magicBonus:p.bonus,rcVsBonus:p.vsBonus,rcVs:p.vs,unsupportedMagic:!!p.vs,partialMagic:!!p.vs,rcWeaponGeneration:"simple"};
+ return item
 }
 function rcArmorNormalSize(size){return ["Human","Dwarf","Elf"].includes(size)}
 function rcMagicArmorItem(size,type,bonus,power,cursed,name){
- let single=type==="Shield"||SHOP.Armor.some(x=>x[0]===type),normal=rcArmorNormalSize(size);
- if(!single||!normal||cursed)return{n:name,kind:"gear",can:false,eq:false,rcMagic:true,rcCategory:"armorShield",rcItem:type,rcSize:size,magicBonus:bonus,rcSpecialPower:power,cursed,unsupportedMagic:true};
- let kind=type==="Shield"?"shield":"armor";return{n:name,kind,can:true,eq:false,rcMagic:true,magical:true,rcCategory:"armorShield",rcItem:type,baseArmor:type,rcSize:size,magicBonus:bonus,rcSpecialPower:power,cursed:false,unsupportedMagic:!!power,partialMagic:!!power}
+ let single=type==="Shield"||SHOP.Armor.some(x=>x[0]===type),normal=rcArmorNormalSize(size),display=formatMagicArmorName(size,type,bonus,power,cursed);
+ if(!single||!normal||cursed)return{n:display,kind:"gear",can:false,eq:false,rcMagic:true,rcCategory:"armorShield",rcItem:type,rcOriginalName:name,rcSize:size,magicBonus:bonus,rcSpecialPower:power,cursed,unsupportedMagic:true};
+ let kind=type==="Shield"?"shield":"armor";return{n:display,kind,can:true,eq:false,rcMagic:true,magical:true,rcCategory:"armorShield",rcItem:type,rcOriginalName:name,baseArmor:type,rcSize:size,magicBonus:bonus,rcSpecialPower:power,cursed:false,unsupportedMagic:!!power,partialMagic:!!power}
 }
 function rollRcArmorShield(){
  let size=rcTablePick(RC_ARMOR_SIZE),type=rcTablePick(RC_ARMOR_TYPE),bonus=rcArmorBonusFor(type),chance={1:10,2:15,3:20,4:25,5:30}[bonus],power=rcChance(chance)?rcTablePick(RC_ARMOR_SPECIAL):null,cursed=d(8)===1;
@@ -1923,6 +1943,7 @@ function migratePersistentCharacter(saved){
  s.inv=Array.isArray(s.inv)?s.inv.map(x=>typeof x==="string"?{n:x,kind:"gear",can:false,eq:false}:x).filter(Boolean):[];
  if(!s.clothingStarterV1){for(const x of starterClothingItems())if(!s.inv.some(i=>i.n===x.n))s.inv.push(x);s.clothingStarterV1=true}
  for(const x of s.inv)if(EVENT_KEY_ITEMS.has(x.n))x.eventKey=true;
+ for(const x of s.inv)refreshRcMagicDisplayName(x);
  {let equip=[],other=[];for(const x of s.inv)(isInventoryEquipable(x)?equip:other).push(x);s.inv=[...equip,...other]}
  s.ammo=(s.ammo&&typeof s.ammo==="object"&&!Array.isArray(s.ammo))?s.ammo:{};
  for(const k of ["Arrows","Quarrels","Sling Stones"])s.ammo[k]=Math.max(0,Math.trunc(numOr(s.ammo[k],0)));
