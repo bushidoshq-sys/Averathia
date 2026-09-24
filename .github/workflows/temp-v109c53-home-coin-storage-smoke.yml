@@ -45,10 +45,10 @@ jobs:
           await page.locator('#storeHomeCoins').click();
           let state=await page.evaluate(()=>JSON.parse(localStorage.getItem('averathia-v041')));
           if(state.gp!==0||state.sp!==0||state.cp!==0)throw new Error('Wallet not emptied: '+JSON.stringify({gp:state.gp,sp:state.sp,cp:state.cp}));
-          if(state.homeCoins.gp!==9500||state.homeCoins.sp!==12||state.homeCoins.cp!==3)throw new Error('Stored coins wrong: '+JSON.stringify(state.homeCoins));
+          if(state.homeCoins.gp!==9501||state.homeCoins.sp!==2||state.homeCoins.cp!==3)throw new Error('Stored coins wrong after canonical coin exchange: '+JSON.stringify(state.homeCoins));
 
           txt=await page.locator('#homeContent').innerText();
-          if(!txt.includes('9515 / 10000 coins'))throw new Error('Stored count UI wrong: '+txt);
+          if(!txt.includes('9506 / 10000 coins'))throw new Error('Stored count UI wrong: '+txt);
 
           const metrics=await page.evaluate(()=>({viewport:innerWidth,scrollWidth:document.documentElement.scrollWidth,homeWidth:document.getElementById('homeContent').getBoundingClientRect().width}));
           if(metrics.scrollWidth>metrics.viewport+1)throw new Error('Horizontal overflow '+JSON.stringify(metrics));
