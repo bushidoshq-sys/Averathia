@@ -1145,7 +1145,33 @@ function clog(s){
  let box=$("#combatLog");if(box){box.insertAdjacentHTML("beforeend",`<div>${s}</div>`);box.scrollTop=box.scrollHeight}
  adventureLog(s,"Combat")
 }
-function living(){return h?.combat?.enemies?.filter(e=>e.hp>0)||[]}
+function monsterCombatActive(e){return !!e&&!e.destroyed&&(e.hp>0||(e.special==="regeneration"&&Number(e.nonRegenDamage||0)<Number(e.maxhp||0)))}
+function living(){return h?.combat?.enemies?.filter(monsterCombatActive)||[]}
+function applyMonsterDamage(e,dmg,type="normal"){
+ dmg=Math.max(0,Math.trunc(Number(dmg)||0));if(!e||!dmg||e.destroyed)return 0;
+ if(e.special==="regeneration"){
+  if(e.regenStartRound==null)e.regenStartRound=(h?.combat?.round||1)+3;
+  if(type==="fire"||type==="acid"){e.nonRegenDamage=Math.min(e.maxhp,Number(e.nonRegenDamage||0)+dmg);e.hp=Math.max(0,e.hp-dmg);if(e.nonRegenDamage>=e.maxhp){e.destroyed=true;e.hp=0}}
+  else e.hp=Math.max(0,e.hp-dmg);
+  return dmg
+ }
+ e.hp=Math.max(0,e.hp-dmg);return dmg
+}
+function monsterDefeated(e){return !!e&&(e.destroyed||(e.special!=="regeneration"&&e.hp<=0))}
+function resolveMonsterDefeat(e){
+ if(!e||e.xpAwarded)return false;
+ if(monsterDefeated(e)){e.xpAwarded=true;let gained=awardXP(e.xp);clog(`${e.n} defeated. +${gained} XP.`);return true}
+ if(e.special==="regeneration"&&e.hp<=0)clog(`${e.n} collapses, but its flesh is still regenerating.`);
+ return false
+}
+function tickMonsterRegeneration(){
+ if(!h?.combat)return;
+ for(const e of h.combat.enemies||[]){
+  if(e.special!=="regeneration"||e.destroyed||e.regenStartRound==null)continue;
+  let ceiling=Math.max(0,e.maxhp-Number(e.nonRegenDamage||0));
+  if(h.combat.round>=e.regenStartRound&&e.hp<ceiling){let heal=Math.min(3,ceiling-e.hp);if(heal>0){e.hp+=heal;clog(`${e.n} regenerates ${heal} HP.`)}}
+ }
+}
 // RC Rules Cyclopedia, Balancing Encounters (pp.100-101): TPL -> IAHD -> challenge %.
 function rcTPL(){
  let level=Math.max(1,h.level||1),maxhp=Math.max(1,h.maxhp||combatStats().maxhp||1),hp=Math.max(0,h.hp??maxhp);
