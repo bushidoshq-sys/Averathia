@@ -138,4 +138,4 @@ jobs:
             process.exit(1);
           });
           NODE
-          node /tmp/averathia-smoke.cjs
+          NODE_PATH=$(npm root) node /tmp/averathia-smoke.cjs
