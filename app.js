@@ -1150,7 +1150,7 @@ function living(){return h?.combat?.enemies?.filter(monsterCombatActive)||[]}
 function applyMonsterDamage(e,dmg,type="normal"){
  dmg=Math.max(0,Math.trunc(Number(dmg)||0));if(!e||!dmg||e.destroyed)return 0;
  if(e.special==="regeneration"&&e.regenStartRound==null)e.regenStartRound=(h?.combat?.round||1)+3;
- e.hp=Math.max(0,e.hp-dmg);return dmg
+ e.lastDamageType=type||"normal";e.hp=Math.max(0,e.hp-dmg);return dmg
 }
 function monsterDefeated(e){return !!e&&(e.destroyed||(e.special!=="regeneration"&&e.hp<=0))}
 function resolveMonsterDefeat(e){
@@ -1161,9 +1161,8 @@ function resolveMonsterDefeat(e){
    return false
   }
   if(h.trollWeaknessKnown){
-   let ls=ensureLightStock();
-   if(ls.torchMinutes>=60){addLightStock("torch",-60);e.destroyed=true;clog("You use one full torch to burn the fallen Troll thoroughly, preventing its regeneration.")}
-   else{if(!e.downedNotice){e.downedNotice=true;clog("The Troll is down, but you have no full Torch left to finish it. Its wounds are already closing.")}return false}
+   if(e.lastDamageType==="fire"||e.lastDamageType==="acid"){e.destroyed=true;clog(`The ${e.lastDamageType} damage finishes the fallen Troll before it can regenerate.`)}
+   else{let ls=ensureLightStock();if(ls.torchMinutes>=60){addLightStock("torch",-60);e.destroyed=true;clog("You use one full Torch to burn the fallen Troll thoroughly, preventing its regeneration.")}else{if(!e.downedNotice){e.downedNotice=true;clog("The Troll is down, but you have no full Torch left to finish it. Its wounds are already closing.")}return false}}
   }else return false
  }
  if(monsterDefeated(e)){e.xpAwarded=true;let gained=awardXP(e.xp);clog(`${e.n} defeated. +${gained} XP.`);return true}
