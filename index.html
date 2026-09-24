@@ -1,6 +1,6 @@
 <!doctype html><html><head><meta charset=utf-8><meta name=viewport content="width=device-width,initial-scale=1"><meta name=theme-color content="#100d16"><meta name=apple-mobile-web-app-capable content=yes><meta name=apple-mobile-web-app-status-bar-style content=black-translucent><link rel=apple-touch-icon href=icon-192.png><link rel=manifest href=manifest.webmanifest><title>Averathia</title><style>
 *{box-sizing:border-box}body{margin:0;background:#0d0a12;color:#eee;font:15px system-ui}main{max-width:850px;margin:auto;padding:14px}.brand{text-align:center;font:36px Georgia;letter-spacing:4px}.p,.card{background:#211a2b;border:1px solid #5d496c;border-radius:13px;padding:13px;margin:9px 0}.row{display:flex;gap:8px;flex-wrap:wrap}.grow{flex:1}.hide{display:none}button,input{background:#2a2035;color:white;border:1px solid #765d89;border-radius:9px;padding:10px;font:inherit}button{cursor:pointer}.on,.primary{background:#694688}.cards .card{flex:1;min-width:210px}.sel{outline:2px solid #bd8bdd}.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:5px}.stat{background:#15101c;border-radius:7px;padding:6px;text-align:center}.avatar{font-size:48px;text-align:center}.avatarBtn{font-size:38px}.item{display:grid;grid-template-columns:1fr auto auto;gap:8px;align-items:center;padding:7px 0;border-bottom:1px solid #42344c}.small{font-size:12px;color:#c8bdd0}.nav{position:sticky;top:0;background:#0d0a12;padding:5px 0;z-index:5}.nav button{flex:1}.bar{position:relative;height:28px;background:#17121e;border:1px solid #765d89;border-radius:14px;overflow:visible}.fill{height:100%;background:#694688;border-radius:14px;width:0}.runner{position:absolute;top:-27px;transform:translateX(-50%) scale(.34);transform-origin:bottom center;left:0;width:66px;height:112px}.sheetgrid{display:grid;grid-template-columns:110px 1fr;gap:12px}.warn{border-color:#a15b61}.good{border-color:#4c875d}h2{font:24px Georgia;margin:4px 0 10px}progress{width:100%}
-.creationGrid{display:grid;grid-template-columns:minmax(260px,1.5fr) minmax(180px,.8fr) minmax(190px,.9fr);gap:14px;align-items:stretch}.classBox,.previewBox{border:1px solid #765d89;border-radius:10px;padding:12px;background:#18121f}.classChoice{width:100%;display:flex;gap:10px;align-items:center;margin:12px 0;text-align:left}.classChoice small{display:block;color:#c8bdd0}.classIcon{font-size:30px}.previewBox{text-align:center;display:flex;flex-direction:column;justify-content:center}.bigAvatar{font-size:108px;line-height:1.15;min-height:130px}.avatarBtn{min-width:74px}.creationGrid input{min-width:0}@media(max-width:720px){.creationGrid{grid-template-columns:1fr}.bigAvatar{font-size:96px}}
+.creationGrid{display:grid;grid-template-columns:minmax(280px,1.45fr) minmax(220px,1fr);gap:14px;align-items:start}.classBox{border:1px solid #765d89;border-radius:10px;padding:12px;background:#18121f}.classChoice{width:100%;display:flex;gap:10px;align-items:center;margin:12px 0;text-align:left}.classChoice small{display:block;color:#c8bdd0}.classIcon{font-size:30px}.avatarBtn{min-width:74px}.creationGrid input{min-width:0}@media(max-width:720px){.creationGrid{grid-template-columns:1fr}}
 .avatarGrid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
 .avatarBtn{height:126px;padding:5px;display:flex;align-items:flex-end;justify-content:center;background:#17121e}
 .chibi{position:relative;width:66px;height:112px;margin:auto}
@@ -25,10 +25,10 @@
 .travelMeta{display:flex;justify-content:space-between;font:17px Georgia;margin:8px 5px 15px}.travelMeta .right{text-align:right}.returnBtn{font:18px Georgia;padding:12px 22px;margin-bottom:14px}.eventLog{border:1px solid #394658;border-radius:9px;overflow:hidden}.eventLog p{margin:0;padding:11px 14px;border-bottom:1px solid #202b39;background:rgba(19,27,39,.78)}.eventLog p:last-child{border-bottom:0}
 @media(max-width:650px){.adventureHero{flex-direction:column}.timeBox{align-self:stretch;justify-content:center}.adventureHero h2{font-size:27px}.travelBar .runner{transform:translateX(-50%) scale(.40)}}
 
-.avatarBtn{height:180px;overflow:hidden;background:#10131a;padding:6px}
+.avatarBtn{height:180px;overflow:hidden;background:#10131a;padding:6px;border:2px solid #5d496c;transition:border-color .15s,box-shadow .15s}
+.avatarBtn.on{background:#10131a!important;border-color:#d09cff;box-shadow:0 0 0 3px rgba(208,156,255,.42),0 0 18px rgba(189,139,221,.28)}
 .avatarBtn img{width:100%;height:100%;object-fit:contain;display:block}
-.bigAvatar{min-height:245px;display:flex;align-items:center;justify-content:center}
-.bigAvatar img{max-width:210px;max-height:235px;object-fit:contain}
+.avatarBtn .avatar-art-arcanist-male-1{transform:scale(1.16);transform-origin:center center}
 .travelBar .runner{bottom:-8px;width:58px;height:64px;transform:translateX(-50%);display:flex;align-items:flex-end;justify-content:center}
 .travelBar .runner img{max-width:58px;max-height:64px;object-fit:contain}
 .chibi{display:none!important}
@@ -103,8 +103,7 @@
     <p>Choose figure</p><div id="avatars" class="avatarGrid"></div>
     <p>Name</p><div class="row"><input id="charName" class="grow" placeholder="Full name"><button id="genName">Generate Name</button></div>
   </div>
-  <div class="classBox"><b>Class</b><div id="classList" class="classList"></div><div class="small">All classes are selectable. During this prototype stage they temporarily use Fighter mechanics under the hood.</div></div>
-  <div class="previewBox"><div id="bigAvatar" class="bigAvatar"></div><b id="previewLabel">Selected Character</b></div>
+  <div class="classBox"><b>Class</b><div id="classList" class="classList"></div></div>
 </div></div>
 <div id="candidates" class="row cards"></div><div id="selectionHint" class="small">Want different stats? Press Reroll.</div>
 <div class="row"><button id="reroll">🎲 Reroll</button><button id="chooseCharacter" class="primary">Choose Character → Town</button></div>
@@ -131,4 +130,4 @@
   <div id="eventChoice" class="hide"></div><div id="tripCombatPlaceholder" class="hide"></div>
   <div class="p"><h3>📜 Adventure Log</h3><div id="adventureLogEntries" class="eventLog"></div></div><div id="log" class="eventLog hide"></div>
 </div></div>
-</section><script src="app.js?v=109c55"></script></main></body></html>
+</section><script src="app.js?v=109c56"></script></main></body></html>
