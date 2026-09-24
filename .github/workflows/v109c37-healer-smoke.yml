@@ -1,0 +1,92 @@
+name: Averathia v109c37 healer smoke
+
+on:
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  healer-smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install browser driver
+        run: npm install --no-save playwright-core
+      - name: Start local app server
+        run: |
+          python3 -m http.server 8000 >/tmp/averathia-http.log 2>&1 &
+          sleep 2
+          curl --fail http://127.0.0.1:8000/index.html >/dev/null
+      - name: Run healer smoke
+        run: |
+          cat >/tmp/healer-smoke.cjs <<'NODE'
+          const { chromium } = require('playwright-core');
+          const assert = require('node:assert/strict');
+          const fs = require('node:fs');
+          (async()=>{
+            const executablePath=['/usr/bin/google-chrome','/usr/bin/google-chrome-stable','/usr/bin/chromium','/usr/bin/chromium-browser'].find(fs.existsSync);
+            assert.ok(executablePath,'No Chromium executable');
+            const browser=await chromium.launch({executablePath,headless:true,args:['--no-sandbox','--disable-dev-shm-usage']});
+            const page=await browser.newPage({viewport:{width:390,height:844}});
+            const pageErrors=[];page.on('pageerror',e=>pageErrors.push(String(e)));
+
+            await page.goto('http://127.0.0.1:8000/',{waitUntil:'networkidle'});
+            await page.fill('#charName','Poison Tester');
+            await page.click('[data-class="Fighter"]');
+            await page.click('[data-av="0"]');
+            await page.click('#chooseCharacter');
+            await page.waitForSelector('#game:not(.hide)');
+            await page.click('[data-page="healer"]');
+
+            assert.equal(await page.locator('#cureDiseaseHealer').isDisabled(),true,'Cure Disease must be disabled when healthy');
+            assert.equal(await page.locator('#curePoisonHealer').isDisabled(),true,'Cure Poison must be disabled when not poisoned');
+            assert.equal(await page.locator('#cureDiseaseHealer').innerText(),'Cure Disease — 20 gp');
+            assert.equal(await page.locator('#curePoisonHealer').innerText(),'Cure Poison — 10 gp');
+
+            let save=JSON.parse(await page.evaluate(()=>localStorage.getItem('averathia-v041')));
+            save.diseases.push({
+              id:'smoke-centipede',
+              type:'centipede',
+              name:'Centipede Sickness',
+              source:'Giant Centipede',
+              activityBlockedUntilAT:Date.now()+864000000,
+              autoRecoverAtAT:Date.now()+864000000
+            });
+            localStorage.setItem('averathia-v041',JSON.stringify(save));
+            await page.reload({waitUntil:'networkidle'});
+            await page.click('[data-page="healer"]');
+
+            assert.equal(await page.locator('#cureDiseaseHealer').isDisabled(),true,'Centipede Sickness must not enable Cure Disease');
+            assert.equal(await page.locator('#curePoisonHealer').isDisabled(),false,'Centipede Sickness must enable Cure Poison');
+
+            await page.click('#curePoisonHealer');
+            save=JSON.parse(await page.evaluate(()=>localStorage.getItem('averathia-v041')));
+            assert.equal(save.diseases.some(x=>x.type==='centipede'),false,'Centipede poison must be removed');
+            assert.equal(save.gp,170,'Level-1 Cure Poison must cost 10 GP');
+            assert.match(await page.locator('#healmsg').innerText(),/Centipede Sickness cured for 10 gp/);
+            assert.equal(await page.locator('#curePoisonHealer').isDisabled(),true,'Cure Poison must disable again after cure');
+
+            const prices=await page.evaluate(()=>({d3:window.cureDiseaseCostGP(3),p3:window.curePoisonCostGP(3)}));
+            assert.deepEqual(prices,{d3:120,p3:60},'Cure Poison must be exactly half Cure Disease');
+
+            save=JSON.parse(await page.evaluate(()=>localStorage.getItem('averathia-v041')));
+            save.timedConditions=[{id:'widow-test',type:'lethalSpiderPoison',name:'Black Widow Venom',rounds:60,lethalOnExpire:true}];
+            localStorage.setItem('averathia-v041',JSON.stringify(save));
+            await page.reload({waitUntil:'networkidle'});
+            await page.click('[data-page="healer"]');
+            assert.equal(await page.locator('#curePoisonHealer').isDisabled(),false,'Spider venom must enable Cure Poison');
+            await page.click('#curePoisonHealer');
+            save=JSON.parse(await page.evaluate(()=>localStorage.getItem('averathia-v041')));
+            assert.equal(save.timedConditions.length,0,'Spider venom must be removed by Cure Poison');
+
+            assert.deepEqual(pageErrors,[],'Page errors: '+pageErrors.join(' | '));
+            console.log('HEALER_SMOKE_PASS');
+            console.log(JSON.stringify({prices,gpAfterCentipedeCure:170},null,2));
+            await browser.close();
+          })().catch(e=>{console.error(e);process.exit(1)});
+          NODE
+          NODE_PATH=$(npm root) node /tmp/healer-smoke.cjs
