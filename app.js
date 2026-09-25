@@ -518,12 +518,16 @@ function combatBandIndex(){let d=combatDistance();if(d<=5)return 0;if(d<=30)retu
 function syncCombatRange(){if(h?.combat)h.combat.range=RANGE_BANDS[combatBandIndex()].name}
 function setCombatBand(i){if(!h?.combat)return;let b=RANGE_BANDS[Math.max(0,Math.min(RANGE_BANDS.length-1,i))];h.combat.distanceFeet=b.feet;h.combat.range=b.name}
 function weaponCanReach(name,distance=combatDistance()){let r=WEAPON_RANGES[weaponBaseName(name)];return !!r&&distance<=r[2]}
-function attackModeFor(name){
- let distance=combatDistance(),base=weaponBaseName(name);
- if(distance<=5)return RANGED_WEAPONS.has(base)?"missile":"melee";
+function attackModeFor(itemOrName){
+ let item=typeof itemOrName==="object"?itemOrName:null,distance=combatDistance(),base=weaponBaseName(itemOrName),slot=item?.eqSlot||null;
+ if(distance<=5){
+  if(RANGED_WEAPONS.has(base))return"missile";
+  return"melee"
+ }
+ if(slot==="melee")return"out-of-range";
  if(RANGED_WEAPONS.has(base))return weaponCanReach(base,distance)?"missile":"out-of-range";
  if(THROWN_WEAPONS.has(base))return weaponCanReach(base,distance)?"thrown":"out-of-range";
- return "out-of-range"
+ return"out-of-range"
 }
 const TWO_HANDED=new Set(["Staff","Halberd","Pike","Polearm","Poleaxe","Bastard Sword (2H)","Two-Handed Sword","Short Bow","Long Bow","Light Crossbow","Heavy Crossbow"]);
 function weaponBaseName(itemOrName){let item=typeof itemOrName==="object"?itemOrName:null,name=item?.baseWeapon||item?.n||String(itemOrName||"");if(!item){let m=/^(.*) \+\d(?:, .*|$)/.exec(name);if(m)name=m[1]}return name}
@@ -574,7 +578,7 @@ function recoverThrownWeapons(){
 }
 function combatStats(){
  let weapon=activeWeapon(),armor=h.inv.find(x=>x.kind==="armor"&&x.eq),shield=h.inv.find(x=>x.kind==="shield"&&x.eq),wd=weapon?itemData(weapon):{},ad=armor?itemData(armor):{},shieldEffective=!!shield&&!wd.two,sd=shieldEffective?itemData(shield):{},name=weapon?.n||"Unarmed",baseWeapon=weaponBaseName(weapon)||"Unarmed",dexAC=mod(h.stats.DEX);
- return{weapon:name,weaponKey:baseWeapon,weaponItem:weapon,damage:wd.damage||"1d2",magicBonus:wd.magicBonus||0,attackMode:attackModeFor(baseWeapon),rangeText:weaponRangeText(baseWeapon),armor:armor?.n||"None",shield:shieldEffective?(shield?.n||"None"):"None",dexAC,ac:(ad.ac??9)+(shieldEffective?(sd.acBonus??-1):0)-dexAC}
+ return{weapon:name,weaponKey:baseWeapon,weaponItem:weapon,damage:wd.damage||"1d2",magicBonus:wd.magicBonus||0,attackMode:attackModeFor(weapon||baseWeapon),rangeText:weaponRangeText(baseWeapon),armor:armor?.n||"None",shield:shieldEffective?(shield?.n||"None"):"None",dexAC,ac:(ad.ac??9)+(shieldEffective?(sd.acBonus??-1):0)-dexAC}
 }
 function isInventoryEquipable(x){return !!x?.can&&x?.kind!=="clothing"}
 function normalizeInventoryOrder(){
