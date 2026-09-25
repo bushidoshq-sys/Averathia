@@ -1403,6 +1403,15 @@ function rcRollMonsterCarried(m,level=h?.level||1){
  for(const x of p.carried)rcMergeTreasure(out,rcRollCarriedType(x.type,x.mult,level));
  return out
 }
+function rcTreasureIsEmpty(t){
+ return !Object.values(t?.coins||{}).some(v=>Number(v)>0)&&![...(t?.gems||[]),...(t?.jewelry||[]),...(t?.special||[]),...(t?.magic||[])].length
+}
+function journeySpoilsForMonster(m){
+ let out=rcBlankTreasure("journey-spoils",m?.n||m?.id||"monster");
+ // Averathia fallback: humanoid enemies with no RC individual treasure still carry a modest personal purse.
+ if(m?.humanoid){out.coins.sp+=d(6);out.coins.cp+=d(6)}
+ return out
+}
 function rcRollMonsterLair(m,level=h?.level||1){
  let p=rcMonsterTreasureProfile(m),out=rcBlankTreasure("monster-lair",m?.n||m?.id||"monster");
  for(const x of p.lair){
@@ -1455,7 +1464,9 @@ function rcRollCombatTreasure(enemies=[],isBoss=false,level=h?.level||1,includeL
  let out=rcBlankTreasure(includeLair?"lair-combat":(isBoss?"boss-combat":"combat"),includeLair?"lair":(isBoss?"boss":"ordinary")),ogres=enemies.filter(e=>monsterKey(e)==="ogre");
  for(const e of enemies){
   if(monsterKey(e)==="ogre")continue; // RC Ogre prose overrides generic carried notation for the encountered group.
-  rcMergeTreasure(out,rcRollMonsterCarried(e,level))
+  let carried=rcRollMonsterCarried(e,level);
+  if(rcTreasureIsEmpty(carried))carried=journeySpoilsForMonster(e);
+  rcMergeTreasure(out,carried)
  }
  if(ogres.length)out.coins.gp+=d(6)*100; // RC: an ogre group encountered outside its lair carries 1d6 x 100 gp.
  if(includeLair&&enemies.length){
