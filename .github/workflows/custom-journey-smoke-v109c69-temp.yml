@@ -37,7 +37,7 @@ jobs:
             const d=f.contentDocument;
             d.querySelector("#customDurationBtn").click();
             const hours=d.querySelector("#customHours"), mins=d.querySelector("#customMinutes");
-            hours.value="3"; mins.value="30"; mins.dispatchEvent(new Event("input",{bubbles:true}));
+            hours.value="3"; mins.value="30"; mins.dispatchEvent(new f.contentWindow.Event("input",{bubbles:true}));
             setTimeout(()=>{
               const customReq=d.querySelector("#requirements")?.textContent||"";
               const customVisible=!d.querySelector("#customDurationFields").classList.contains("hide");
@@ -58,7 +58,7 @@ jobs:
           </script>
           EOF
           "$CHROME" --headless --no-sandbox --disable-gpu --window-size=390,844 --virtual-time-budget=5500 --dump-dom http://127.0.0.1:8123/qa.html > /tmp/dom.txt
-          grep -q '"customVisible":true' /tmp/dom.txt
+          grep -o '<pre id="result">[^<]*</pre>' /tmp/dom.txt || true\n          grep -q '"customVisible":true' /tmp/dom.txt
           grep -q '"customOn":true' /tmp/dom.txt
           grep -q 'Needed for 210 min (84.0 AT h)' /tmp/dom.txt
           grep -q 'food 3.500 days' /tmp/dom.txt
