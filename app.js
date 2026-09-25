@@ -1,6 +1,6 @@
 const RC_AVERATHIA_SPELL_AUDIT={"Arcanist/Elf":{"1":{"NOW":["Magic Missile","Shield","Sleep","Light"],"LATER":["Charm Person","Detect Magic","Floating Disc","Hold Portal","Read Languages","Read Magic","Ventriloquism"],"NO":[]},"2":{"NOW":["Mirror Image","Web"],"LATER":["Continual Light","Detect Evil","Detect Invisible","ESP","Invisibility","Knock","Levitate","Locate Object","Wizard Lock"],"NO":[]},"3":{"NOW":["Fireball","Lightning Bolt","Haste","Slow","Hold Person","Protection from Normal Missiles"],"LATER":["Clairvoyance","Create Air","Dispel Magic","Fly","Infravision","Invisibility 10' Radius","Water Breathing"],"NO":[]}},"Cleric":{"1":{"NOW":["Cure Light Wounds","Protection from Evil","Remove Fear","Resist Cold"],"LATER":["Detect Evil","Detect Magic","Light","Purify Food and Water"],"NO":[]},"2":{"NOW":["Bless","Hold Person","Resist Fire"],"LATER":["Find Traps","Know Alignment","Silence 15' Radius","Snake Charm","Speak with Animal"],"NO":[]},"3":{"NOW":["Cure Disease","Striking"],"LATER":["Continual Light","Cure Blindness","Dispel Magic","Growth of Animals","Locate Object","Speak with the Dead"],"NO":[]}}};
 const $=s=>document.querySelector(s),$$=s=>[...document.querySelectorAll(s)],d=n=>1+Math.floor(Math.random()*n);
-let sex="Male",avatar=0,cs=[],pick=null,h=null,tab="Weapons",inventoryTab="Inventory",mode="present",risk="Normal",mins=1,timer=null,autonomousCombatRunning=false,homeCoinMode="take",homeCoinDenom="gp",homeCoinAmount="";
+let sex="Male",avatar=0,cs=[],pick=null,h=null,tab="Weapons",inventoryTab="Inventory",mode="present",risk="Normal",mins=1,customDurationActive=false,timer=null,autonomousCombatRunning=false,homeCoinMode="take",homeCoinDenom="gp",homeCoinAmount="";
 const classSlug=c=>c.toLowerCase();
 function artPath(cls,sx,i,kind="full"){return `${classSlug(cls)}_${sx.toLowerCase()}_${i+1}_${kind}.png`;}
 const CLASSES=[["Fighter","⚔️","Human"],["Cleric","✦","Human"],["Arcanist","✧","Human"],["Thief","🗝️","Human"],["Elf","🏹","Race-as-class"],["Dwarf","⛏️","Race-as-class"]];
@@ -996,7 +996,22 @@ function buy(x){
 function equip(i){let q=h.inv[i];if(!q||!q.can)return;if(!classCanUse(q.baseWeapon||q.baseArmor||q.n,q.kind)){alert(`${h.className} cannot use ${q.n}.`);return}if(q.eq){q.eq=false;save();return}if(q.kind==="armor")h.inv.forEach(z=>{if(z.kind==="armor")z.eq=false});if(q.kind==="weapon"){let ranged=isRangedWeapon(q);h.inv.forEach(z=>{if(z.kind==="weapon"&&isRangedWeapon(z)===ranged)z.eq=false});if(itemData(q).two)h.inv.forEach(z=>{if(z.kind==="shield")z.eq=false})}if(q.kind==="shield"){let w=h.inv.find(z=>z.kind==="weapon"&&z.eq);if(w&&itemData(w).two){alert("A shield cannot be equipped with a two-handed weapon.");return}h.inv.forEach(z=>{if(z.kind==="shield")z.eq=false})}q.eq=true;save()}
 document.addEventListener("click",e=>{if(e.target.dataset.eq!==undefined)equip(+e.target.dataset.eq)});
 $$("[data-heal]").forEach(b=>b.onclick=()=>{let pct=+b.dataset.heal,cost=gpToCP({10:2,50:10,100:20}[pct]);if(magicalHealingBlockedByDisease()){$("#healmsg").textContent="Tomb Rot blocks magical healing. Cure the disease first.";return}if(walletCP()<cost){$("#healmsg").textContent="Not enough gold.";return}if(h.hp>=h.maxhp){$("#healmsg").textContent="Already at full health.";return}setWalletCP(walletCP()-cost);h.hp=Math.min(h.maxhp,h.hp+Math.ceil(h.maxhp*pct/100));$("#healmsg").textContent="Healing complete.";save()});if($("#cureDiseaseHealer"))$("#cureDiseaseHealer").onclick=()=>{let target=nextDiseaseForCure(),price=cureDiseaseCostGP(),cost=gpToCP(price);if(!target){$("#healmsg").textContent="No disease to cure.";return}if(walletCP()<cost){$("#healmsg").textContent=`Cure Disease costs ${price} gp.`;return}setWalletCP(walletCP()-cost);let cured=cureOneDisease();$("#healmsg").textContent=`${cured.name} cured for ${price} gp.`;save()};if($("#curePoisonHealer"))$("#curePoisonHealer").onclick=()=>{let target=nextPoisonForCure(),price=curePoisonCostGP(),cost=gpToCP(price);if(!target){$("#healmsg").textContent="No poison to cure.";return}if(walletCP()<cost){$("#healmsg").textContent=`Cure Poison costs ${price} gp.`;return}setWalletCP(walletCP()-cost);let cured=cureOnePoison();$("#healmsg").textContent=`${cured.name} cured for ${price} gp.`;save()};
-if($("#fillWaterskinsBtn"))$("#fillWaterskinsBtn").onclick=fillWaterskinsManual;document.querySelectorAll("[data-mode]").forEach(b=>b.onclick=()=>{mode=b.dataset.mode;$$("[data-mode]").forEach(x=>x.classList.toggle("on",x===b))});$$("[data-risk]").forEach(b=>b.onclick=()=>{risk=b.dataset.risk;$$("[data-risk]").forEach(x=>x.classList.toggle("on",x===b))});$$("[data-min]").forEach(b=>b.onclick=()=>{mins=+b.dataset.min;$$("[data-min]").forEach(x=>x.classList.toggle("on",x===b));refresh()});
+if($("#fillWaterskinsBtn"))$("#fillWaterskinsBtn").onclick=fillWaterskinsManual;
+document.querySelectorAll("[data-mode]").forEach(b=>b.onclick=()=>{mode=b.dataset.mode;$$("[data-mode]").forEach(x=>x.classList.toggle("on",x===b))});
+$$("[data-risk]").forEach(b=>b.onclick=()=>{risk=b.dataset.risk;$$("[data-risk]").forEach(x=>x.classList.toggle("on",x===b))});
+function setCustomDurationFromInputs(){
+ let hours=Math.max(0,Math.trunc(Number($("#customHours")?.value)||0)),minutes=Math.max(0,Math.trunc(Number($("#customMinutes")?.value)||0));
+ if(minutes>59)minutes=59;if(hours>24)hours=24;
+ let total=hours*60+minutes;if(total<1)total=1;if(total>1440)total=1440;
+ hours=Math.floor(total/60);minutes=total%60;
+ if($("#customHours"))$("#customHours").value=hours;if($("#customMinutes"))$("#customMinutes").value=minutes;
+ mins=total;customDurationActive=true;
+ $$("[data-min]").forEach(x=>x.classList.remove("on"));if($("#customDurationBtn"))$("#customDurationBtn").classList.add("on");
+ refresh()
+}
+$$("[data-min]").forEach(b=>b.onclick=()=>{mins=+b.dataset.min;customDurationActive=false;$$("[data-min]").forEach(x=>x.classList.toggle("on",x===b));if($("#customDurationBtn"))$("#customDurationBtn").classList.remove("on");if($("#customDurationFields"))$("#customDurationFields").classList.add("hide");refresh()});
+if($("#customDurationBtn"))$("#customDurationBtn").onclick=()=>{customDurationActive=true;$("#customDurationBtn").classList.add("on");$$("[data-min]").forEach(x=>x.classList.remove("on"));if($("#customDurationFields"))$("#customDurationFields").classList.remove("hide");let h=Math.floor(mins/60),m=mins%60;$("#customHours").value=h;$("#customMinutes").value=m;setCustomDurationFromInputs()};
+for(const id of ["#customHours","#customMinutes"])if($(id)){$(id).onchange=setCustomDurationFromInputs;$(id).oninput=()=>{if(customDurationActive)setCustomDurationFromInputs()}};
 function clock(t){return new Date(t).toLocaleTimeString([], {hour:"2-digit",minute:"2-digit"})}
 function adventureLog(t,type="Event"){
  if(!h?.trip)return;
@@ -1044,11 +1059,23 @@ function ageTimedBuffsClock(now=Date.now()){
 }
 function beginTripPause(){if(h?.trip&&!h.trip.pauseStart){ageTimedBuffsClock(Date.now());ageTimedConditionsClock(Date.now());h.trip.pauseStart=Date.now();h.buffAgeAt=h.trip.pauseStart;h.timedConditionAgeAt=h.trip.pauseStart}}
 function endTripPause(){if(!h?.trip?.pauseStart)return;let now=Date.now(),dt=now-h.trip.pauseStart;for(const k of ["start","end","half","nextEvent","resourceAt"])if(Number.isFinite(h.trip[k]))h.trip[k]+=dt;h.trip.pauseStart=null;h.buffAgeAt=now;h.timedConditionAgeAt=now}
-const ADVENTURE_EVENT_COUNTS={1:1,5:5,10:5,30:6,60:6,120:8,480:8,1440:10};
 const MISSION_OBJECTIVE_TREASURE_GP={1:"1d4",5:"1d6+2",10:"2d6+3",30:"3d6+5",60:"4d6+10",120:"6d6+20",240:"10d6+30",480:"20d6+50",1440:"30d6+100"};
+const MISSION_OBJECTIVE_TREASURE_MINUTES=Object.keys(MISSION_OBJECTIVE_TREASURE_GP).map(Number).sort((a,b)=>a-b);
+function diceExpressionRange(expr){
+ let m=/^(\d+)d(\d+)(?:\+(\d+))?$/i.exec(String(expr||""));if(!m)return null;
+ let n=+m[1],die=+m[2],add=+(m[3]||0);return{min:n+add,max:n*die+add}
+}
+function missionObjectiveBaseGP(minutes){
+ let m=Math.max(1,Math.min(1440,Math.round(Number(minutes)||1))),exact=MISSION_OBJECTIVE_TREASURE_GP[m];
+ if(exact)return rcRollScaled(exact);
+ let hi=MISSION_OBJECTIVE_TREASURE_MINUTES.find(x=>x>m)||1440,lo=[...MISSION_OBJECTIVE_TREASURE_MINUTES].reverse().find(x=>x<m)||1;
+ let a=diceExpressionRange(MISSION_OBJECTIVE_TREASURE_GP[lo]),b=diceExpressionRange(MISSION_OBJECTIVE_TREASURE_GP[hi]);
+ if(!a||!b)return 0;
+ let t=(m-lo)/(hi-lo),min=Math.round(a.min+(b.min-a.min)*t),max=Math.round(a.max+(b.max-a.max)*t);
+ return min+d(Math.max(1,max-min+1))-1
+}
 function missionObjectiveTreasureGP(minutes=h?.trip?.durationMinutes||1,level=h?.level||1){
- let expr=MISSION_OBJECTIVE_TREASURE_GP[Math.round(Number(minutes)||1)];if(!expr)return 0;
- return rcRollScaled(expr)*Math.max(1,Math.trunc(Number(level)||1))
+ return missionObjectiveBaseGP(minutes)*Math.max(1,Math.trunc(Number(level)||1))
 }
 function awardMissionObjectiveTreasure(){
  if(!h?.trip?.mission||h.trip.mission.objectiveTreasureAwarded)return null;
@@ -1062,8 +1089,12 @@ function awardMissionObjectiveTreasure(){
  return{rolledGP:gp,...credit}
 }
 function adventureEventTarget(minutes){
- minutes=Math.max(1,Math.round(Number(minutes)||1));
- return ADVENTURE_EVENT_COUNTS[minutes]||Math.max(1,Math.min(10,Math.round(Math.sqrt(minutes))));
+ minutes=Math.max(1,Math.min(1440,Math.round(Number(minutes)||1)));
+ if(minutes===1)return 1;
+ if(minutes<=10)return 5;
+ if(minutes<=60)return 6;
+ if(minutes<=480)return 8;
+ return 10
 }
 function ensureTripSchedule(trip=h?.trip){
  if(!trip||!Number.isFinite(Number(trip.start))||!Number.isFinite(Number(trip.end)))return trip;
