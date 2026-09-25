@@ -2495,13 +2495,13 @@ function thiefAbilities(level=h?.level||1){
 
 const CLASS_SPECIALS={
  Elf:[
-  ["Ghoul Touch Immunity","Immune to a ghoul's paralyzing touch; other paralysis still works normally."],
-  ["Infravision","Can see heat patterns in darkness where infravision applies."],
-  ["Secret Doors","1-in-3 chance to detect a secret or concealed door when actively searching a relevant location; other classes use 1-in-6."]
+  ["Ghoul Touch Immunity","A ghoul's paralyzing touch has no effect on an Elf; other sources of paralysis still work normally."],
+  ["Infravision","In darkness, an Elf can make out differences in heat where infravision can be used."],
+  ["Secret Doors","When actively checking a suitable area, an Elf has a 1-in-3 chance to notice a hidden or concealed door; other classes use 1-in-6."]
  ],
  Dwarf:[
-  ["Infravision","Can see heat patterns in darkness where infravision applies."],
-  ["Stonecraft","1-in-3 chance to detect stone traps, sliding walls, slopes and recent stone construction when relevant."]
+  ["Infravision","In darkness, a Dwarf can make out differences in heat where infravision can be used."],
+  ["Stonecraft","When examining worked stone, a Dwarf has a 1-in-3 chance to notice unusual construction — such as hidden traps, moving stonework, changes in slope, or masonry added more recently."]
  ]
 };
 const SKILL_LABELS={openLocks:"Open Locks",findTraps:"Find Traps",removeTraps:"Remove Traps",climbWalls:"Climb Walls",moveSilently:"Move Silently",hideInShadows:"Hide in Shadows",pickPockets:"Pick Pockets",hearNoise:"Hear Noise"};
