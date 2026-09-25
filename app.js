@@ -2716,6 +2716,7 @@ function eventRequirementItem(ch){
  return null
 }
 function eventUnlockedByInventory(ev){let keyed=(ev?.choices||[]).filter(c=>c.requiresItem||c.requiresAnyItem);return !keyed.length||keyed.some(eventChoiceAvailable)}
+const SHORT_REST_EVENT={id:"REST-001",type:"Rest",title:"A Quiet Place to Rest",text:"The road offers a safe place to stop for a while.",choices:[{label:"Take a Short Rest",result:"shortRest"},{label:"Continue the Journey",result:"passed"}]};
 const GEAR_KEY_EVENTS=[
  {id:"GEAR-001",type:"Decision",title:"A Nervous Young Suitor",text:"A young suitor is about to ask for a hand in marriage, but wants one last look at himself before he goes in.",choices:[{label:"Lend him your Steel Mirror",result:"gearKey",requiresItem:"Steel Mirror",xp:3,coins:[0,5,0]},{label:"Wish him courage",result:"passed"}]},
  {id:"GEAR-002",type:"Decision",title:"The Vampire Hunter",text:"Another adventurer is hurrying toward a vampire's lair and suddenly realizes the garlic was left back in town.",choices:[{label:"Give your Garlic",result:"gearKey",requiresItem:"Garlic",consumeItem:true,xp:4,coins:[0,0,0]},{label:"Wish them luck",result:"passed"}]},
@@ -2746,11 +2747,11 @@ const CLOTHING_KEY_EVENTS=[
 function eventCanStartCombat(ev){return ev?.type==="Encounter"&&(ev.choices||[]).some(c=>c?.result==="combat"||c?.result==="clericTurn")}
 function pickEvent(){
  let pools={Fighter:FIGHTER_EVENTS,Cleric:CLERIC_EVENTS,Arcanist:ARCANIST_EVENTS,Thief:THIEF_EVENTS,Elf:ELF_EVENTS,Dwarf:DWARF_EVENTS};
- let unlockedGlobal=[...GEAR_KEY_EVENTS,...CLOTHING_KEY_EVENTS].filter(eventUnlockedByInventory),source=[...(pools[h.className]||FIGHTER_EVENTS),...unlockedGlobal],used=new Set((h.trip.journal||[]).map(x=>x.id));
+ let unlockedGlobal=[...GEAR_KEY_EVENTS,...CLOTHING_KEY_EVENTS].filter(eventUnlockedByInventory),restEvents=(h.trip?.durationMinutes||0)>=30?[SHORT_REST_EVENT]:[],source=[...(pools[h.className]||FIGHTER_EVENTS),...unlockedGlobal,...restEvents],used=new Set((h.trip.journal||[]).map(x=>x.id));
  let available=source.filter(e=>!used.has(e.id));if(!available.length)available=source;
  if(journeyDaylightNow()){let noNight=available.filter(e=>!EXPLICIT_NIGHT_ENCOUNTERS.has(e.id));if(noNight.length)available=noNight}
  let roll=d(100),wanted=roll<=40?"Encounter":roll<=60?"Decision":roll<=80?"Discovery":"Quiet";
- let typed=available.filter(e=>e.type===wanted),pool=typed.length?typed:available,picked=pool[d(pool.length)-1];
+ let typed=available.filter(e=>e.type===wanted||(wanted==="Quiet"&&e.type==="Rest")),pool=typed.length?typed:available,picked=pool[d(pool.length)-1];
  if(h.trip?.mountedTravel&&eventCanStartCombat(picked)&&d(100)<=50){
   let nonCombat=available.filter(e=>!eventCanStartCombat(e));
   if(nonCombat.length)picked=nonCombat[d(nonCombat.length)-1]
@@ -2765,6 +2766,12 @@ function applyEventChoice(ev,ch){
  let resumeAfter=h.pendingEvent===ev;
  if(!eventChoiceAvailable(ch)){addlog(`${ev.title}: ${eventChoiceUnavailableReason(ch)}.`,ev.type||"Event");return}
  resolveSecretDoorSearch(ev,ch);
+ if(ch?.result==="shortRest"){
+   let before=h.hp;h.hp=Math.min(h.maxhp,h.hp+2);let healed=h.hp-before;
+   journal({id:ev.id,type:"Rest",title:ev.title,text:ev.text,choice:ch.label,result:"shortRest",xp:0,coins:[0,0,0],hpHealed:healed,durationMinutes:30});
+   addlog(`${ev.title}: Short Rest — ${healed?"+ "+healed+" HP restored":"already at full HP"}. 30 minutes of Journey time.`,"Rest");
+   h.pendingEvent=null;endTripPause();save();renderPendingEvent();if(resumeAfter)tick();return
+ }
  if(ch?.result==="gearKey"){
    let usedItem=eventRequirementItem(ch);if(ch.consumeItem&&usedItem)takeInventoryItem(usedItem);
    let xp=ch.xp?awardXP(ch.xp):0,coin=ch.coins||[0,0,0],credit=coin?addCoins(coin[0]||0,coin[1]||0,coin[2]||0):{cpValue:0,leftCP:0},keptCoins=coinArrayFromCP(credit.cpValue);
