@@ -68,7 +68,7 @@ function gainLevel(){
  h.level=old+1;
  if(h.level<=9){let roll=d(r.hd),gain=Math.max(1,roll+conHPBonus());h.maxhp+=gain;h.hp+=gain;h.lastLevelGain={level:h.level,hp:gain,roll,con:conHPBonus()}}
  else{let gain={Fighter:2,Thief:2,Cleric:1,Arcanist:1,Dwarf:3,Elf:2}[h.className]??1;h.maxhp+=gain;h.hp+=gain;h.lastLevelGain={level:h.level,hp:gain,roll:null,con:0}}
- if(h.trip?.journal)journal({id:`LEVEL-${h.level}`,type:"Progression",title:`Level ${h.level}`,text:`${h.name} reached level ${h.level}.`,result:"levelUp",xp:0,coins:[0,0,0],hpGain:h.lastLevelGain.hp});
+ if(h.trip?.journal){journal({id:`LEVEL-${h.level}`,type:"Progression",title:`Level ${h.level}`,text:`${h.name} reached level ${h.level}.`,result:"levelUp",xp:0,coins:[0,0,0],hpGain:h.lastLevelGain.hp});adventureLog(`${h.name} reached Level ${h.level}. Max HP +${h.lastLevelGain.hp}.`,"Progression")}
  if(PREPARED_CASTERS.has(h.className))ensureSpellState();
  return true
 }
@@ -415,7 +415,7 @@ function recordLastAdventureFromTrip(trip=h?.trip,opts={}){
 }
 function timedConditionDeath(effect){
  h.timedConditions=ensureTimedConditions().filter(x=>x.id!==effect.id);
- recordLastAdventureFromTrip(h.trip,{ending:"death"});recoverThrownWeapons();h.trip=null;h.pendingEvent=null;h.combat=null;h.deadUntil=Date.now()+h.level*5*60000;h.hp=0;
+ if(h.trip){adventureLog("The Journey ends in death.","Summary");adventureLog(`Recall will occur in ${h.level*5} minutes.`,"Home")}recordLastAdventureFromTrip(h.trip,{ending:"death"});recoverThrownWeapons();h.trip=null;h.pendingEvent=null;h.combat=null;h.deadUntil=Date.now()+h.level*5*60000;h.hp=0;
  localStorage.setItem("averathia-v041",JSON.stringify(h));renderDeathPage();return false
 }
 function addTimedCondition(effect){
@@ -469,7 +469,7 @@ function centipedePoisonStatusText(){
 function journeyBlockingStatusText(){return[diseaseStatusText(),centipedePoisonStatusText()].filter(Boolean).join(" | ")}
 function diseaseDeath(dis){
  h.diseases=ensureDiseases().filter(x=>x.id!==dis.id);h.mummyDisease=h.diseases.some(x=>x.type==="mummy");syncDiseaseCondition();
- recordLastAdventureFromTrip(h.trip,{ending:"death"});recoverThrownWeapons();h.trip=null;h.pendingEvent=null;h.combat=null;h.deadUntil=Date.now()+h.level*5*60000;h.hp=0;
+ if(h.trip){adventureLog("The Journey ends in death.","Summary");adventureLog(`Recall will occur in ${h.level*5} minutes.`,"Home")}recordLastAdventureFromTrip(h.trip,{ending:"death"});recoverThrownWeapons();h.trip=null;h.pendingEvent=null;h.combat=null;h.deadUntil=Date.now()+h.level*5*60000;h.hp=0;
  localStorage.setItem("averathia-v041",JSON.stringify(h));renderDeathPage();return true
 }
 function updateDiseases(){
@@ -2078,6 +2078,7 @@ function monsterRangeStep(e){
 function combatDeath(reason=""){
  if(reason)clog(reason);
  clog(`You are DEAD. Resurrection in ${h.level*5} minutes.`);
+ if(h.trip){adventureLog("The Journey ends in death.","Summary");adventureLog(`Recall will occur in ${h.level*5} minutes.`,"Home")}
  recordLastAdventureFromTrip(h.trip,{ending:"death"});
  recoverThrownWeapons();h.trip=null;h.pendingEvent=null;h.combat=null;h.deadUntil=Date.now()+h.level*5*60000;h.hp=0;
  localStorage.setItem("averathia-v041",JSON.stringify(h));renderDeathPage();return false
