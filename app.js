@@ -480,7 +480,7 @@ function refresh(){updateNavigationLock();if(h){ageTimedBuffsClock(Date.now());i
  if($("#longRestBtn")){$("#longRestBtn").disabled=!!h.restUntil||!!h.deadUntil;$("#longRestBtn").onclick=()=>startLongRest()}if($("#cureDiseaseHealer")){$("#cureDiseaseHealer").textContent=`Cure Disease — ${cureDiseaseCostGP()} gp`;$("#cureDiseaseHealer").disabled=!hasCurableDisease()}if($("#curePoisonHealer")){$("#curePoisonHealer").textContent=`Cure Poison — ${curePoisonCostGP()} gp`;$("#curePoisonHealer").disabled=!hasActivePoison()}
  if($("#restStatus"))$("#restStatus").textContent=h.deadUntil?`Recall: ${Math.ceil((h.deadUntil-Date.now())/60000)} min`:h.restUntil?`Resting: ${Math.max(0,Math.ceil((h.restUntil-Date.now())/60000))} min RT remaining`:"";
  let carry=carriedBulkPoints(),carryMax=maxCarryBP(),backpack=hasBackpack(),overBulk=carry>carryMax+1e-9;
- $("#top").innerHTML=`<div class="topIdentity"><div class="topName">${h.name}</div><div class="topMeta">${characterRaceName()} · ${h.sex} · ${h.className} · Level ${h.level}</div></div><div class="topVitals">❤️ ${h.hp}/${h.maxhp} &nbsp;&nbsp; ⭐ ${h.xp} XP${h.level<classLevelData().cap?` / ${classLevelData().xp[h.level]}`:" · MAX"}</div><div class="topCoins">${topCoinStatusHTML()}</div><div class="topCarry ${overBulk?"overCarry":""}">🎒 ${formatBP(carry)} / ${formatBP(carryMax)} BP${overBulk?" · OVER CAPACITY":""}</div>${hasDisease()?`<div class="topDisease">🦠 ${diseaseStatusText()}</div>`:""}${activePoisonDiseases().length?`<div class="topDisease">☠️ ${centipedePoisonStatusText()}</div>`:""}${ensureTimedConditions().length?`<div class="topDisease">🕷️ ${timedConditionStatusText()}</div>`:""}`;
+ $("#top").innerHTML=`<div class="topIdentity"><div class="topName">${h.name}</div><div class="topMeta">${characterTopMeta()}</div></div><div class="topVitals">❤️ ${h.hp}/${h.maxhp} &nbsp;&nbsp; ⭐ ${h.xp} XP${h.level<classLevelData().cap?` / ${classLevelData().xp[h.level]}`:" · MAX"}</div><div class="topCoins">${topCoinStatusHTML()}</div><div class="topCarry ${overBulk?"overCarry":""}">🎒 ${formatBP(carry)} / ${formatBP(carryMax)} BP${overBulk?" · OVER CAPACITY":""}</div>${hasDisease()?`<div class="topDisease">🦠 ${diseaseStatusText()}</div>`:""}${activePoisonDiseases().length?`<div class="topDisease">☠️ ${centipedePoisonStatusText()}</div>`:""}${ensureTimedConditions().length?`<div class="topDisease">🕷️ ${timedConditionStatusText()}</div>`:""}`;
  let av=chibiHTML(h.sex,h.avatar,true);$("#townAvatar").innerHTML=$("#sheetAvatar").innerHTML=av;
  let order=["STR","DEX","CON","INT","WIS","CHA"];$("#sheetStats").innerHTML=order.map(k=>`<div class=stat>${k}<br><b>${h.stats[k]}</b></div>`).join("");
  let resourceParts=[`Rations: ${h.rations.toFixed(2)} days`,`Water: ${h.water.toFixed(2)}/${h.waterCapacity} skins`,`Light: ${(totalLightMinutes()/60).toFixed(2)} h`,...visibleAmmoStatus()];
@@ -854,6 +854,7 @@ function topCoinStatusHTML(){
  return `<span class="coinValue"><span class="coinIcon coinGold" aria-hidden="true"></span>${Math.trunc(h.gp??h.gold??0)} GP</span><span class="coinValue"><span class="coinIcon coinSilver" aria-hidden="true"></span>${Math.trunc(h.sp??0)} SP</span><span class="coinValue"><span class="coinIcon coinCopper" aria-hidden="true"></span>${Math.trunc(h.cp??0)} CP</span>`
 }
 function characterRaceName(){return ["Elf","Dwarf"].includes(h?.className)?h.className:"Human"}
+function characterTopMeta(){return ["Elf","Dwarf"].includes(h?.className)?`${h.className} · ${h.sex} · Level ${h.level}`:`Human · ${h.sex} · ${h.className} · Level ${h.level}`}
 function visibleAmmoStatus(){
  let out=[];
  for(const [label,key] of [["Arrows","Arrows"],["Quarrels","Quarrels"],["Sling stones","Sling Stones"]]){let n=ammoCount(key);if(n>0)out.push(`${label}: ${n}`)}
@@ -2495,13 +2496,13 @@ function thiefAbilities(level=h?.level||1){
 
 const CLASS_SPECIALS={
  Elf:[
-  ["Ghoul Touch Immunity","A ghoul's paralyzing touch has no effect on an Elf; other sources of paralysis still work normally."],
-  ["Infravision","In darkness, an Elf can make out differences in heat where infravision can be used."],
-  ["Secret Doors","When actively checking a suitable area, an Elf has a 1-in-3 chance to notice a hidden or concealed door; other classes use 1-in-6."]
+  ["Ghoul Touch Immunity","Ghoul paralysis cannot lock an Elf's body, though paralysis from other causes can still affect them."],
+  ["Infravision","In darkness, an Elf can read nearby heat differences when the surroundings allow infravision to work."],
+  ["Secret Doors","Careful searching gives an Elf a 1-in-3 chance to spot a concealed doorway; everyone else normally has a 1-in-6 chance."]
  ],
  Dwarf:[
-  ["Infravision","In darkness, a Dwarf can make out differences in heat where infravision can be used."],
-  ["Stonecraft","When examining worked stone, a Dwarf has a 1-in-3 chance to notice unusual construction — such as hidden traps, moving stonework, changes in slope, or masonry added more recently."]
+  ["Infravision","In darkness, a Dwarf can read nearby heat differences when the surroundings allow infravision to work."],
+  ["Stonecraft","A Dwarf who studies worked stone has a 1-in-3 chance to notice that something is wrong with the masonry — for example a disguised hazard, a section that can shift, an unnatural incline, or stonework from a different period."]
  ]
 };
 const SKILL_LABELS={openLocks:"Open Locks",findTraps:"Find Traps",removeTraps:"Remove Traps",climbWalls:"Climb Walls",moveSilently:"Move Silently",hideInShadows:"Hide in Shadows",pickPockets:"Pick Pockets",hearNoise:"Hear Noise"};
@@ -2523,7 +2524,7 @@ function renderSkills(){
  let nav=$("#skillsNav");if(nav)nav.classList.toggle("hide",!classHasSkills());
  let box=$("#skillsContent");if(!box||!h)return;
  let out=[];
- if(h.className==="Thief"){let a=thiefAbilities();for(const k of Object.keys(SKILL_LABELS))out.push(`<div class=skillCard><span class=skillPct>${a[k]}%</span><b>${SKILL_LABELS[k]}</b><span class=small>RC progression; no points to allocate.</span></div>`);out.push(`<div class=skillCard><b>Backstab</b><span class=small>+4 attack; ×2 damage when the backstab conditions are met.</span></div>`);if(h.level>=4)out.push(`<div class=skillCard><b>Read Languages</b><span class=small>80% chance.</span></div>`);if(h.level>=10)out.push(`<div class=skillCard><b>Magic-user Scrolls</b><span class=small>Can attempt scroll use; 10% backfire chance.</span></div>`)}
+ if(h.className==="Thief"){let a=thiefAbilities();for(const k of Object.keys(SKILL_LABELS))out.push(`<div class=skillCard><span class=skillPct>${a[k]}%</span><b>${SKILL_LABELS[k]}</b><span class=small>Improves automatically with level; no points to allocate.</span></div>`);out.push(`<div class=skillCard><b>Backstab</b><span class=small>+4 attack; ×2 damage when the backstab conditions are met.</span></div>`);if(h.level>=4)out.push(`<div class=skillCard><b>Read Languages</b><span class=small>80% chance.</span></div>`);if(h.level>=10)out.push(`<div class=skillCard><b>Magic-user Scrolls</b><span class=small>Can attempt scroll use; 10% backfire chance.</span></div>`)}
  for(const [name,desc] of (CLASS_SPECIALS[h.className]||[]))out.push(`<div class=skillCard><b>${name}</b><span class=small>${desc}</span></div>`);
  if(PREPARED_CASTERS.has(h.className)){
   ensureSpellState();let slots=spellSlotsFor(),list=SPELLS[h.className]||[],prepLocked=!!h.trip||!!h.combat||!!h.restUntil||(h.spells.spentMem||[]).length>0;
