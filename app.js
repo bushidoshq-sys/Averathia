@@ -136,24 +136,9 @@ function processInnLodging(){
 }
 function resolveStreetSleepEvent(){
  ensureInnState();let day=innCurrentDay();if(h.inn.lastStreetEventDay===day)return null;
- h.inn.lastStreetEventDay=day;let event=null;
- if(d(100)<=85){
-  if(d(100)<=70){
-   let loss=Math.min(walletCP(),Math.max(1,d(6))*10);
-   event=loss>0
-    ?{day,type:"Mugging",text:"A mugger catches you while you sleep on the street. You lose "+coinTextCP(loss)+"."}
-    :{day,type:"Mugging",text:"A mugger tries their luck while you sleep on the street, but you have no money to steal."};
-   if(loss>0)setWalletCP(walletCP()-loss);
-  }else{
-   const incidents=[
-    "Town watch wakes you and moves you along before dawn.",
-    "Cold rain ruins your sleep and leaves you exhausted by morning.",
-    "A drunken brawl erupts nearby and keeps you awake for hours.",
-    "Stray dogs tear through your things, but nothing valuable is lost."
-   ];
-   event={day,type:"Street Event",text:incidents[d(incidents.length)-1]};
-  }
- }
+ h.inn.lastStreetEventDay=day;
+ if(d(100)>85){h.inn.lastStreetEvent=null;return null}
+ let event={day,type:"Mugging",combat:true,text:"A mugger approaches while you sleep on the street. Combat begins."};
  h.inn.lastStreetEvent=event;return event
 }
 function checkInInn(){if(!h||hasRoom()||h.trip||h.combat)return false;ensureInnState();if(walletCP()<INN_DAILY_COST_CP)return false;setWalletCP(walletCP()-INN_DAILY_COST_CP);h.inn.checkedIn=true;h.inn.lastChargedDay=innCurrentDay();h.inn.lastStreetEvent=null;save();return true}
@@ -518,8 +503,10 @@ function updateRest(){
  if(h?.restUntil&&Date.now()>=h.restUntil){
    let sleptAt=h.restLocation||"home";h.restUntil=null;h.restLocation=null;
    let rate=.25*diseaseNaturalHealingMultiplier();h.hp=Math.min(h.maxhp,h.hp+Math.ceil(h.maxhp*rate));resetDailySpells();
-   if(sleptAt==="street"&&!hasRoom()&&!h.inn?.checkedIn)resolveStreetSleepEvent();
-   save();return true
+   let streetEvent=sleptAt==="street"&&!hasRoom()&&!h.inn?.checkedIn?resolveStreetSleepEvent():null;
+   save();
+   if(streetEvent?.combat)startStreetMuggingCombat();
+   return true
  }return false
 }
 function save(){if(h){processInnLodging();ensureLightStock();normalizeInventoryOrder();checkLevelUps()}localStorage.setItem("averathia-v041",JSON.stringify(h));refresh()}
@@ -1873,6 +1860,15 @@ function monsterContextAttackModifier(e){
  let ctx=h?.combat?.context;if(ctx?.daylight===true&&Number.isFinite(Number(e?.daylightAttackPenalty)))return Number(e.daylightAttackPenalty);
  return 0
 }
+function startStreetMuggingCombat(){
+ let b=MONSTERS.find(x=>x.id==="bandit");if(!b)return false;
+ let hp=0;if(Number.isFinite(Number(b.hpDie)))hp=d(Number(b.hpDie));else for(let k=0;k<b.hdDice;k++)hp+=d(8);hp=Math.max(1,hp+(b.hdAdj||0));
+ let e={...b,monsterId:b.id,id:0,lane:0,hp,maxhp:hp,damage:b.damage[0],ammo:b.rangedDamage?d(6):0,boss:false,iahd:rcAdjustedHD(b)};
+ let tpl=rcTPL(),pct=rcChallengePct(e.iahd,tpl);
+ h.combat={round:1,enemies:[e],target:0,log:[],skipNext:false,isBoss:false,context:{streetSleep:true,eventId:"STREET-MUGGING",eventTitle:"Street Mugging",environment:"town",terrain:"street",daylight:false},range:"Close",distanceFeet:RANGE_BANDS[1].feet,rcTPL:tpl,rcIAHD:e.iahd,rcChallengePct:pct,rcChallenge:rcChallengeName(pct)};
+ clog("Street Mugging — Bandit. Combat begins.");
+ save();renderCombat();return true
+}
 function makeCombat(isBoss=false,context=null){
  beginTripPause();
  let combatContext=context||(isBoss?missionCombatContext():{eventId:null,eventTitle:null,environment:"unknown",terrain:null,daylight:null});
@@ -2531,10 +2527,14 @@ function useMummyBurnCombat(){
  enemyStrike(e=>!e.alwaysWinInitiative);if(h.combat)advanceCombatRound(h.combat,true)
 }
 function finishCombat(){
- let boss=!!h.combat?.isBoss,enemies=[...(h.combat?.enemies||[])],treasure=rcRollCombatTreasure(enemies,boss,h.level,false);
+ let streetSleep=!!h.combat?.context?.streetSleep,boss=!!h.combat?.isBoss,enemies=[...(h.combat?.enemies||[])],treasure=rcRollCombatTreasure(enemies,boss,h.level,false);
  let defeated=enemies.filter(e=>e.destroyed||e.hp<=0).length,total=enemies.length;
- addlog((boss?"Boss defeated":"Combat won")+" — "+defeated+" of "+total+" enem"+(total===1?"y":"ies")+" defeated.");
- rcAwardTreasure(treasure,"RC carried treasure");
+ if(!streetSleep)addlog((boss?"Boss defeated":"Combat won")+" — "+defeated+" of "+total+" enem"+(total===1?"y":"ies")+" defeated.");
+ rcAwardTreasure(treasure,streetSleep?"Mugger's carried treasure":"RC carried treasure");
+ if(streetSleep){
+  ensureInnState();h.inn.lastStreetEvent={day:innCurrentDay(),type:"Mugging",combat:true,text:"You defeated the mugger who attacked while you slept on the street."};
+  recoverThrownWeapons();h.combat=null;save();page("home");return
+ }
  if(boss)resolveMissionBoss();
  recoverThrownWeapons();h.combat=null;endTripPause();save();
  if(h.trip&&diseaseJourneyBlocked()){returnEarly(`${journeyBlockingCondition()?.name||"Current condition"} prevents further adventuring. You turn back toward town.`);return}
@@ -2547,6 +2547,10 @@ function retreatCombat(){
  if(!preemptiveEnemiesAct())return;
  let lessonEscape=!!(h?.combat?.trollLesson&&h.combat.trollLessonDowned);
  if(d(6)>=3){
+   if(h.combat?.context?.streetSleep){
+    ensureInnState();h.inn.lastStreetEvent={day:innCurrentDay(),type:"Mugging",combat:true,text:"A mugger attacked while you slept on the street, but you escaped."};
+    recoverThrownWeapons();h.combat=null;save();page("home");return
+   }
    addlog("You escape the encounter.");recoverThrownWeapons();h.combat=null;endTripPause();
    if(lessonEscape&&h.trip){h.trip.trollLessonReturn=true;save();returnEarly("You retreat toward town. Behind you, the Troll is already beginning to move again.");return}
    save();if(h.trip&&diseaseJourneyBlocked()){returnEarly(`${journeyBlockingCondition()?.name||"Current condition"} prevents further adventuring. You turn back toward town.`);return}
