@@ -1405,8 +1405,8 @@ function rcRollMonsterCarried(m,level=h?.level||1){
 }
 function journeySpoilsForMonster(m){
  let out=rcBlankTreasure("journey-spoils",m?.n||m?.id||"monster");
- // Averathia fallback: humanoid enemies with no RC individual treasure still carry a modest personal purse.
- if(m?.humanoid){out.coins.sp+=d(6);out.coins.cp+=d(6)}
+ // Averathia fallback: humanoid enemies with no RC individual treasure still carry a useful personal purse.
+ if(m?.humanoid){out.coins.gp+=d(6);out.coins.sp+=d(6);out.coins.cp+=d(6)}
  return out
 }
 function rcRollMonsterLair(m,level=h?.level||1){
