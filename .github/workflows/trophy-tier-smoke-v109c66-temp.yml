@@ -50,7 +50,7 @@ jobs:
             });
           },650);
           </script>
-EOF
+          EOF
             "$CHROME" --headless --no-sandbox --disable-gpu --window-size=390,844 --virtual-time-budget=5000 --dump-dom http://127.0.0.1:8123/qa.html > "/tmp/tier-$TIER.txt"
             grep -q "\"heading\":\"🏆 $EXPECTED\"" "/tmp/tier-$TIER.txt"
             grep -q "\"nav\":\"$EXPECTED\"" "/tmp/tier-$TIER.txt"
