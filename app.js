@@ -979,6 +979,7 @@ function createMission(){
 function resolveMissionBoss(){
  if(!h.trip?.mission||h.trip.mission.resolved)return;
  let m=h.trip.mission;m.bossWon=true;m.resolved=true;
+ awardMissionObjectiveTreasure();
  if(m.trophyCandidate&&unlockTrophy(m.trophyCandidate)){
    addlog(`🏆 TROPHY DISCOVERED: ${m.trophyCandidate}. It has been added to your ${TROPHY_TITLES[h.className]}.`);
  }else addlog(`Objective secured: ${m.title}. No rare trophy was found this time.`);
@@ -997,6 +998,22 @@ function ageTimedBuffsClock(now=Date.now()){
 function beginTripPause(){if(h?.trip&&!h.trip.pauseStart){ageTimedBuffsClock(Date.now());ageTimedConditionsClock(Date.now());h.trip.pauseStart=Date.now();h.buffAgeAt=h.trip.pauseStart;h.timedConditionAgeAt=h.trip.pauseStart}}
 function endTripPause(){if(!h?.trip?.pauseStart)return;let now=Date.now(),dt=now-h.trip.pauseStart;for(const k of ["start","end","half","nextEvent","resourceAt"])if(Number.isFinite(h.trip[k]))h.trip[k]+=dt;h.trip.pauseStart=null;h.buffAgeAt=now;h.timedConditionAgeAt=now}
 const ADVENTURE_EVENT_COUNTS={1:1,5:5,10:5,30:6,60:6,120:8,480:8,1440:10};
+const MISSION_OBJECTIVE_TREASURE_GP={1:"1d4",5:"1d6+2",10:"2d6+3",30:"3d6+5",60:"4d6+10",120:"6d6+20",240:"10d6+30",480:"20d6+50",1440:"30d6+100"};
+function missionObjectiveTreasureGP(minutes=h?.trip?.durationMinutes||1,level=h?.level||1){
+ let expr=MISSION_OBJECTIVE_TREASURE_GP[Math.round(Number(minutes)||1)];if(!expr)return 0;
+ return rcRollScaled(expr)*Math.max(1,Math.trunc(Number(level)||1))
+}
+function awardMissionObjectiveTreasure(){
+ if(!h?.trip?.mission||h.trip.mission.objectiveTreasureAwarded)return null;
+ let gp=missionObjectiveTreasureGP(h.trip.durationMinutes,h.level),credit=addCoins(gp,0,0);
+ h.trip.mission.objectiveTreasureAwarded=true;
+ h.trip.mission.objectiveTreasureRolledGP=gp;
+ h.trip.mission.objectiveTreasureKeptCP=credit.cpValue;
+ if(credit.cpValue>0)h.trip.rcTreasureXpCP=Math.max(0,Number(h.trip.rcTreasureXpCP)||0)+credit.cpValue;
+ journal({id:"MISSION-OBJECTIVE-TREASURE",type:"Treasure",title:"Mission Objective Treasure",text:`Mission objective secured: ${gp} GP found.`,result:"objectiveTreasure",xp:0,coins:coinArrayFromCP(credit.cpValue),leftCoinCP:credit.leftCP||0});
+ addlog(`Mission Objective Treasure: ${gp} GP found.${credit.cpValue?` ${coinTextCP(credit.cpValue)} kept.`:""}${credit.leftCP?` ${coinTextCP(credit.leftCP)} left behind at the carry limit.`:""}`);
+ return{rolledGP:gp,...credit}
+}
 function adventureEventTarget(minutes){
  minutes=Math.max(1,Math.round(Number(minutes)||1));
  return ADVENTURE_EVENT_COUNTS[minutes]||Math.max(1,Math.min(10,Math.round(Math.sqrt(minutes))));
@@ -1374,8 +1391,8 @@ function rcRollMagicSpec(spec){
 function rcRollCarriedType(type,mult=1,level=h?.level||1){
  let row=RC_TREASURE_CARRIED[type],out=rcBlankTreasure("carried",type);if(!row)return out;
  for(const [kind,spec] of Object.entries(row.coins||{}))if(spec.chance===100||rcChance(spec.chance))out.coins[kind]+=rcRollScaled(spec.dice)*mult;
- if(row.gems&&(row.gems.chance===100||rcChance(row.gems.chance))){let n=rcRollScaled(row.gems.dice)*mult;while(n--)out.gems.push(rcGemItem(level))}
- if(row.jewelry&&(row.jewelry.chance===100||rcChance(row.jewelry.chance))){let n=rcRollScaled(row.jewelry.dice)*mult;while(n--)out.jewelry.push(rcJewelryItem(level))}
+ if(row.gems&&(row.gems.chance===100||rcChance(row.gems.chance))){let n=rcRollScaled(row.gems.dice)*mult;if(type==="U"||type==="V")n=Math.min(1,n);while(n--)out.gems.push(rcGemItem(level))}
+ if(row.jewelry&&(row.jewelry.chance===100||rcChance(row.jewelry.chance))){let n=rcRollScaled(row.jewelry.dice)*mult;if(type==="U"||type==="V")n=Math.min(1,n);while(n--)out.jewelry.push(rcJewelryItem(level))}
  if(row.special&&(row.special.chance===100||rcChance(row.special.chance))){let n=rcRollScaled(row.special.dice)*mult;while(n--)out.special.push(rcSpecialTreasureItem())}
  if(row.magic&&(row.magic.chance===100||rcChance(row.magic.chance))){let n=rcRollScaled(row.magic.dice)*mult;while(n--)out.magic.push(rollRcMagicAny())}
  return out
