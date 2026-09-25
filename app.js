@@ -2324,9 +2324,9 @@ function useMummyBurnCombat(){
  enemyStrike(e=>!e.alwaysWinInitiative);if(h.combat)advanceCombatRound(h.combat,true)
 }
 function finishCombat(){
- let boss=!!h.combat?.isBoss,enemies=[...(h.combat?.enemies||[])],lair=!!h.combat?.context?.lairTreasure,treasure=rcRollCombatTreasure(enemies,boss,h.level,lair);
+ let boss=!!h.combat?.isBoss,enemies=[...(h.combat?.enemies||[])],treasure=rcRollCombatTreasure(enemies,boss,h.level,false);
  addlog(boss?"Boss defeated.":"Combat won.");
- rcAwardTreasure(treasure,lair?"RC lair treasure":"RC carried treasure");
+ rcAwardTreasure(treasure,"RC carried treasure");
  if(boss)resolveMissionBoss();
  recoverThrownWeapons();h.combat=null;endTripPause();save();
  if(h.trip&&diseaseJourneyBlocked()){returnEarly(`${journeyBlockingCondition()?.name||"Current condition"} prevents further adventuring. You turn back toward town.`);return}
