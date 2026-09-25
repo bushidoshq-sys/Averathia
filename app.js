@@ -1403,9 +1403,6 @@ function rcRollMonsterCarried(m,level=h?.level||1){
  for(const x of p.carried)rcMergeTreasure(out,rcRollCarriedType(x.type,x.mult,level));
  return out
 }
-function rcTreasureIsEmpty(t){
- return !Object.values(t?.coins||{}).some(v=>Number(v)>0)&&![...(t?.gems||[]),...(t?.jewelry||[]),...(t?.special||[]),...(t?.magic||[])].length
-}
 function journeySpoilsForMonster(m){
  let out=rcBlankTreasure("journey-spoils",m?.n||m?.id||"monster");
  // Averathia fallback: humanoid enemies with no RC individual treasure still carry a modest personal purse.
