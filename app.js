@@ -997,8 +997,8 @@ function equip(i){let q=h.inv[i];if(!q||!q.can)return;if(!classCanUse(q.baseWeap
 document.addEventListener("click",e=>{if(e.target.dataset.eq!==undefined)equip(+e.target.dataset.eq)});
 $$("[data-heal]").forEach(b=>b.onclick=()=>{let pct=+b.dataset.heal,cost=gpToCP({10:2,50:10,100:20}[pct]);if(magicalHealingBlockedByDisease()){$("#healmsg").textContent="Tomb Rot blocks magical healing. Cure the disease first.";return}if(walletCP()<cost){$("#healmsg").textContent="Not enough gold.";return}if(h.hp>=h.maxhp){$("#healmsg").textContent="Already at full health.";return}setWalletCP(walletCP()-cost);h.hp=Math.min(h.maxhp,h.hp+Math.ceil(h.maxhp*pct/100));$("#healmsg").textContent="Healing complete.";save()});if($("#cureDiseaseHealer"))$("#cureDiseaseHealer").onclick=()=>{let target=nextDiseaseForCure(),price=cureDiseaseCostGP(),cost=gpToCP(price);if(!target){$("#healmsg").textContent="No disease to cure.";return}if(walletCP()<cost){$("#healmsg").textContent=`Cure Disease costs ${price} gp.`;return}setWalletCP(walletCP()-cost);let cured=cureOneDisease();$("#healmsg").textContent=`${cured.name} cured for ${price} gp.`;save()};if($("#curePoisonHealer"))$("#curePoisonHealer").onclick=()=>{let target=nextPoisonForCure(),price=curePoisonCostGP(),cost=gpToCP(price);if(!target){$("#healmsg").textContent="No poison to cure.";return}if(walletCP()<cost){$("#healmsg").textContent=`Cure Poison costs ${price} gp.`;return}setWalletCP(walletCP()-cost);let cured=cureOnePoison();$("#healmsg").textContent=`${cured.name} cured for ${price} gp.`;save()};
 if($("#fillWaterskinsBtn"))$("#fillWaterskinsBtn").onclick=fillWaterskinsManual;
-document.querySelectorAll("[data-mode]").forEach(b=>b.onclick=()=>{mode=b.dataset.mode;$("[data-mode]").forEach(x=>x.classList.toggle("on",x===b))});
-$("[data-risk]").forEach(b=>b.onclick=()=>{risk=b.dataset.risk;$("[data-risk]").forEach(x=>x.classList.toggle("on",x===b))});
+document.querySelectorAll("[data-mode]").forEach(b=>b.onclick=()=>{mode=b.dataset.mode;$$("[data-mode]").forEach(x=>x.classList.toggle("on",x===b))});
+$$("[data-risk]").forEach(b=>b.onclick=()=>{risk=b.dataset.risk;$$("[data-risk]").forEach(x=>x.classList.toggle("on",x===b))});
 function setCustomDurationFromInputs(){
  let hours=Math.max(0,Math.trunc(Number($("#customHours")?.value)||0)),minutes=Math.max(0,Math.trunc(Number($("#customMinutes")?.value)||0));
  if(minutes>59)minutes=59;if(hours>24)hours=24;
@@ -1006,11 +1006,11 @@ function setCustomDurationFromInputs(){
  hours=Math.floor(total/60);minutes=total%60;
  if($("#customHours"))$("#customHours").value=hours;if($("#customMinutes"))$("#customMinutes").value=minutes;
  mins=total;customDurationActive=true;
- $("[data-min]").forEach(x=>x.classList.remove("on"));if($("#customDurationBtn"))$("#customDurationBtn").classList.add("on");
+ $$("[data-min]").forEach(x=>x.classList.remove("on"));if($("#customDurationBtn"))$("#customDurationBtn").classList.add("on");
  refresh()
 }
-$("[data-min]").forEach(b=>b.onclick=()=>{mins=+b.dataset.min;customDurationActive=false;$("[data-min]").forEach(x=>x.classList.toggle("on",x===b));if($("#customDurationBtn"))$("#customDurationBtn").classList.remove("on");if($("#customDurationFields"))$("#customDurationFields").classList.add("hide");refresh()});
-if($("#customDurationBtn"))$("#customDurationBtn").onclick=()=>{customDurationActive=true;$("#customDurationBtn").classList.add("on");$("[data-min]").forEach(x=>x.classList.remove("on"));if($("#customDurationFields"))$("#customDurationFields").classList.remove("hide");let h=Math.floor(mins/60),m=mins%60;$("#customHours").value=h;$("#customMinutes").value=m;setCustomDurationFromInputs()};
+$$("[data-min]").forEach(b=>b.onclick=()=>{mins=+b.dataset.min;customDurationActive=false;$$("[data-min]").forEach(x=>x.classList.toggle("on",x===b));if($("#customDurationBtn"))$("#customDurationBtn").classList.remove("on");if($("#customDurationFields"))$("#customDurationFields").classList.add("hide");refresh()});
+if($("#customDurationBtn"))$("#customDurationBtn").onclick=()=>{customDurationActive=true;$("#customDurationBtn").classList.add("on");$$("[data-min]").forEach(x=>x.classList.remove("on"));if($("#customDurationFields"))$("#customDurationFields").classList.remove("hide");let h=Math.floor(mins/60),m=mins%60;$("#customHours").value=h;$("#customMinutes").value=m;setCustomDurationFromInputs()};
 for(const id of ["#customHours","#customMinutes"])if($(id)){$(id).onchange=setCustomDurationFromInputs;$(id).oninput=()=>{if(customDurationActive)setCustomDurationFromInputs()}};
 function clock(t){return new Date(t).toLocaleTimeString([], {hour:"2-digit",minute:"2-digit"})}
 function adventureLog(t,type="Event"){
