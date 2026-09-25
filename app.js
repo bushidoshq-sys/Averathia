@@ -1691,7 +1691,6 @@ function monsterNeed(e){return Math.max(2,(20-monsterHitModifier(e))-effectiveAC
 function clog(s){
  h.combat.log.push(s);if(h.combat.log.length>40)h.combat.log.shift();
  let box=$("#combatLog");if(box){box.insertAdjacentHTML("beforeend",`<div>${s}</div>`);box.scrollTop=box.scrollHeight}
- adventureLog(s,"Combat")
 }
 function monsterCombatActive(e){return !!e&&!e.destroyed&&(e.hp>0||e.special==="regeneration")}
 function living(){return h?.combat?.enemies?.filter(monsterCombatActive)||[]}
