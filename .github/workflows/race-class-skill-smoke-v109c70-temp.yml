@@ -1,0 +1,55 @@
+name: Temporary race-class skill smoke v109c70
+on:
+  pull_request:
+    branches: [ main ]
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Syntax check
+        run: node --check app.js
+      - name: Browser smoke at 390x844
+        shell: bash
+        run: |
+          set -euo pipefail
+          CHROME="$(command -v google-chrome || command -v chromium || command -v chromium-browser)"
+          test -n "$CHROME"
+          python3 -m http.server 8123 >/tmp/averathia-http.log 2>&1 &
+          SERVER_PID=$!
+          trap 'kill $SERVER_PID || true' EXIT
+          sleep 1
+
+          cat > qa.html <<'EOF'
+          <!doctype html><meta charset="utf-8">
+          <pre id="result">WAIT</pre>
+          <script>
+          const h={
+            name:"Leofric Westmere",className:"Dwarf",mechanicsClass:"Dwarf",level:1,xp:28,hp:4,maxhp:10,
+            stats:{STR:18,DEX:14,CON:18,INT:10,WIS:12,CHA:9},gp:32,sp:1,cp:6,sex:"Male",avatar:0,
+            inv:[{n:"Backpack",kind:"gear",can:false,eq:false}],rations:7,water:4,waterCapacity:4,
+            lightStock:{torchMinutes:300,oilMinutes:0,legacyMinutes:0},ammo:{Arrows:0,Quarrels:0,"Sling Stones":0},
+            diseases:[],timedConditions:[],conditions:[],trophies:[],homeTier:0
+          };
+          localStorage.setItem("averathia-v041",JSON.stringify(h));
+          const f=document.createElement("iframe");f.style="width:390px;height:844px";f.src="/index.html?qa=1";document.body.appendChild(f);
+          f.onload=()=>setTimeout(()=>{
+            const d=f.contentDocument;
+            d.querySelector('[data-page="skills"]').click();
+            setTimeout(()=>{
+              const cards=[...d.querySelectorAll("#skillsContent .skillCard")].map(x=>x.textContent.trim());
+              result.textContent=JSON.stringify({
+                topMeta:d.querySelector(".topMeta")?.textContent||"",
+                stonecraft:cards.find(x=>x.startsWith("Stonecraft"))||"",
+                oldPhrase:cards.some(x=>x.includes("hidden traps, moving stonework, changes in slope")),
+                classes:d.querySelectorAll("[data-class]").length
+              });
+            },250);
+          },700);
+          </script>
+          EOF
+          "$CHROME" --headless --no-sandbox --disable-gpu --window-size=390,844 --virtual-time-budget=5000 --dump-dom http://127.0.0.1:8123/qa.html > /tmp/dom.txt
+          grep -q '"topMeta":"Dwarf · Male · Level 1"' /tmp/dom.txt
+          grep -q 'StonecraftA Dwarf who studies worked stone has a 1-in-3 chance to notice that something is wrong with the masonry' /tmp/dom.txt
+          grep -q '"oldPhrase":false' /tmp/dom.txt
+          grep -q '"classes":6' /tmp/dom.txt
