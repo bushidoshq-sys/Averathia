@@ -47,7 +47,8 @@ jobs:
           if(t1==='none'||t1===t2) throw new Error('Arcanist male 1 visual scale override missing: '+JSON.stringify({t1,t2}));
 
           await second.click();
-          if(!(await second.evaluate(el=>el.classList.contains('on')))) throw new Error('Selected ring did not move to second avatar');
+          await page.waitForFunction(()=>document.querySelectorAll('.avatarBtn')[1]?.classList.contains('on'),null,{timeout:2000});
+          if(await page.locator('.avatarBtn').nth(1).getAttribute('aria-pressed')!=='true') throw new Error('Selected ring did not move to second avatar');
           if(await page.locator('.avatarBtn.on').count()!==1) throw new Error('Multiple selected avatar rings after click');
 
           const metrics=await page.evaluate(()=>({
