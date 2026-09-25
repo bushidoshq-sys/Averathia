@@ -1451,14 +1451,14 @@ function rcTreasureSummary(t){
  return parts.join(", ")||"no treasure"
 }
 
-function rcRollCombatTreasure(enemies=[],isBoss=false,level=h?.level||1){
- let out=rcBlankTreasure(isBoss?"boss-combat":"combat",isBoss?"boss":"ordinary"),ogres=enemies.filter(e=>monsterKey(e)==="ogre");
+function rcRollCombatTreasure(enemies=[],isBoss=false,level=h?.level||1,includeLair=false){
+ let out=rcBlankTreasure(includeLair?"lair-combat":(isBoss?"boss-combat":"combat"),includeLair?"lair":(isBoss?"boss":"ordinary")),ogres=enemies.filter(e=>monsterKey(e)==="ogre");
  for(const e of enemies){
   if(monsterKey(e)==="ogre")continue; // RC Ogre prose overrides generic carried notation for the encountered group.
   rcMergeTreasure(out,rcRollMonsterCarried(e,level))
  }
  if(ogres.length)out.coins.gp+=d(6)*100; // RC: an ogre group encountered outside its lair carries 1d6 x 100 gp.
- if(isBoss&&enemies.length){
+ if(includeLair&&enemies.length){
   let hoardOwner=enemies.find(e=>e?.boss)||enemies[0];
   rcMergeTreasure(out,rcRollMonsterLair(hoardOwner,level))
  }
@@ -2324,9 +2324,9 @@ function useMummyBurnCombat(){
  enemyStrike(e=>!e.alwaysWinInitiative);if(h.combat)advanceCombatRound(h.combat,true)
 }
 function finishCombat(){
- let boss=!!h.combat?.isBoss,enemies=[...(h.combat?.enemies||[])],treasure=rcRollCombatTreasure(enemies,boss,h.level);
+ let boss=!!h.combat?.isBoss,enemies=[...(h.combat?.enemies||[])],lair=!!h.combat?.context?.lairTreasure,treasure=rcRollCombatTreasure(enemies,boss,h.level,lair);
  addlog(boss?"Boss defeated.":"Combat won.");
- rcAwardTreasure(treasure,boss?"RC boss treasure":"RC carried treasure");
+ rcAwardTreasure(treasure,lair?"RC lair treasure":"RC carried treasure");
  if(boss)resolveMissionBoss();
  recoverThrownWeapons();h.combat=null;endTripPause();save();
  if(h.trip&&diseaseJourneyBlocked()){returnEarly(`${journeyBlockingCondition()?.name||"Current condition"} prevents further adventuring. You turn back toward town.`);return}
