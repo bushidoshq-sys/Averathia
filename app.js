@@ -953,7 +953,7 @@ const CLASS_EQUIPMENT={
  Cleric:{armor:"all",weapons:["Club","Mace","War Hammer","Sling"]},
  Arcanist:{armor:[],weapons:["Dagger","Silver Dagger","Staff"]},
  Thief:{armor:["Leather Armor"],weapons:["Club","Dagger","Hand Axe","Spear","Mace","War Hammer","Short Sword","Sword","Short Bow","Light Crossbow","Sling"]},
- Dwarf:{armor:"all",weapons:["Club","Dagger","Silver Dagger","Cestus","Hand Axe","Spear","Mace","War Hammer","Battle Axe","Short Sword","Sword","Short Bow","Light Crossbow","Heavy Crossbow","Sling"]},
+ Dwarf:{armor:"all",weapons:["Club","Dagger","Silver Dagger","Cestus","Throwing Hammer","Hand Axe","Spear","Mace","War Hammer","Battle Axe","Short Sword","Sword","Short Bow","Light Crossbow","Heavy Crossbow","Sling"]},
  Elf:{armor:"all",weapons:"all"}
 };
 function classCanUse(name,kind){
