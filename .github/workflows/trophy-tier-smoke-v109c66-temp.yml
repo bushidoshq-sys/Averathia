@@ -1,0 +1,60 @@
+name: Temporary trophy tier smoke v109c66
+on:
+  pull_request:
+    branches: [ main ]
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Syntax check
+        run: node --check app.js
+      - name: Browser smoke at 390x844
+        shell: bash
+        run: |
+          set -euo pipefail
+          CHROME="$(command -v google-chrome || command -v chromium || command -v chromium-browser)"
+          test -n "$CHROME"
+          python3 -m http.server 8123 >/tmp/averathia-http.log 2>&1 &
+          SERVER_PID=$!
+          trap 'kill $SERVER_PID || true' EXIT
+          sleep 1
+
+          for TIER in 1 2 3; do
+            EXPECTED="Trophy Shelf"
+            [ "$TIER" = "2" ] && EXPECTED="Trophy Cabinet"
+            [ "$TIER" = "3" ] && EXPECTED="Trophy Hall"
+
+            cat > qa.html <<EOF
+          <!doctype html><meta charset="utf-8">
+          <pre id="result">WAIT</pre>
+          <script>
+          const h={
+            name:"Tier Test",className:"Cleric",mechanicsClass:"Cleric",level:2,xp:0,hp:10,maxhp:10,
+            stats:{STR:12,DEX:12,CON:12,INT:12,WIS:16,CHA:12},gp:50,sp:0,cp:0,sex:"Female",avatar:0,
+            inv:[{n:"Backpack",kind:"gear",can:false,eq:false}],rations:7,water:1,waterCapacity:1,
+            lightStock:{torchMinutes:60,oilMinutes:0,legacyMinutes:0},ammo:{Arrows:0,Quarrels:0,"Sling Stones":0},
+            diseases:[],timedConditions:[],conditions:[],trophies:[],homeTier:$TIER,homeStorage:[],homeCoins:{gp:0,sp:0,cp:0}
+          };
+          localStorage.setItem("averathia-v041",JSON.stringify(h));
+          const f=document.createElement("iframe");f.style="width:390px;height:844px";f.src="/index.html?tier=$TIER";document.body.appendChild(f);
+          f.onload=()=>setTimeout(()=>{
+            const d=f.contentDocument;
+            const heading=d.querySelector("#trophyHeading"), intro=d.querySelector("#trophyIntro"), nav=d.querySelector("#trophyNav");
+            result.textContent=JSON.stringify({
+              heading:heading?.textContent||"",
+              nav:nav?.textContent||"",
+              headingAlign:f.contentWindow.getComputedStyle(heading).textAlign,
+              introAlign:f.contentWindow.getComputedStyle(intro).textAlign,
+              classes:d.querySelectorAll("[data-class]").length
+            });
+          },650);
+          </script>
+EOF
+            "$CHROME" --headless --no-sandbox --disable-gpu --window-size=390,844 --virtual-time-budget=5000 --dump-dom http://127.0.0.1:8123/qa.html > "/tmp/tier-$TIER.txt"
+            grep -q "\"heading\":\"🏆 $EXPECTED\"" "/tmp/tier-$TIER.txt"
+            grep -q "\"nav\":\"$EXPECTED\"" "/tmp/tier-$TIER.txt"
+            grep -q '"headingAlign":"center"' "/tmp/tier-$TIER.txt"
+            grep -q '"introAlign":"center"' "/tmp/tier-$TIER.txt"
+            grep -q '"classes":6' "/tmp/tier-$TIER.txt"
+          done
