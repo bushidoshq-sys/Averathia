@@ -33,7 +33,7 @@ jobs:
             setTimeout(()=>{
               result.textContent=JSON.stringify({
                 count:buttons.length,
-                clericSelected:cleric.classList.contains("on"),
+                clericSelected:d.querySelector('[data-class="Cleric"]').classList.contains("on"),
                 createVisible:!d.querySelector("#create").classList.contains("hide")
               });
             },250);
@@ -42,7 +42,7 @@ jobs:
           EOF
           "$CHROME" --headless --no-sandbox --disable-gpu --window-size=390,844 --virtual-time-budget=4000 --dump-dom http://127.0.0.1:8123/qa-classes.html > /tmp/classes-dom.txt
           grep -q '"count":6' /tmp/classes-dom.txt
-          grep -q '"clericSelected":true' /tmp/classes-dom.txt
+          cat /tmp/classes-dom.txt | grep -o '<pre id="result">[^<]*</pre>' || true\n          grep -q '"clericSelected":true' /tmp/classes-dom.txt
 
           cat > qa-save.html <<'EOF'
           <!doctype html><meta charset="utf-8"><script>
