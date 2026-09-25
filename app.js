@@ -540,10 +540,10 @@ function recoverThrownWeapons(){
  if(restore)restore.eq=true
 }
 const TWO_HANDED=new Set(["Staff","Halberd","Pike","Polearm","Poleaxe","Bastard Sword (2H)","Two-Handed Sword","Short Bow","Long Bow","Light Crossbow","Heavy Crossbow"]);
-function weaponBaseName(itemOrName){let item=typeof itemOrName==="object"?itemOrName:null,name=item?.baseWeapon||String(itemOrName||"");if(!item){let m=/^(.*) \+\d(?:, .*|$)/.exec(name);if(m)name=m[1]}return name}
+function weaponBaseName(itemOrName){let item=typeof itemOrName==="object"?itemOrName:null,name=item?.baseWeapon||item?.n||String(itemOrName||"");if(!item){let m=/^(.*) \+\d(?:, .*|$)/.exec(name);if(m)name=m[1]}return name}
 function isRangedWeapon(itemOrName){return RANGED_WEAPONS.has(weaponBaseName(itemOrName))}
 function itemData(itemOrName){
- let item=typeof itemOrName==="object"?itemOrName:null,name=item?.baseWeapon||item?.baseArmor||String(itemOrName||""),bonus=Math.max(0,Number(item?.magicBonus)||0);
+ let item=typeof itemOrName==="object"?itemOrName:null,name=item?.baseWeapon||item?.baseArmor||item?.n||String(itemOrName||""),bonus=Math.max(0,Number(item?.magicBonus)||0);
  for(const x of SHOP.Weapons)if(x[0]===name)return{damage:x[2],two:TWO_HANDED.has(name),magicBonus:bonus};
  for(const x of SHOP.Armor)if(x[0]===name)return name==="Shield"?{shield:true,acBonus:-(1+bonus),magicBonus:bonus}:{armor:true,ac:+x[2].match(/\d+/)[0]-bonus,magicBonus:bonus};
  return{}
