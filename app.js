@@ -6,7 +6,7 @@ function artPath(cls,sx,i,kind="full"){return `${classSlug(cls)}_${sx.toLowerCas
 const CLASSES=[["Fighter","⚔️","Human"],["Cleric","✦","Human"],["Arcanist","✧","Human"],["Thief","🗝️","Human"],["Elf","🏹","Race-as-class"],["Dwarf","⛏️","Race-as-class"]];
 const FN={Male:["Aldric","Edric","Garran","Leofric","Oswin","Roderic","Wulfric","Cedric","Beren","Tobran"],Female:["Alda","Elowen","Mara","Rowena","Isolde","Aveline","Seren","Edith","Brynja","Tamsin"]};
 const LN=["Stonefield","Ashford","Blackwood","Thorne","Vale","Ironwood","Hawke","Westmere","Oakheart","Ravenbrook","Greyward","Redfern"];
-const SHOP={Weapons:[["Battle Axe",7,"1d8"],["Hand Axe",4,"1d6"],["Short Bow",25,"1d6"],["Long Bow",40,"1d6"],["Light Crossbow",30,"1d6"],["Heavy Crossbow",50,"2d4"],["Club",3,"1d4"],["Throwing Hammer",4,"1d4"],["War Hammer",5,"1d6"],["Mace",5,"1d6"],["Staff",5,"1d6"],["Dagger",3,"1d4"],["Silver Dagger",30,"1d4"],["Halberd",7,"1d10"],["Javelin",1,"1d6"],["Lance",10,"1d10"],["Pike",3,"1d10"],["Polearm",7,"1d10"],["Poleaxe",5,"1d10"],["Spear",3,"1d6"],["Trident",5,"1d6"],["Short Sword",7,"1d6"],["Sword",10,"1d8"],["Bastard Sword (1H)",15,"1d6+1"],["Bastard Sword (2H)",15,"1d8+1"],["Two-Handed Sword",15,"1d10"],["Cestus",5,"1d3"],["Sling",2,"1d4"],],Armor:[["Shield",10,"AC -1"],["Leather Armor",20,"AC 7"],["Scale Mail",30,"AC 6"],["Chain Mail",40,"AC 5"],["Banded Mail",50,"AC 4"],["Plate Mail",60,"AC 3"],["Suit Armor",250,"AC 0"]],Gear:[["Rations — 7 days",5,"7 days food"],["Waterskin",1,"1 quart; reusable"],["Torch",0.2,"1 hour light"],["6 Torches",1,"6 hours light"],["Lantern",10,""],["Oil Flask",2,"4 hours lantern fuel"],["Backpack",5,"Required for Journey · carries all non-worn gear"],["50-foot Rope",1,""],["Tinder Box",3,""],["Grappling Hook",25,""],["Garlic",5,"Event key"],["Hammer",2,"Small hammer"],["Holy Water",25,"1d8 vs undead · 10/30/50 ft"],["Iron Spike",0.1,"One spike"],["12 Iron Spikes",1,"Twelve spikes"],["Steel Mirror",5,"Event key"],["10-foot Pole",1,"Wooden pole"],["Belt Pouch",0.5,"Event key · protects against theft"],["Quiver",1,"For arrows or quarrels"],["Small Sack",1,"Event key · suitable small container"],["Large Sack",2,"Event key · suitable large container"],["3 Stakes + Mallet",3,"Event key"],["Wine — 1 quart",1,"Wineskin not included"],["Wolfsbane",10,"Event key"],["Arrows — 20",5,"20 arrows"],["Quarrels — 30",10,"30 crossbow bolts"],["Sling Stones — 30",1,"30 sling stones"],["Healing Potion",10,"1D6+1 HP"]],Clothing:[["Belt",0.2,"RC belt"],["Plain Boots",1,"Plain boots"],["Riding Boots",5,"Riding / swash-topped boots"],["Short Cloak",0.5,"Short cloak"],["Long Cloak",1,"Long cloak"],["Plain Clothes",0.5,"Plain clothes"],["Middle-Class Clothes",5,"Middle-class clothes"],["Fine Clothes",20,"Fine clothes"],["Extravagant Clothes",50,"50+ GP baseline"],["Hat or Cap",0.2,"Standard headgear"],["Shoes",0.5,"Shoes"]]};
+const SHOP={Weapons:[["Battle Axe",7,"1d8"],["Hand Axe",4,"1d6"],["Short Bow",25,"1d6"],["Long Bow",40,"1d6"],["Light Crossbow",30,"1d6"],["Heavy Crossbow",50,"2d4"],["Club",3,"1d4"],["Throwing Hammer",4,"1d4"],["War Hammer",5,"1d6"],["Mace",5,"1d6"],["Staff",5,"1d6"],["Dagger",3,"1d4"],["Silver Dagger",30,"1d4"],["Halberd",7,"1d10"],["Javelin",1,"1d6"],["Lance",10,"1d10"],["Pike",3,"1d10"],["Polearm",7,"1d10"],["Poleaxe",5,"1d10"],["Spear",3,"1d6"],["Trident",5,"1d6"],["Short Sword",7,"1d6"],["Sword",10,"1d8"],["Bastard Sword (1H)",15,"1d6+1"],["Bastard Sword (2H)",15,"1d8+1"],["Two-Handed Sword",15,"1d10"],["Cestus",5,"1d3"],["Sling",2,"1d4"],],Armor:[["Shield",10,"AC -1"],["Leather Armor",20,"AC 7"],["Scale Mail",30,"AC 6"],["Chain Mail",40,"AC 5"],["Banded Mail",50,"AC 4"],["Plate Mail",60,"AC 3"],["Suit Armor",250,"AC 0"]],Gear:[["Rations — 7 days",5,"7 days food"],["Waterskin",1,"1 quart; reusable"],["Torch",0.2,"1 hour light"],["6 Torches",1,"6 hours light"],["Lantern",10,""],["Oil Flask",2,"4 hours lantern fuel"],["Backpack",5,"Required for Journey · carries all non-worn gear"],["50-foot Rope",1,""],["Tinder Box",3,""],["Grappling Hook",25,""],["Garlic",5,""],["Hammer",2,"Small hammer"],["Holy Water",25,"1d8 vs undead · 10/30/50 ft"],["Iron Spike",0.1,"One spike"],["12 Iron Spikes",1,"Twelve spikes"],["Steel Mirror",5,""],["10-foot Pole",1,"Wooden pole"],["Belt Pouch",0.5,"Protects against theft"],["Quiver",1,"For arrows or quarrels"],["Small Sack",1,"Suitable small container"],["Large Sack",2,"Suitable large container"],["3 Stakes + Mallet",3,""],["Wine — 1 quart",1,"Wineskin not included"],["Wolfsbane",10,""],["Arrows — 20",5,"20 arrows"],["Quarrels — 30",10,"30 crossbow bolts"],["Sling Stones — 30",1,"30 sling stones"],["Healing Potion",10,"1D6+1 HP"]],Clothing:[["Belt",0.2,"Belt"],["Plain Boots",1,"Plain boots"],["Riding Boots",5,"Riding / swash-topped boots"],["Short Cloak",0.5,"Short cloak"],["Long Cloak",1,"Long cloak"],["Plain Clothes",0.5,"Plain clothes"],["Middle-Class Clothes",5,"Middle-class clothes"],["Fine Clothes",20,"Fine clothes"],["Extravagant Clothes",50,"Extravagant clothes"],["Hat or Cap",0.2,"Standard headgear"],["Shoes",0.5,"Shoes"]]};
 function mod(v){return v===18?3:v>=16?2:v>=13?1:0}
 const CREATION_ABILITY_PRIORITY={
  Fighter:["STR","CON","DEX","CHA","WIS","INT"],
@@ -26,7 +26,8 @@ function fullName(){return FN[sex][d(FN[sex].length)-1]+" "+LN[d(LN.length)-1]}
 function chibiHTML(sx,i,big=false){let key=`avatar-art-${classSlug(chosenClass)}-${sx.toLowerCase()}-${i+1}`;return `<img class="avatarArt ${key}" src="${artPath(chosenClass,sx,i,"full")}" alt="${sx} ${chosenClass} ${i+1}">`}
 function spriteHTML(sx,i,cls=chosenClass){return `<img src="${artPath(cls,sx,i,"sprite")}" alt="">`}
 let chosenClass="Fighter";
-function renderClasses(){$("#classList").innerHTML=CLASSES.map(c=>`<button class="classChoice ${c[0]===chosenClass?"on":""}" data-class="${c[0]}"><b>${c[0]}</b></button>`).join("");$$("[data-class]").forEach(b=>b.onclick=()=>{chosenClass=b.dataset.class;rerollAll();renderClasses();renderAv()})}
+function removeObsoleteCreationNotes(){document.querySelectorAll("#create p,#create .small").forEach(el=>{let t=String(el.textContent||"").toLowerCase();if(t.includes("fighter")&&(t.includes("only")||t.includes("currently")||t.includes("other class")||t.includes("other classes")))el.remove()})}
+function renderClasses(){$("#classList").innerHTML=CLASSES.map(c=>`<button class="classChoice ${c[0]===chosenClass?"on":""}" data-class="${c[0]}"><b>${c[0]}</b></button>`).join("");removeObsoleteCreationNotes();$("[data-class]").forEach(b=>b.onclick=()=>{chosenClass=b.dataset.class;rerollAll();renderClasses();renderAv()})}
 function renderAv(){let grid=$("#avatars");grid.innerHTML=[0,1,2].map((a,i)=>`<button class="avatarBtn ${i===avatar?"on":""}" data-av="${i}" aria-pressed="${i===avatar?"true":"false"}">${chibiHTML(sex,i)}</button>`).join("");grid.onclick=e=>{let b=e.target.closest("[data-av]");if(!b||!grid.contains(b))return;avatar=+b.dataset.av;renderAv()}}
 function renderCandidates(){let c=cs[0];if(!c)return;$("#selectionHint").textContent="Want different stats? Press Reroll.";$("#candidates").innerHTML=`<div class="card sel"><b>Rolled Stats</b><div class="stats">${["STR","DEX","CON","INT","WIS","CHA"].map(a=>`<div class="stat">${a}<br><b>${c.stats[a]}</b></div>`).join("")}</div><p>❤️ ${c.hp} HP · 🪙 ${c.gold} gp</p></div>`}
 function rerollAll(){cs=[candidate()];pick=0;$("#chooseCharacter").disabled=false;renderCandidates()}
@@ -852,9 +853,9 @@ function sellPriceCP(item){
 }
 function sellDescriptor(item){
  if(item?.oreSack)return "Ore value · empty sack returned";
- if(item?.rcGem)return `RC gem cashing fee ${rcTreasureCashFeePct(item)}%`;
- if(item?.rcJewelry)return `RC jewelry cashing fee ${rcTreasureCashFeePct(item)}%`;
- if(item?.rcSpecial)return "RC market value";
+ if(item?.rcGem)return `Cashing fee ${rcTreasureCashFeePct(item)}%`;
+ if(item?.rcJewelry)return `Cashing fee ${rcTreasureCashFeePct(item)}%`;
+ if(item?.rcSpecial)return "Market value";
  if(item?.starterClothing)return (h?.stats?.CHA||0)>=16?"High CHA found a 1 CP buyer":"Starter clothing · discard / 0 CP";
  return "Sell price"
 }
@@ -916,15 +917,30 @@ function classCanUse(name,kind){
 function shopKind(name,section=tab){
  return section==="Armor"?(name==="Shield"?"shield":"armor"):(section==="Weapons"?"weapon":section==="Clothing"?"clothing":"gear")
 }
+function compactOwnedNumber(v){
+ v=Math.max(0,Number(v)||0);let rounded=Math.round(v*10)/10;
+ return Number.isInteger(rounded)?String(rounded):rounded.toFixed(1)
+}
+function shopOwnedText(name){
+ if(!h)return"0";
+ if(name==="Rations — 7 days")return compactOwnedNumber(h.rations||0)+" days";
+ if(name==="Waterskin")return String(Math.max(0,Math.trunc(Number(h.waterCapacity)||0)));
+ if(name==="Torch"||name==="6 Torches")return compactOwnedNumber((ensureLightStock().torchMinutes||0)/60)+" torches";
+ if(name==="Oil Flask")return compactOwnedNumber((ensureLightStock().oilMinutes||0)/240)+" flasks";
+ if(name==="Arrows — 20")return String(Math.max(0,Math.trunc(Number(h.ammo?.Arrows)||0)));
+ if(name==="Quarrels — 30")return String(Math.max(0,Math.trunc(Number(h.ammo?.Quarrels)||0)));
+ if(name==="Sling Stones — 30")return String(Math.max(0,Math.trunc(Number(h.ammo?.["Sling Stones"])||0)));
+ return String((h.inv||[]).filter(x=>(x.baseWeapon||x.baseArmor||x.n)===name).length)
+}
 function renderShop(){
  if(!h)return;
  let bonus=Math.round(chaSellBonus()*100);
  $("#shopItems").innerHTML=
  `<div class="shopMode"><button id="buyMode" class="${shopMode!=="sell"?"on":""}">Buy</button><button id="sellMode" class="${shopMode==="sell"?"on":""}">Sell</button></div>`+
  (shopMode==="sell"
- ? `<div class="small">Ordinary gear resale: 50% of shop value${bonus?` + ${bonus}% CHA sell bonus`:""}. Resources are sold from their real stock, not duplicate inventory rows. Starter clothing is normally worthless; CHA 16+ can get 1 CP. RC gems, jewelry and special treasure use their own cashing rules.</div>`+
+ ? `<div class="small">Ordinary gear resale: 50% of shop value${bonus?` + ${bonus}% CHA sell bonus`:""}. Resources are sold from their real stock, not duplicate inventory rows. Starter clothing is normally worthless; CHA 16+ can get 1 CP. Gems, jewelry and special treasure use their own cashing rules.</div>`+
    ((h.inv.map((x,i)=>{let price=sellPriceCP(x),ok=!x.noSell&&!x.bound&&(price>0||x.starterClothing),action=x.starterClothing&&price===0?"Discard":"Sell";return `<div class=item><span><b>${x.n}</b><div class=small>${x.eq?"Equipped · ":""}${sellDescriptor(x)}</div></span><span>${coinTextCP(price)}</span><button data-sell="${i}" ${ok?"":"disabled"}>${action}</button></div>`}).join("")+resourceSellRows())||"<p>Inventory is empty.</p>")
- : SHOP[tab].map((x,i)=>{let kind=shopKind(x[0]),allowed=classCanUse(x[0],kind),price=buyPriceCP(x),disc=Math.round(chaBuyDiscount()*100),bp=shopPurchaseBulkPoints(x,tab),projected=projectedBulkAfterPurchase(x,tab),fits=projected<=maxCarryBP()+1e-9;return `<div class=item><span><b>${x[0]}</b><div class=small>${x[2]}${x[2]?" · ":""}${formatBP(bp)} BP${allowed?"":" · Restricted for "+h.className}${disc?` · CHA -${disc}%`:""}${fits?"":" · Too much to carry"}</div></span><span>${coinTextCP(price)}</span><button data-buy="${i}" ${walletCP()<price||!allowed||!fits?"disabled":""}>Buy</button></div>`}).join(""));
+ : SHOP[tab].map((x,i)=>{let kind=shopKind(x[0]),allowed=classCanUse(x[0],kind),price=buyPriceCP(x),disc=Math.round(chaBuyDiscount()*100),bp=shopPurchaseBulkPoints(x,tab),projected=projectedBulkAfterPurchase(x,tab),fits=projected<=maxCarryBP()+1e-9;return `<div class=item><span><b>${x[0]}</b><div class=small>${x[2]}${x[2]?" · ":""}Owned: ${shopOwnedText(x[0])} · ${formatBP(bp)} BP${allowed?"":" · Restricted for "+h.className}${disc?` · CHA -${disc}%`:""}${fits?"":" · Too much to carry"}</div></span><span>${coinTextCP(price)}</span><button data-buy="${i}" ${walletCP()<price||!allowed||!fits?"disabled":""}>Buy</button></div>`}).join(""));
  $("#buyMode").onclick=()=>{shopMode="buy";renderShop()};
  $("#sellMode").onclick=()=>{shopMode="sell";renderShop()};
  $$("[data-buy]").forEach(b=>b.onclick=()=>buy(SHOP[tab][+b.dataset.buy]));
@@ -961,13 +977,16 @@ function adventureLog(t,type="Event"){
  if(h.trip.adventureLog.length>250)h.trip.adventureLog.shift();
  renderAdventureLog();
 }
+function adventureOutcomeClass(text){
+ text=String(text||"");if(/\bFAILURE\b/.test(text))return"logFailure";if(/\bSUCCESS\b/.test(text))return"logSuccess";return""
+}
 function renderAdventureLog(){
  let box=$("#adventureLogEntries");if(!box)return;
  let rows=h?.trip?.adventureLog||[];
- box.innerHTML=rows.length?rows.map(e=>`<div class="adventureLogRow"><span class="adventureLogTime">[${clock(e.time)}]</span> <b>${e.type}</b> — ${e.text}</div>`).join(""):`<div class="small">No events recorded yet.</div>`;
+ box.innerHTML=rows.length?rows.map(e=>`<div class="adventureLogRow ${adventureOutcomeClass(e.text)}"><span class="adventureLogTime">[${clock(e.time)}]</span> <b>${e.type}</b> — ${e.text}</div>`).join(""):`<div class="small">No events recorded yet.</div>`;
  box.scrollTop=box.scrollHeight;
 }
-function addlog(t){$("#log").insertAdjacentHTML("beforeend",`<p>${t}<span style="float:right;color:#aaa">${clock(Date.now())}</span></p>`);adventureLog(t,"Adventure")}
+function addlog(t){let cls=adventureOutcomeClass(t);$("#log").insertAdjacentHTML("beforeend",`<p class="${cls}">${t}<span style="float:right;color:#aaa">${clock(Date.now())}</span></p>`);adventureLog(t,"Adventure")}
 const CLASS_MISSIONS={"Arcanist":[["Recover a lost arcane volume","A sealed archive is said to contain a forgotten work."],["Seek a vanished scholar's manuscript","Fragments point toward a manuscript lost beyond town."],["Investigate an abandoned magical library","Old records describe books left behind when the place was sealed."]],"Thief":[["Steal a guarded cache","Rumor places a valuable cache behind watchful eyes."],["Find a legendary jewel","A fence has heard whispers of a remarkable gem."],["Raid a forgotten strongroom","An old strongroom may still hold valuables no one reclaimed."]],"Fighter":[["Answer a challenge of arms","A dangerous foe has become a test worthy of renown."],["Break a threat on the road","Travelers speak of a menace no one has yet driven off."],["Win a deed worth remembering","A hard task offers no easy riches, only the chance for glory."]],"Cleric":[["Recover a saint's relic","A forgotten holy site may still shelter an old relic."],["Cleanse a desecrated resting place","Something has disturbed a place once held sacred."],["Seek a lost reliquary","Accounts tell of a reliquary abandoned far from town."]],"Dwarf":[["Recover an ancestral rune","A carved rune may preserve a missing piece of clan history."],["Trace a lost family inscription","Old mine records hint at words left by distant kin."],["Search a forgotten deep hall","A ruined underground hall may carry marks of the ancestors."]],"Elf":[["Protect the woodland","Signs of danger have appeared beyond the familiar paths."],["Seek a rare seed","A rare tree is said to grow in a threatened part of the wild."],["Preserve a vanishing grove","A fragile grove may hold seeds that should not be lost."]]};
 function createMission(){
  let pool=CLASS_MISSIONS[h.className]||CLASS_MISSIONS.Fighter,m=pool[d(pool.length)-1];
