@@ -1,4 +1,5 @@
 name: Temporary race-class skill smoke v109c70
+# trigger QA rerun
 on:
   pull_request:
     branches: [ main ]
