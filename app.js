@@ -51,7 +51,7 @@ function addClassStartingItems(){
  if(weapon)h.inv.push({n:weapon,kind:"weapon",can:true,eq:false,bound:true,noSell:true});
  addStarterClothing()
 }
-$("#chooseCharacter").onclick=()=>{if(!cs[0])return;let c=structuredClone(cs[0]);h={...c,maxhp:c.hp,xp:0,level:1,name:$("#charName").value.trim()||fullName(),sex,avatar,className:chosenClass,mechanicsClass:chosenClass,gp:0,sp:0,cp:0,inv:[],rations:0,water:0,waterCapacity:0,lightStock:{torchMinutes:0,oilMinutes:0,legacyMinutes:0},lightMinutes:0,buffAgeAt:Date.now(),diseases:[],trollWeaknessKnown:false,mummyWeaknessKnown:false,timedConditions:[],timedConditionAgeAt:Date.now()};h.gp=c.gold;addClassStartingItems();$("#create").classList.add("hide");$("#game").classList.remove("hide");save();home();page("town")};
+$("#chooseCharacter").onclick=()=>{if(!cs[0])return;let c=structuredClone(cs[0]);h={...c,maxhp:c.hp,xp:0,level:1,name:$("#charName").value.trim()||fullName(),sex,avatar,className:chosenClass,mechanicsClass:chosenClass,gp:0,sp:0,cp:0,inv:[],rations:0,water:0,waterCapacity:0,lightStock:{torchMinutes:0,oilMinutes:0,legacyMinutes:0},lightMinutes:0,buffAgeAt:Date.now(),diseases:[],trollWeaknessKnown:false,mummyWeaknessKnown:false,timedConditions:[],timedConditionAgeAt:Date.now(),inn:{name:generateInnName(),checkedIn:false,lastChargedDay:Math.floor(Date.now()/86400000),lastStreetEventDay:0,lastStreetEvent:null}};h.gp=c.gold;addClassStartingItems();$("#create").classList.add("hide");$("#game").classList.remove("hide");save();home();page("town")};
 const CLASS_LEVELS={
  Fighter:{cap:36,hd:8,xp:[0,2000,4000,8000,16000,32000,64000,120000,240000,360000,480000,600000,720000,840000,960000,1080000,1200000,1320000,1440000,1560000,1680000,1800000,1920000,2040000,2160000,2280000,2400000,2520000,2640000,2760000,2880000,3000000,3120000,3240000,3360000,3480000]},
  Cleric:{cap:36,hd:6,xp:[0,1500,3000,6000,12000,25000,50000,100000,200000,300000,400000,500000,600000,700000,800000,900000,1000000,1100000,1200000,1300000,1400000,1500000,1600000,1700000,1800000,1900000,2000000,2100000,2200000,2300000,2400000,2500000,2600000,2700000,2800000,2900000]},
@@ -110,6 +110,43 @@ const MOUNT_FEED_WEEK_GP=10;
 const MOUNT_FEED_PACK_DAYS=7;
 const RETAINER_CARRY_BP=1600;
 const WISHING_WELL_CHANCE=100;
+const INN_PREFIXES=["Golden","Silver","Copper","Red","Blue","Green","Black","White","Laughing","Sleeping"];
+const INN_SUFFIXES=["Lion","Stag","Boar","Fox","Hound","Dragon","Crown","Lantern","Tankard","Oak"];
+const INN_DAILY_COST_CP=20;
+function generateInnName(){return "The "+INN_PREFIXES[d(INN_PREFIXES.length)-1]+" "+INN_SUFFIXES[d(INN_SUFFIXES.length)-1]}
+function ensureInnState(obj=h){
+ if(!obj)return;
+ if(!obj.inn||typeof obj.inn!=="object")obj.inn={};
+ if(!obj.inn.name)obj.inn.name=generateInnName();
+ if(typeof obj.inn.checkedIn!=="boolean")obj.inn.checkedIn=false;
+ obj.inn.lastChargedDay=Math.max(0,Math.trunc(Number(obj.inn.lastChargedDay)||Math.floor(diseaseNowFor(obj)/86400000)));
+ obj.inn.lastStreetEventDay=Math.max(0,Math.trunc(Number(obj.inn.lastStreetEventDay)||0));
+}
+function innCurrentDay(obj=h){return Math.floor(diseaseNowFor(obj)/86400000)}
+function processInnLodging(){
+ if(!h)return;ensureInnState();if(hasRoom()){h.inn.checkedIn=false;return}
+ let day=innCurrentDay();
+ if(h.inn.checkedIn){
+  let due=Math.max(0,day-h.inn.lastChargedDay);
+  while(due>0){
+   if(walletCP()<INN_DAILY_COST_CP){h.inn.checkedIn=false;break}
+   setWalletCP(walletCP()-INN_DAILY_COST_CP);h.inn.lastChargedDay++;due--;
+  }
+ }else if(h.inn.lastStreetEventDay<day){
+  // Street-sleep event only; never while checked in. Maximum one event per night.
+  h.inn.lastStreetEventDay=day;
+  if(d(100)<=75){
+   let roll=d(100);
+   if(roll<=70){
+    let loss=Math.min(walletCP(),Math.max(1,d(6))*10);
+    if(loss>0){setWalletCP(walletCP()-loss);h.inn.lastStreetEvent={day,type:"Mugging",text:"A mugger catches you while you sleep on the street. You lose "+coinTextCP(loss)+"."}}
+    else h.inn.lastStreetEvent={day,type:"Mugging",text:"A mugger tries their luck while you sleep on the street, but you have no money to steal."};
+   }else h.inn.lastStreetEvent={day,type:"Street Event",text:"Your night on the street is disturbed, but you make it through without loss."};
+  }else h.inn.lastStreetEvent=null;
+ }
+}
+function checkInInn(){if(!h||hasRoom()||h.trip||h.combat)return false;ensureInnState();if(walletCP()<INN_DAILY_COST_CP)return false;setWalletCP(walletCP()-INN_DAILY_COST_CP);h.inn.checkedIn=true;h.inn.lastChargedDay=innCurrentDay();h.inn.lastStreetEvent=null;save();return true}
+function checkOutInn(){if(!h||hasRoom())return false;ensureInnState();h.inn.checkedIn=false;save();return true}
 const HOME_COIN_STORAGE=[
  {name:"None",capacity:0},
  {name:"Coin Chest",capacity:10000},
@@ -118,6 +155,7 @@ const HOME_COIN_STORAGE=[
 ];
 function ensureHomeState(obj=h){
  if(!obj)return;
+ ensureInnState(obj);
  obj.homeTier=Math.max(0,Math.min(3,Math.trunc(Number(obj.homeTier)||0)));
  obj.homeStorage=Array.isArray(obj.homeStorage)?obj.homeStorage:[];
  obj.homeCoins=obj.homeCoins&&typeof obj.homeCoins==="object"?obj.homeCoins:{};
@@ -202,7 +240,7 @@ function feedPackPriceCP(){return Math.round(gpToCP(MOUNT_FEED_WEEK_GP)*(1-chaBu
 function buyHomeUpgrade(){
  if(h.trip||h.combat)return;let t=homeTier();if(t>=3)return;let cost=homeUpgradeCostCP();
  if(homeSpendableCP()<cost){alert("Not enough money for "+HOME_TIER_NAMES[t+1]+".");return}
- spendFromWalletAndHome(cost);h.homeTier=t+1;ensureHomeState();processTownAutomation();save()
+ spendFromWalletAndHome(cost);h.homeTier=t+1;ensureHomeState();if(hasRoom()&&h.inn)h.inn.checkedIn=false;processTownAutomation();save()
 }
 function storeAtHome(i){
  if(!hasRoom()||h.trip||h.combat)return;let x=h.inv[i];if(!x)return;if(x.eq)x.eq=false;h.homeStorage.push(x);h.inv.splice(i,1);save()
@@ -274,16 +312,20 @@ function fillWaterskinsManual(){
 function setRetainerFlag(key,value){if(!hasEstate())return;ensureHomeState();h.retainer[key]=!!value;processTownAutomation();save()}
 function setMountUse(value){if(!hasHouse())return;ensureHomeState();h.mounts.useOnJourney=!!value;save()}
 function renderTown(){
- if(!h)return;ensureHomeState();let cost=hasHouse()?0:2,full=h.water>=h.waterCapacity-1e-9;
- if($("#wellStatus"))$("#wellStatus").textContent=h.waterCapacity?"Water: "+h.water.toFixed(2)+"/"+h.waterCapacity+" skins · "+(hasHouse()?"Free with House":"2 CP per refill"):"Buy a Waterskin in the Shop first.";
- if($("#fillWaterskinsBtn")){$("#fillWaterskinsBtn").textContent=hasHouse()?"Fill Waterskins — FREE":"Fill Waterskins — 2 CP";$("#fillWaterskinsBtn").disabled=h.waterCapacity<1||full||(cost>0&&walletCP()<cost)}
+ if(!h)return;ensureHomeState();processInnLodging();let freeWater=hasHouse()||(!hasRoom()&&h.inn?.checkedIn),cost=freeWater?0:2,full=h.water>=h.waterCapacity-1e-9;
+ if($("#wellStatus"))$("#wellStatus").textContent=h.waterCapacity?"Water: "+h.water.toFixed(2)+"/"+h.waterCapacity+" skins · "+(freeWater?(hasHouse()?"Free with House":"Free while checked in at "+h.inn.name):"2 CP per refill"):"Buy a Waterskin in the Shop first.";
+ if($("#fillWaterskinsBtn")){$("#fillWaterskinsBtn").textContent=freeWater?"Fill Waterskins — FREE":"Fill Waterskins — 2 CP";$("#fillWaterskinsBtn").disabled=h.waterCapacity<1||full||(cost>0&&walletCP()<cost)}
  if($("#wellMsg")&&h.townAutomationMsg)$("#wellMsg").textContent=h.townAutomationMsg;
 }
 function renderHome(){
  let box=$("#homeContent");if(!box||!h)return;ensureHomeState();let t=homeTier(),next=t<3?HOME_TIER_NAMES[t+1]:null,cost=homeUpgradeCostCP(),out=[];
- let head='<div class="settingsSection"><h3>'+(t?HOME_TIER_NAMES[t]:"No Home")+'</h3><p class="small">'+(t?"Permanent property in town.":"Purchase a Room to establish a home in town.")+'</p>';
+ processInnLodging();let head='<div class="settingsSection"><h3>'+(t?HOME_TIER_NAMES[t]:(h.inn?.checkedIn?"Lodging at the Inn":"Sleeping on the Street"))+'</h3><p class="small">'+(t?"Permanent property in town.":(h.inn?.checkedIn?("Checked in at "+h.inn.name+" · 2 SP per day · well water is free."):"No paid lodging. Sleeping on the street may trigger one night event, often a mugging attempt."))+'</p>';
  if(next)head+='<button id="buyHomeTier" class="primary">'+(t?"Upgrade to ":"Buy ")+next+" — "+coinTextCP(cost)+'</button>';else head+='<b>Maximum tier: Estate</b>';
  out.push(head+"</div>");
+ if(!hasRoom()){
+  let streetNote=h.inn?.lastStreetEvent?'<p class="small">Last night: '+h.inn.lastStreetEvent.text+'</p>':'';
+  out.push('<div class="settingsSection"><h3>🛏 '+h.inn.name+'</h3><p class="small">'+(h.inn.checkedIn?'You are checked in. No street-night events can occur. The inn well is free to use.':'You are not checked in. Street-night events can occur, maximum one per night.')+'</p>'+streetNote+'<button id="innToggleBtn" class="'+(h.inn.checkedIn?'':'primary')+'">'+(h.inn.checkedIn?'Check Out':'Check In — 2 SP/day')+'</button></div>');
+ }
  if(hasRoom()){
   if(h.lastAdventure)out.push('<div id="lastAdventure" class="settingsSection"><details id="lastAdventureDetails"><summary id="lastAdventureSummary">📖 Journey Log</summary><div id="lastAdventureText"></div></details></div>');
   let stored=h.homeStorage.map(function(x,i){let cap=gpSackCapacity(x),gp=Math.max(0,Math.trunc(Number(x.storedGP)||0)),money=cap?'<div class="small">GP '+gp+'/'+cap+'</div>':'',controls=cap?'<div class="row"><button data-home-gp-store="'+i+'" '+(gp>=cap||Math.trunc(Number(h.gp??h.gold)||0)<1?'disabled':'')+'>Store GP</button><button data-home-gp-take="'+i+'" '+(gp<1?'disabled':'')+'>Take GP</button><button data-home-take="'+i+'">Take Sack</button></div>':'<button data-home-take="'+i+'">Take</button>';return '<div class="item"><span><b>'+x.n+'</b><div class="small">'+formatBP(itemBulkPoints(x))+' BP stored</div>'+money+'</span>'+controls+'</div>'}).join("")||'<div class="small">Nothing stored.</div>';
@@ -302,7 +344,7 @@ function renderHome(){
  }
  box.innerHTML=out.join("");
  if(hasRoom()&&h.lastAdventure&&$("#lastAdventureText")){$("#lastAdventureText").textContent=h.lastAdventure;if($("#lastAdventureSummary"))$("#lastAdventureSummary").textContent="📖 "+(h.lastAdventureTitle||"Journey Log")}
- if($("#buyHomeTier"))$("#buyHomeTier").onclick=buyHomeUpgrade;if($("#homeRestBtn"))$("#homeRestBtn").onclick=startLongRest;
+ if($("#buyHomeTier"))$("#buyHomeTier").onclick=buyHomeUpgrade;if($("#homeRestBtn"))$("#homeRestBtn").onclick=startLongRest;if($("#innToggleBtn"))$("#innToggleBtn").onclick=()=>{if(h.inn?.checkedIn)checkOutInn();else checkInInn();renderHome();renderTown()};
  document.querySelectorAll("[data-home-coin-mode]").forEach(b=>b.onclick=()=>{homeCoinMode=b.dataset.homeCoinMode;homeCoinAmount="";renderHome()});
  document.querySelectorAll("[data-home-coin-denom]").forEach(b=>b.onclick=()=>{homeCoinDenom=b.dataset.homeCoinDenom;homeCoinAmount="";renderHome()});
  document.querySelectorAll("[data-home-coin-key]").forEach(b=>b.onclick=()=>homeCoinKey(b.dataset.homeCoinKey));
@@ -474,7 +516,7 @@ function ensureTrophies(){if(h&&!Array.isArray(h.trophies))h.trophies=[]}
 function unlockTrophy(name){ensureTrophies();if(!h||h.trophies.includes(name))return false;let valid=(TROPHY_COLLECTIONS[h.className]||[]).some(x=>x[0]===name);if(!valid)return false;h.trophies.push(name);save();return true}
 function renderTrophies(){let grid=$("#trophyGrid"),intro=$("#trophyIntro"),heading=$("#trophyHeading"),nav=$("#trophyNav");if(!grid||!h)return;ensureTrophies();let display=trophyDisplayName(),list=TROPHY_COLLECTIONS[h.className]||[],got=new Set(h.trophies);if(heading)heading.textContent="🏆 "+display;if(nav)nav.textContent=display;intro.textContent=`${TROPHY_TITLES[h.className]||"Collection"} — ${list.filter(x=>got.has(x[0])).length}/${list.length} discovered`;grid.innerHTML=list.map(([name,kind])=>got.has(name)?`<div class="trophyCard unlocked"><div class=trophyIcon>✦</div><b>${name}</b><span>${kind}</span></div>`:`<div class="trophyCard locked"><div class=trophyIcon>?</div><b>???</b><span>Undiscovered</span></div>`).join("")}
 
-function refresh(){updateNavigationLock();if(h){ageTimedBuffsClock(Date.now());if(ageTimedConditionsClock(Date.now())===false)return;if(updateDiseases())return}if(h?.deadUntil&&Date.now()<h.deadUntil){renderDeathPage();return}renderTrophies();if(h)renderSkills();renderPendingEvent();if(!h)return;updateRest();
+function refresh(){updateNavigationLock();if(h){processInnLodging();ageTimedBuffsClock(Date.now());if(ageTimedConditionsClock(Date.now())===false)return;if(updateDiseases())return}if(h?.deadUntil&&Date.now()<h.deadUntil){renderDeathPage();return}renderTrophies();if(h)renderSkills();renderPendingEvent();if(!h)return;updateRest();
  if(h.deadUntil&&Date.now()>=h.deadUntil){h.deadUntil=null;h.hp=Math.max(1,h.maxhp);h.trip=null;h.combat=null;save();page("town");return}
  if($("#worldClock"))$("#worldClock").textContent=atClockText();
  if($("#longRestBtn")){$("#longRestBtn").disabled=!!h.restUntil||!!h.deadUntil;$("#longRestBtn").onclick=()=>startLongRest()}if($("#cureDiseaseHealer")){$("#cureDiseaseHealer").textContent=`Cure Disease — ${cureDiseaseCostGP()} gp`;$("#cureDiseaseHealer").disabled=!hasCurableDisease()}if($("#curePoisonHealer")){$("#curePoisonHealer").textContent=`Cure Poison — ${curePoisonCostGP()} gp`;$("#curePoisonHealer").disabled=!hasActivePoison()}
