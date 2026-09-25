@@ -51,7 +51,7 @@ function addClassStartingItems(){
  if(weapon)h.inv.push({n:weapon,kind:"weapon",can:true,eq:false,bound:true,noSell:true});
  addStarterClothing()
 }
-$("#chooseCharacter").onclick=()=>{if(!cs[0])return;let c=structuredClone(cs[0]);h={...c,maxhp:c.hp,xp:0,level:1,name:$("#charName").value.trim()||fullName(),sex,avatar,className:chosenClass,mechanicsClass:chosenClass,gp:0,sp:0,cp:0,inv:[],rations:0,water:0,waterCapacity:0,lightStock:{torchMinutes:0,oilMinutes:0,legacyMinutes:0},lightMinutes:0,buffAgeAt:Date.now(),diseases:[],trollWeaknessKnown:false,mummyWeaknessKnown:false,timedConditions:[],timedConditionAgeAt:Date.now(),inn:{name:generateInnName(),checkedIn:false,lastChargedDay:Math.floor(Date.now()/86400000),lastStreetEventDay:0,lastStreetEvent:null}};h.gp=c.gold;addClassStartingItems();$("#create").classList.add("hide");$("#game").classList.remove("hide");save();home();page("town")};
+$("#chooseCharacter").onclick=()=>{if(!cs[0])return;let c=structuredClone(cs[0]);h={...c,maxhp:c.hp,xp:0,level:1,name:$("#charName").value.trim()||fullName(),sex,avatar,className:chosenClass,mechanicsClass:chosenClass,gp:0,sp:0,cp:0,inv:[],rations:0,water:0,waterCapacity:0,lightStock:{torchMinutes:0,oilMinutes:0,legacyMinutes:0},lightMinutes:0,buffAgeAt:Date.now(),diseases:[],trollWeaknessKnown:false,mummyWeaknessKnown:false,timedConditions:[],timedConditionAgeAt:Date.now(),inn:{name:generateInnName(),checkedIn:false,lastChargedDay:Math.floor(Date.now()/86400000),lastStreetEventDay:Math.floor(Date.now()/86400000),lastStreetEvent:null}};h.gp=c.gold;addClassStartingItems();$("#create").classList.add("hide");$("#game").classList.remove("hide");save();home();page("town")};
 const CLASS_LEVELS={
  Fighter:{cap:36,hd:8,xp:[0,2000,4000,8000,16000,32000,64000,120000,240000,360000,480000,600000,720000,840000,960000,1080000,1200000,1320000,1440000,1560000,1680000,1800000,1920000,2040000,2160000,2280000,2400000,2520000,2640000,2760000,2880000,3000000,3120000,3240000,3360000,3480000]},
  Cleric:{cap:36,hd:6,xp:[0,1500,3000,6000,12000,25000,50000,100000,200000,300000,400000,500000,600000,700000,800000,900000,1000000,1100000,1200000,1300000,1400000,1500000,1600000,1700000,1800000,1900000,2000000,2100000,2200000,2300000,2400000,2500000,2600000,2700000,2800000,2900000]},
@@ -120,7 +120,7 @@ function ensureInnState(obj=h){
  if(!obj.inn.name)obj.inn.name=generateInnName();
  if(typeof obj.inn.checkedIn!=="boolean")obj.inn.checkedIn=false;
  obj.inn.lastChargedDay=Math.max(0,Math.trunc(Number(obj.inn.lastChargedDay)||Math.floor(diseaseNowFor(obj)/86400000)));
- obj.inn.lastStreetEventDay=Math.max(0,Math.trunc(Number(obj.inn.lastStreetEventDay)||0));
+ if(!Number.isFinite(Number(obj.inn.lastStreetEventDay)))obj.inn.lastStreetEventDay=innCurrentDay(obj);else obj.inn.lastStreetEventDay=Math.max(0,Math.trunc(Number(obj.inn.lastStreetEventDay)));
 }
 function innCurrentDay(obj=h){return Math.floor(diseaseNowFor(obj)/86400000)}
 function processInnLodging(){
@@ -132,18 +132,29 @@ function processInnLodging(){
    if(walletCP()<INN_DAILY_COST_CP){h.inn.checkedIn=false;break}
    setWalletCP(walletCP()-INN_DAILY_COST_CP);h.inn.lastChargedDay++;due--;
   }
- }else if(h.inn.lastStreetEventDay<day){
-  // Street-sleep event only; never while checked in. Maximum one event per night.
-  h.inn.lastStreetEventDay=day;
-  if(d(100)<=75){
-   let roll=d(100);
-   if(roll<=70){
-    let loss=Math.min(walletCP(),Math.max(1,d(6))*10);
-    if(loss>0){setWalletCP(walletCP()-loss);h.inn.lastStreetEvent={day,type:"Mugging",text:"A mugger catches you while you sleep on the street. You lose "+coinTextCP(loss)+"."}}
-    else h.inn.lastStreetEvent={day,type:"Mugging",text:"A mugger tries their luck while you sleep on the street, but you have no money to steal."};
-   }else h.inn.lastStreetEvent={day,type:"Street Event",text:"Your night on the street is disturbed, but you make it through without loss."};
-  }else h.inn.lastStreetEvent=null;
  }
+}
+function resolveStreetSleepEvent(){
+ ensureInnState();let day=innCurrentDay();if(h.inn.lastStreetEventDay===day)return null;
+ h.inn.lastStreetEventDay=day;let event=null;
+ if(d(100)<=85){
+  if(d(100)<=70){
+   let loss=Math.min(walletCP(),Math.max(1,d(6))*10);
+   event=loss>0
+    ?{day,type:"Mugging",text:"A mugger catches you while you sleep on the street. You lose "+coinTextCP(loss)+"."}
+    :{day,type:"Mugging",text:"A mugger tries their luck while you sleep on the street, but you have no money to steal."};
+   if(loss>0)setWalletCP(walletCP()-loss);
+  }else{
+   const incidents=[
+    "Town watch wakes you and moves you along before dawn.",
+    "Cold rain ruins your sleep and leaves you exhausted by morning.",
+    "A drunken brawl erupts nearby and keeps you awake for hours.",
+    "Stray dogs tear through your things, but nothing valuable is lost."
+   ];
+   event={day,type:"Street Event",text:incidents[d(incidents.length)-1]};
+  }
+ }
+ h.inn.lastStreetEvent=event;return event
 }
 function checkInInn(){if(!h||hasRoom()||h.trip||h.combat)return false;ensureInnState();if(walletCP()<INN_DAILY_COST_CP)return false;setWalletCP(walletCP()-INN_DAILY_COST_CP);h.inn.checkedIn=true;h.inn.lastChargedDay=innCurrentDay();h.inn.lastStreetEvent=null;save();return true}
 function checkOutInn(){if(!h||hasRoom())return false;ensureInnState();h.inn.checkedIn=false;save();return true}
@@ -324,7 +335,7 @@ function renderHome(){
  out.push(head+"</div>");
  if(!hasRoom()){
   let streetNote=h.inn?.lastStreetEvent?'<p class="small">Last night: '+h.inn.lastStreetEvent.text+'</p>':'';
-  out.push('<div class="settingsSection"><h3>🛏 '+h.inn.name+'</h3><p class="small">'+(h.inn.checkedIn?'You are checked in. No street-night events can occur. The inn well is free to use.':'You are not checked in. Street-night events can occur, maximum one per night.')+'</p>'+streetNote+'<button id="innToggleBtn" class="'+(h.inn.checkedIn?'':'primary')+'">'+(h.inn.checkedIn?'Check Out':'Check In — 2 SP/day')+'</button></div>');
+  out.push('<div class="settingsSection"><h3>🛏 '+h.inn.name+'</h3><p class="small">'+(h.inn.checkedIn?'You are checked in. No street-night events can occur. The inn well is free to use.':'You are not checked in. If you sleep on the street, at most one night event can occur.')+'</p>'+streetNote+'<div class="row"><button id="innToggleBtn" class="'+(h.inn.checkedIn?'':'primary')+'">'+(h.inn.checkedIn?'Check Out':'Check In — 2 SP/day')+'</button><button id="homeRestBtn" '+(h.restUntil?'disabled':'')+'>Sleep 8 AT hours</button></div></div>');
  }
  if(hasRoom()){
   if(h.lastAdventure)out.push('<div id="lastAdventure" class="settingsSection"><details id="lastAdventureDetails"><summary id="lastAdventureSummary">📖 Journey Log</summary><div id="lastAdventureText"></div></details></div>');
@@ -369,6 +380,8 @@ function renderJourneySupport(){
 
 function startLongRest(){
  if(h.trip||h.combat||h.deadUntil)return false;
+ ensureInnState();
+ h.restLocation=hasRoom()?"home":(h.inn.checkedIn?"inn":"street");
  h.restUntil=Date.now()+realMsForATHours(8);save();return true
 }
 function cureDiseaseCostGP(level=h?.level||1){level=Math.max(1,Math.trunc(Number(level)||1));return 10*level*(level+1)}
@@ -503,10 +516,13 @@ function contractCentipedeSickness(e){
 }
 function updateRest(){
  if(h?.restUntil&&Date.now()>=h.restUntil){
-   h.restUntil=null;let rate=.25*diseaseNaturalHealingMultiplier();h.hp=Math.min(h.maxhp,h.hp+Math.ceil(h.maxhp*rate));resetDailySpells();save();return true
+   let sleptAt=h.restLocation||"home";h.restUntil=null;h.restLocation=null;
+   let rate=.25*diseaseNaturalHealingMultiplier();h.hp=Math.min(h.maxhp,h.hp+Math.ceil(h.maxhp*rate));resetDailySpells();
+   if(sleptAt==="street"&&!hasRoom()&&!h.inn?.checkedIn)resolveStreetSleepEvent();
+   save();return true
  }return false
 }
-function save(){if(h){ensureLightStock();normalizeInventoryOrder();checkLevelUps()}localStorage.setItem("averathia-v041",JSON.stringify(h));refresh()}
+function save(){if(h){processInnLodging();ensureLightStock();normalizeInventoryOrder();checkLevelUps()}localStorage.setItem("averathia-v041",JSON.stringify(h));refresh()}
 const TROPHY_COLLECTIONS={"Arcanist":[["The Violet Codex","Book"],["Atlas of the Hollow Stars","Book"],["The Thirteenth Equation","Book"],["Grimoire of the Glass Moon","Book"],["The Ashen Index","Book"],["Treatise on Silent Doors","Book"]],"Thief":[["The Widow's Ruby","Jewel"],["Emerald of Seven Doors","Jewel"],["The Blackbird Brooch","Jewel"],["Moon-Tear Sapphire","Jewel"],["The Gilded Serpent","Jewel"],["Crownless Diamond","Jewel"]],"Fighter":[["Slayer of the Bridge Ogre","Deed"],["Victor of Blackstone Pass","Deed"],["Defender of Three Wells","Deed"],["Breaker of the Iron Siege","Deed"],["Champion of Raven Ford","Deed"],["The Last Stand at Greywatch","Deed"]],"Cleric":[["Fingerbone of Saint Ordel","Relic"],["Bell of Saint Merra","Relic"],["Ashes of Saint Caldrin","Relic"],["Broken Halo of Saint Vey","Relic"],["Lantern of Saint Edrin","Relic"],["Tear of Saint Alwen","Relic"]],"Dwarf":[["Rune of the First Hearth","Rune"],["Rune of Borun's Exile","Rune"],["Rune of the Seven Sons","Rune"],["Rune of the Deep Anvil","Rune"],["Rune of the Lost Hold","Rune"],["Rune of the Returning Kin","Rune"]],"Elf":[["Silveroak Acorn","Seed"],["Moonwillow Seed","Seed"],["Starbloom Kernel","Seed"],["Heartnut of the Elder Grove","Seed"],["Dawnpine Cone","Seed"],["Whisperleaf Seed","Seed"]]};const TROPHY_TITLES={"Arcanist":"Forbidden Library","Thief":"Crown Jewels","Fighter":"Deeds of Renown","Cleric":"Relics of the Saints","Dwarf":"Ancestral Runes","Elf":"Seeds of the First Wood"};
 function trophyDisplayName(obj=h){
  let tier=homeTier(obj);
