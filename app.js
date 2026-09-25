@@ -1464,8 +1464,8 @@ function rcRollCombatTreasure(enemies=[],isBoss=false,level=h?.level||1,includeL
  let out=rcBlankTreasure(includeLair?"lair-combat":(isBoss?"boss-combat":"combat"),includeLair?"lair":(isBoss?"boss":"ordinary")),ogres=enemies.filter(e=>monsterKey(e)==="ogre");
  for(const e of enemies){
   if(monsterKey(e)==="ogre")continue; // RC Ogre prose overrides generic carried notation for the encountered group.
-  let carried=rcRollMonsterCarried(e,level);
-  if(rcTreasureIsEmpty(carried))carried=journeySpoilsForMonster(e);
+  let profile=rcMonsterTreasureProfile(e),carried=rcRollMonsterCarried(e,level);
+  if(!profile.carried.length)carried=journeySpoilsForMonster(e);
   rcMergeTreasure(out,carried)
  }
  if(ogres.length)out.coins.gp+=d(6)*100; // RC: an ogre group encountered outside its lair carries 1d6 x 100 gp.
