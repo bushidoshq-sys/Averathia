@@ -2532,7 +2532,8 @@ function useMummyBurnCombat(){
 }
 function finishCombat(){
  let boss=!!h.combat?.isBoss,enemies=[...(h.combat?.enemies||[])],treasure=rcRollCombatTreasure(enemies,boss,h.level,false);
- addlog(boss?"Boss defeated.":"Combat won.");
+ let defeated=enemies.filter(e=>e.destroyed||e.hp<=0).length,total=enemies.length;
+ addlog((boss?"Boss defeated":"Combat won")+" — "+defeated+" of "+total+" enem"+(total===1?"y":"ies")+" defeated.");
  rcAwardTreasure(treasure,"RC carried treasure");
  if(boss)resolveMissionBoss();
  recoverThrownWeapons();h.combat=null;endTripPause();save();
