@@ -540,10 +540,10 @@ function recoverThrownWeapons(){
  if(restore)restore.eq=true
 }
 const TWO_HANDED=new Set(["Staff","Halberd","Pike","Polearm","Poleaxe","Bastard Sword (2H)","Two-Handed Sword","Short Bow","Long Bow","Light Crossbow","Heavy Crossbow"]);
-function weaponBaseName(itemOrName){let item=typeof itemOrName==="object"?itemOrName:null,name=item?.baseWeapon||String(itemOrName||"");if(!item){let m=/^(.*) \+\d(?:, .*|$)/.exec(name);if(m)name=m[1]}return name}
+function weaponBaseName(itemOrName){let item=typeof itemOrName==="object"?itemOrName:null,name=item?.baseWeapon||item?.n||String(itemOrName||"");if(!item){let m=/^(.*) \+\d(?:, .*|$)/.exec(name);if(m)name=m[1]}return name}
 function isRangedWeapon(itemOrName){return RANGED_WEAPONS.has(weaponBaseName(itemOrName))}
 function itemData(itemOrName){
- let item=typeof itemOrName==="object"?itemOrName:null,name=item?.baseWeapon||item?.baseArmor||String(itemOrName||""),bonus=Math.max(0,Number(item?.magicBonus)||0);
+ let item=typeof itemOrName==="object"?itemOrName:null,name=item?.baseWeapon||item?.baseArmor||item?.n||String(itemOrName||""),bonus=Math.max(0,Number(item?.magicBonus)||0);
  for(const x of SHOP.Weapons)if(x[0]===name)return{damage:x[2],two:TWO_HANDED.has(name),magicBonus:bonus};
  for(const x of SHOP.Armor)if(x[0]===name)return name==="Shield"?{shield:true,acBonus:-(1+bonus),magicBonus:bonus}:{armor:true,ac:+x[2].match(/\d+/)[0]-bonus,magicBonus:bonus};
  return{}
@@ -2498,6 +2498,7 @@ const CLASS_SPECIALS={
  Elf:[
   ["Ghoul Touch Immunity","Ghoul paralysis cannot lock an Elf's body, though paralysis from other causes can still affect them."],
   ["Infravision","In darkness, an Elf can read nearby heat differences when the surroundings allow infravision to work."],
+  ["Secret Doors","Careful searching gives an Elf a 1-in-3 chance to spot a concealed doorway; everyone else normally has a 1-in-6 chance."]
  ],
  Dwarf:[
   ["Infravision","In darkness, a Dwarf can read nearby heat differences when the surroundings allow infravision to work."],
@@ -2518,14 +2519,11 @@ const SPELL_BRIEFS={
  "Mending Light":"Restores HP.","Battle Blessing":"Combat support buff.","Guardian Prayer":"Defensive support buff.","Greater Mending":"Restores more HP.",
  "Warding Light":"Defensive support.","War Prayer":"Combat support.","Restoring Grace":"Healing support.","Saint's Aegis":"Strong defensive support."
 };
-function secretDoorSearchTarget(obj=h){return obj?.className==="Elf"?2:1}
-function secretDoorChanceLabel(obj=h){return secretDoorSearchTarget(obj)===2?"1-in-3":"1-in-6"}
-function classHasSkills(){return ["Fighter","Thief","Elf","Dwarf","Arcanist","Cleric"].includes(h?.className)}
+function classHasSkills(){return ["Thief","Elf","Dwarf","Arcanist","Cleric"].includes(h?.className)}
 function renderSkills(){
  let nav=$("#skillsNav");if(nav)nav.classList.toggle("hide",!classHasSkills());
  let box=$("#skillsContent");if(!box||!h)return;
  let out=[];
- out.push(`<div class=skillCard><b>Find Secret Doors</b><span class=small>When the surroundings offer a place worth checking, a careful search has a ${secretDoorChanceLabel()} chance to reveal a concealed doorway.</span></div>`);
  if(h.className==="Thief"){let a=thiefAbilities();for(const k of Object.keys(SKILL_LABELS))out.push(`<div class=skillCard><span class=skillPct>${a[k]}%</span><b>${SKILL_LABELS[k]}</b><span class=small>Improves automatically with level; no points to allocate.</span></div>`);out.push(`<div class=skillCard><b>Backstab</b><span class=small>+4 attack; ×2 damage when the backstab conditions are met.</span></div>`);if(h.level>=4)out.push(`<div class=skillCard><b>Read Languages</b><span class=small>80% chance.</span></div>`);if(h.level>=10)out.push(`<div class=skillCard><b>Magic-user Scrolls</b><span class=small>Can attempt scroll use; 10% backfire chance.</span></div>`)}
  for(const [name,desc] of (CLASS_SPECIALS[h.className]||[]))out.push(`<div class=skillCard><b>${name}</b><span class=small>${desc}</span></div>`);
  if(PREPARED_CASTERS.has(h.className)){
@@ -2569,7 +2567,7 @@ function secretDoorSearchChoice(ev,ch){
 }
 function resolveSecretDoorSearch(ev,ch){
  if(!secretDoorSearchChoice(ev,ch))return null;
- let roll=d(6),target=secretDoorSearchTarget();
+ let roll=d(6),target=h.className==="Elf"?2:1;
  if(roll>target)return{searched:true,found:false,roll,target};
  let outcome=d(6),detail="A concealed seam gives way, revealing a forgotten passage.",treasure=null,applied=null;
  if(outcome>=4&&outcome<=5){
