@@ -525,39 +525,57 @@ function attackModeFor(name){
  if(THROWN_WEAPONS.has(base))return weaponCanReach(base,distance)?"thrown":"out-of-range";
  return "out-of-range"
 }
-function throwWeaponItem(item){
- if(!item)return;
- item._thrown=true;item._restoreEq=!!item.eq&&!item._autoReadied;item.eq=false;delete item._autoReadied;
- let next=h.inv.find(x=>x.kind==="weapon"&&x.n===item.n&&!x.eq&&!x._thrown);
- if(next){next.eq=true;next._autoReadied=true;clog(`You ready another ${item.n}.`)}
-}
-function recoverThrownWeapons(){
- let restore=null;
- for(const x of h.inv||[]){
-  if(x._thrown){if(x._restoreEq&&!restore)restore=x;x.eq=false;delete x._thrown;delete x._restoreEq}
-  if(x._autoReadied){x.eq=false;delete x._autoReadied}
- }
- if(restore)restore.eq=true
-}
 const TWO_HANDED=new Set(["Staff","Halberd","Pike","Polearm","Poleaxe","Bastard Sword (2H)","Two-Handed Sword","Short Bow","Long Bow","Light Crossbow","Heavy Crossbow"]);
 function weaponBaseName(itemOrName){let item=typeof itemOrName==="object"?itemOrName:null,name=item?.baseWeapon||item?.n||String(itemOrName||"");if(!item){let m=/^(.*) \+\d(?:, .*|$)/.exec(name);if(m)name=m[1]}return name}
 function isRangedWeapon(itemOrName){return RANGED_WEAPONS.has(weaponBaseName(itemOrName))}
+function isThrownWeapon(itemOrName){return THROWN_WEAPONS.has(weaponBaseName(itemOrName))}
+function weaponSlotOptions(itemOrName){
+ let base=weaponBaseName(itemOrName);
+ if(RANGED_WEAPONS.has(base))return["ranged"];
+ if(THROWN_WEAPONS.has(base))return["melee","ranged"];
+ return["melee"]
+}
 function itemData(itemOrName){
  let item=typeof itemOrName==="object"?itemOrName:null,name=item?.baseWeapon||item?.baseArmor||item?.n||String(itemOrName||""),bonus=Math.max(0,Number(item?.magicBonus)||0);
  for(const x of SHOP.Weapons)if(x[0]===name)return{damage:x[2],two:TWO_HANDED.has(name),magicBonus:bonus};
  for(const x of SHOP.Armor)if(x[0]===name)return name==="Shield"?{shield:true,acBonus:-(1+bonus),magicBonus:bonus}:{armor:true,ac:+x[2].match(/\d+/)[0]-bonus,magicBonus:bonus};
  return{}
 }
-function ammoTypeFor(itemOrName){let name=weaponBaseName(itemOrName);if(name==="Short Bow"||name==="Long Bow")return "Arrows";if(name==="Light Crossbow"||name==="Heavy Crossbow")return "Quarrels";if(name==="Sling")return "Sling Stones";return null}
-function ammoCount(type){return (h.ammo&&h.ammo[type])||0}
+function ammoTypeFor(itemOrName){let name=weaponBaseName(itemOrName);if(name==="Short Bow"||name==="Long Bow")return"Arrows";if(name==="Light Crossbow"||name==="Heavy Crossbow")return"Quarrels";if(name==="Sling")return"Sling Stones";return null}
+function ammoCount(type){return type?((h.ammo&&h.ammo[type])||0):Infinity}
 function spendAmmoFor(name){let type=ammoTypeFor(name);if(!type)return true;h.ammo=h.ammo||{};if(ammoCount(type)<1)return false;h.ammo[type]--;return true}
-function equippedWeapons(){let all=h.inv.filter(x=>x.kind==="weapon"&&x.eq),melee=all.find(x=>!isRangedWeapon(x)),ranged=all.find(x=>isRangedWeapon(x));return{melee,ranged}}
-function activeWeapon(){
- let w=equippedWeapons(),range=h.combat?.range||"Close";
- if(range==="Hand-to-Hand")return w.melee||w.ranged;
- return w.ranged&&ammoCount(ammoTypeFor(w.ranged))>0?w.ranged:(w.melee||w.ranged)
+function equippedWeapons(){
+ let all=(h.inv||[]).filter(x=>x.kind==="weapon"&&x.eq);
+ return{melee:all.find(x=>x.eqSlot==="melee"),ranged:all.find(x=>x.eqSlot==="ranged")}
 }
-function combatStats(){let weapon=activeWeapon(),armor=h.inv.find(x=>x.kind==="armor"&&x.eq),shield=h.inv.find(x=>x.kind==="shield"&&x.eq),wd=weapon?itemData(weapon):{},ad=armor?itemData(armor):{},sd=shield?itemData(shield):{},name=weapon?.n||"Unarmed",baseWeapon=weaponBaseName(weapon)||"Unarmed",dexAC=mod(h.stats.DEX);return{weapon:name,weaponKey:baseWeapon,weaponItem:weapon,damage:wd.damage||"1d2",magicBonus:wd.magicBonus||0,attackMode:attackModeFor(baseWeapon),rangeText:weaponRangeText(baseWeapon),armor:armor?.n||"None",shield:shield?.n||"None",dexAC,ac:(ad.ac??9)+(shield?(sd.acBonus??-1):0)-dexAC}}
+function activeWeapon(){
+ let w=equippedWeapons(),distance=combatDistance();
+ if(distance<=5)return w.melee||w.ranged||null;
+ if(w.ranged){
+  let ammo=ammoTypeFor(w.ranged);
+  if(!ammo||ammoCount(ammo)>0)return w.ranged
+ }
+ return w.melee||null
+}
+function throwWeaponItem(item){
+ if(!item)return;
+ item._thrown=true;item._restoreEq=!!item.eq&&!item._autoReadied;item._restoreSlot=item.eqSlot||null;
+ item.eq=false;delete item.eqSlot;delete item._autoReadied;
+ let next=h.inv.find(x=>x.kind==="weapon"&&weaponBaseName(x)===weaponBaseName(item)&&!x.eq&&!x._thrown);
+ if(next&&item._restoreSlot){next.eq=true;next.eqSlot=item._restoreSlot;next._autoReadied=true;clog(`You ready another ${item.n}.`)}
+}
+function recoverThrownWeapons(){
+ let restores=[];
+ for(const x of h.inv||[]){
+  if(x._thrown){if(x._restoreEq&&x._restoreSlot)restores.push({x,slot:x._restoreSlot});x.eq=false;delete x.eqSlot;delete x._thrown;delete x._restoreEq;delete x._restoreSlot}
+  if(x._autoReadied){x.eq=false;delete x.eqSlot;delete x._autoReadied}
+ }
+ for(const r of restores){let occupied=(h.inv||[]).some(x=>x.kind==="weapon"&&x.eq&&x.eqSlot===r.slot);if(!occupied){r.x.eq=true;r.x.eqSlot=r.slot}}
+}
+function combatStats(){
+ let weapon=activeWeapon(),armor=h.inv.find(x=>x.kind==="armor"&&x.eq),shield=h.inv.find(x=>x.kind==="shield"&&x.eq),wd=weapon?itemData(weapon):{},ad=armor?itemData(armor):{},shieldEffective=!!shield&&!wd.two,sd=shieldEffective?itemData(shield):{},name=weapon?.n||"Unarmed",baseWeapon=weaponBaseName(weapon)||"Unarmed",dexAC=mod(h.stats.DEX);
+ return{weapon:name,weaponKey:baseWeapon,weaponItem:weapon,damage:wd.damage||"1d2",magicBonus:wd.magicBonus||0,attackMode:attackModeFor(baseWeapon),rangeText:weaponRangeText(baseWeapon),armor:armor?.n||"None",shield:shieldEffective?(shield?.n||"None"):"None",dexAC,ac:(ad.ac??9)+(shieldEffective?(sd.acBonus??-1):0)-dexAC}
+}
 function isInventoryEquipable(x){return !!x?.can&&x?.kind!=="clothing"}
 function normalizeInventoryOrder(){
  if(!h||!Array.isArray(h.inv))return;
@@ -814,7 +832,7 @@ function sheetInventory(){
   let equip=h.inv.map((x,i)=>({x,i})).filter(o=>isInventoryEquipable(o.x)),other=h.inv.map((x,i)=>({x,i})).filter(o=>!isInventoryEquipable(o.x)&&o.x.kind!=="clothing");
   box.innerHTML=`<div class="combatSummary">Combat: ${cs.weapon} (${cs.damage}) · AC ${cs.ac}${cs.shield!=="None"?" · Shield":""}</div>`+tabs+
    `<div class="inventoryGroupLabel">Equippable</div>`+
-   (equip.length?equip.map(({x,i},order)=>`<div class="sheetEquipRow invDrag" data-equip-index="${order}" data-inv="${i}"><span>☰ ${x.eq?"✓ ":""}${x.n}</span><button data-eq="${i}">${x.eq?"Unequip":"Equip"}</button></div>`).join(""):"<div class=small>None.</div>")+
+   (equip.length?equip.map(({x,i},order)=>{let buttons;if(x.kind==="weapon"){let opts=weaponSlotOptions(x);buttons=opts.map(slot=>`<button data-eq="${i}" data-eq-slot="${slot}">${x.eq&&x.eqSlot===slot?"Unequip":slot==="melee"?"Melee":"Ranged"}</button>`).join(" ")}else buttons=`<button data-eq="${i}">${x.eq?"Unequip":"Equip"}</button>`;let mark=x.kind==="weapon"&&x.eq?`✓ ${x.eqSlot==="ranged"?"Ranged":"Melee"} · `:(x.eq?"✓ ":"");return `<div class="sheetEquipRow invDrag" data-equip-index="${order}" data-inv="${i}"><span>☰ ${mark}${x.n}</span><span>${buttons}</span></div>`}).join(""):"<div class=small>None.</div>")+
    `<div class="inventoryGroupLabel">Resources</div>`+resourceSummaryRows()+
    `<div class="inventoryGroupLabel">Gear & Items</div>`+
    (other.length?other.map(({x,i})=>`<div class="sheetEquipRow"><span>${x.n}${rcMagicItemStatus(x)}</span>${rcMagicTownUsable(x)?`<button data-rc-town-use="${i}">Use</button>`:"<span></span>"}</div>`).join(""):"<div class=small>No other items.</div>");
@@ -994,8 +1012,22 @@ function buy(x){
  if(!resource){let armor=tab==="Armor",weapon=tab==="Weapons",clothing=tab==="Clothing";h.inv.push({n:x[0],kind:armor?(x[0]==="Shield"?"shield":"armor"):(weapon?"weapon":clothing?"clothing":"gear"),can:armor||weapon,eq:false,eventKey:typeof EVENT_KEY_ITEMS!=="undefined"&&EVENT_KEY_ITEMS.has(x[0])})}
  save()
 }
-function equip(i){let q=h.inv[i];if(!q||!q.can)return;if(!classCanUse(q.baseWeapon||q.baseArmor||q.n,q.kind)){alert(`${h.className} cannot use ${q.n}.`);return}if(q.eq){q.eq=false;save();return}if(q.kind==="armor")h.inv.forEach(z=>{if(z.kind==="armor")z.eq=false});if(q.kind==="weapon"){let ranged=isRangedWeapon(q);h.inv.forEach(z=>{if(z.kind==="weapon"&&isRangedWeapon(z)===ranged)z.eq=false});if(itemData(q).two)h.inv.forEach(z=>{if(z.kind==="shield")z.eq=false})}if(q.kind==="shield"){let w=h.inv.find(z=>z.kind==="weapon"&&z.eq);if(w&&itemData(w).two){alert("A shield cannot be equipped with a two-handed weapon.");return}h.inv.forEach(z=>{if(z.kind==="shield")z.eq=false})}q.eq=true;save()}
-document.addEventListener("click",e=>{if(e.target.dataset.eq!==undefined)equip(+e.target.dataset.eq)});
+function equip(i,slot=null){
+ let q=h.inv[i];if(!q||!q.can)return;
+ if(!classCanUse(q.baseWeapon||q.baseArmor||q.n,q.kind)){alert(`${h.className} cannot use ${q.n}.`);return}
+ if(q.kind==="weapon"){
+  let options=weaponSlotOptions(q),target=slot&&options.includes(slot)?slot:options[0];
+  if(q.eq&&q.eqSlot===target){q.eq=false;delete q.eqSlot;save();return}
+  h.inv.forEach(z=>{if(z.kind==="weapon"&&z.eqSlot===target){z.eq=false;delete z.eqSlot}});
+  q.eq=true;q.eqSlot=target;save();return
+ }
+ if(q.eq){q.eq=false;save();return}
+ if(q.kind==="armor")h.inv.forEach(z=>{if(z.kind==="armor")z.eq=false});
+ if(q.kind==="shield")h.inv.forEach(z=>{if(z.kind==="shield")z.eq=false});
+ q.eq=true;save()
+}
+document.addEventListener("click",e=>{if(e.target.dataset.eq!==undefined)equip(+e.target.dataset.eq,e.target.dataset.eqSlot||null)});
+
 $$("[data-heal]").forEach(b=>b.onclick=()=>{let pct=+b.dataset.heal,cost=gpToCP({10:2,50:10,100:20}[pct]);if(magicalHealingBlockedByDisease()){$("#healmsg").textContent="Tomb Rot blocks magical healing. Cure the disease first.";return}if(walletCP()<cost){$("#healmsg").textContent="Not enough gold.";return}if(h.hp>=h.maxhp){$("#healmsg").textContent="Already at full health.";return}setWalletCP(walletCP()-cost);h.hp=Math.min(h.maxhp,h.hp+Math.ceil(h.maxhp*pct/100));$("#healmsg").textContent="Healing complete.";save()});if($("#cureDiseaseHealer"))$("#cureDiseaseHealer").onclick=()=>{let target=nextDiseaseForCure(),price=cureDiseaseCostGP(),cost=gpToCP(price);if(!target){$("#healmsg").textContent="No disease to cure.";return}if(walletCP()<cost){$("#healmsg").textContent=`Cure Disease costs ${price} gp.`;return}setWalletCP(walletCP()-cost);let cured=cureOneDisease();$("#healmsg").textContent=`${cured.name} cured for ${price} gp.`;save()};if($("#curePoisonHealer"))$("#curePoisonHealer").onclick=()=>{let target=nextPoisonForCure(),price=curePoisonCostGP(),cost=gpToCP(price);if(!target){$("#healmsg").textContent="No poison to cure.";return}if(walletCP()<cost){$("#healmsg").textContent=`Cure Poison costs ${price} gp.`;return}setWalletCP(walletCP()-cost);let cured=cureOnePoison();$("#healmsg").textContent=`${cured.name} cured for ${price} gp.`;save()};
 if($("#fillWaterskinsBtn"))$("#fillWaterskinsBtn").onclick=fillWaterskinsManual;
 document.querySelectorAll("[data-mode]").forEach(b=>b.onclick=()=>{mode=b.dataset.mode;$$("[data-mode]").forEach(x=>x.classList.toggle("on",x===b))});
@@ -2869,6 +2901,7 @@ function migratePersistentCharacter(saved){
  if(!s.clothingStarterV1){for(const x of starterClothingItems())if(!s.inv.some(i=>i.n===x.n))s.inv.push(x);s.clothingStarterV1=true}
  for(const x of s.inv){if(x?.coinSack||/ Sack of GP$/.test(x?.n||""))syncGpSack(x);if(EVENT_KEY_ITEMS.has(x.n))x.eventKey=true}
  for(const x of s.inv)refreshRcMagicDisplayName(x);
+ {let used={melee:false,ranged:false};for(const x of s.inv){if(x.kind!=="weapon")continue;if(!x.eq){delete x.eqSlot;continue}let opts=weaponSlotOptions(x),slot=(x.eqSlot&&opts.includes(x.eqSlot))?x.eqSlot:(opts.includes("melee")?"melee":"ranged");if(used[slot]){x.eq=false;delete x.eqSlot}else{x.eq=true;x.eqSlot=slot;used[slot]=true}}}
  {let equip=[],other=[];for(const x of s.inv)(isInventoryEquipable(x)?equip:other).push(x);s.inv=[...equip,...other]}
  s.ammo=(s.ammo&&typeof s.ammo==="object"&&!Array.isArray(s.ammo))?s.ammo:{};
  for(const k of ["Arrows","Quarrels","Sling Stones"])s.ammo[k]=Math.max(0,Math.trunc(numOr(s.ammo[k],0)));
