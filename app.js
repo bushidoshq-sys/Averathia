@@ -2645,7 +2645,7 @@ function useMummyBurnCombat(){
 function finishCombat(){
  let streetSleep=!!h.combat?.context?.streetSleep,boss=!!h.combat?.isBoss,enemies=[...(h.combat?.enemies||[])],treasure=avRollCombatTreasure(enemies,boss,h.level,false);
  let defeated=enemies.filter(e=>e.destroyed||e.hp<=0).length,total=enemies.length;
- if(!streetSleep)addlog((boss?"Boss defeated":"Combat won")+" — "+defeated+" of "+total+" enem"+(total===1?"y":"ies")+" defeated.","Combat");
+ if(!streetSleep){let counts={};for(const e of enemies){let n=e.n||"Enemy";counts[n]=(counts[n]||0)+1}let foes=Object.entries(counts).map(([n,q])=>q>1?`${q} ${n}${/s$/i.test(n)?"":"s"}`:n).join(", ");addlog((boss?"Boss defeated":"Combat won")+` — ${foes}.`,"Combat")}
  avAwardTreasure(treasure,streetSleep?"Mugger's carried treasure":"Averathia carried treasure");
  if(streetSleep){
   ensureInnState();h.inn.lastStreetEvent={day:innCurrentDay(),type:"Mugging",combat:true,text:"You defeated the mugger who attacked while you slept on the street."};
