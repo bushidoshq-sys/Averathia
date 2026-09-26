@@ -1730,8 +1730,9 @@ function avApplyTreasure(t){
  return{creditedCP:credited.cpValue,leftCoinCP:credited.leftCP||0,items:accepted.length,leftItems:left,converted:credited.converted,eligibleXPcp}
 }
 function avTreasureSummary(t){
- let c=t?.coins||{},parts=[];
- for(const [k,label] of [["gp","GP"],["sp","SP"],["cp","CP"],["ep","EP→converted"],["pp","PP→converted"]])if(c[k])parts.push(`${c[k]} ${label}`);
+ let c=t?.coins||{},parts=[],coinCP=0;
+ for(const kind of ["gp","sp","cp","ep","pp"])if(c[kind])coinCP+=avCoinValueCP(kind,c[kind]);
+ if(coinCP)parts.push(coinTextCP(coinCP));
  let counts=[["gems","gems"],["jewelry","jewelry"],["special","special treasure"],["magic","magic items"]];
  for(const [k,label] of counts)if(t?.[k]?.length)parts.push(`${t[k].length} ${label}`);
  return parts.join(", ")||"no treasure"
