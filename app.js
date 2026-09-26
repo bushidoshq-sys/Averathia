@@ -2975,30 +2975,50 @@ function taleCombatScene(trip,name){
   if(m&&!starts.includes(m[1]))starts.push(m[1])
  }
  if(!starts.length)return"";
- let shown=starts.slice(0,2),more=starts.length-shown.length;
- let sentence="Combat breaks out against "+shown.join(" and ")+(more>0?" and "+more+" other encounter"+(more===1?"":"s"):"")+".";
+ let shown=starts.slice(0,3),more=starts.length-shown.length;
+ let sentence=name+" faces "+shown.join(", ")+(more>0?" and "+more+" further hostile encounter"+(more===1?"":"s")+".":".");
  let wins=logs.filter(x=>x.text==="Combat won.").length,boss=!!(trip&&trip.mission&&trip.mission.bossWon),escaped=logs.some(x=>/escape the encounter/i.test(x.text||""));
- if(boss)sentence+=" The final opposition is defeated and the mission objective is secured.";
- else if(wins)sentence+=wins>1?" The fights are won.":" The fight is won.";
- else if(escaped)sentence+=" "+name+" escapes and continues the journey.";
+ if(wins)sentence+=" "+(wins===1?"One battle is won.":wins+" battles are won.");
+ if(escaped)sentence+=" At least one fight is escaped rather than finished.";
+ if(boss)sentence+=" At the journey's decisive encounter, the opposition is overcome and the objective is secured.";
  return sentence
+}
+function taleJourneyFacts(trip,name){
+ let parts=[],journal=trip?.journal||[],logs=trip?.adventureLog||[];
+ let rests=logs.filter(x=>x.type==="Rest").length,secrets=journal.filter(x=>x.result==="secretDoor").length;
+ let discoveries=journal.filter(x=>x.type==="Discovery"&&x.result!=="secretDoor").length,decisions=journal.filter(x=>x.type==="Decision").length;
+ if(discoveries||decisions||secrets){
+  let bits=[];if(discoveries)bits.push(discoveries+" discover"+(discoveries===1?"y":"ies"));if(decisions)bits.push(decisions+" decision"+(decisions===1?"":"s"));if(secrets)bits.push(secrets+" secret door"+(secrets===1?"":"s"));
+  parts.push("Along the way, the journey records "+bits.join(", ")+".")
+ }
+ if(rests)parts.push(name+" takes "+rests+" recorded rest"+(rests===1?"":"s")+" before pressing on.");
+ return parts.join(" ")
+}
+function taleJourneyRewards(trip,name){
+ let parts=[],logs=trip?.adventureLog||[],summary=logs.filter(x=>x.type==="Summary").map(x=>x.text).filter(Boolean);
+ let trophy=logs.find(x=>/TROPHY DISCOVERED:/i.test(x.text||""));
+ if(trophy){let m=/TROPHY DISCOVERED:\s*([^\.]+)/i.exec(trophy.text||"");if(m)parts.push(name+" returns with a rare trophy: "+m[1]+".")}
+ if(summary.length)parts.push("Journey record: "+summary[summary.length-1]);
+ return parts.join(" ")
 }
 function buildAdventureTale(trip=h&&h.trip,opts={}){
  if(!trip)return opts&&opts.ending==="death"?(h&&h.name||"The adventurer")+" does not return from the journey.":"Nothing noteworthy happened on this journey.";
  let name=h&&h.name||"The adventurer",mission=trip.mission||{},title=mission.title||"Journey",destination=MISSION_STORY_DESTINATION[title]||"the destination",light=trip.lightSource==="lamp"?"lantern":"torch";
- let opening=name+" sets out to "+taleLowerFirst(title)+" and reaches "+destination+". ";
- if(trip.mountsUsed===1)opening+="After securing the horse, "+name+" lights the "+light+" and ventures forward.";
- else if(trip.mountsUsed>1)opening+="After securing the horses, "+name+" lights the "+light+" and ventures forward.";
- else opening+=name+" lights the "+light+" and ventures forward.";
- let journal=(trip.journal||[]).filter(e=>e.type!=="Progression"&&e.result!=="combat"),important=journal.filter(e=>e.type!=="Quiet"),chosen=(important.length?important:journal).slice(0,3);
+ let opening=name+" sets out to "+taleLowerFirst(title)+". "+(mission.brief||"The road beyond town offers no certainty.")+" The trail leads toward "+destination+". ";
+ if(trip.mountsUsed===1)opening+="Travelling on horseback, "+name+" secures the horse before continuing on foot, with a "+light+" ready for the darker stretches.";
+ else if(trip.mountsUsed>1)opening+="Travelling with horses, "+name+" secures them before continuing on foot, with a "+light+" ready for the darker stretches.";
+ else opening+="On foot, "+name+" carries a "+light+" for the darker stretches of the road.";
+ let journal=(trip.journal||[]).filter(e=>e.type!=="Progression"&&e.result!=="combat"),important=journal.filter(e=>e.type!=="Quiet");
+ let chosen=(important.length?important:journal).slice(0,6);
  let middle=chosen.map(e=>taleEventScene(e,name)).filter(Boolean).join(" ");
- let combat=taleCombatScene(trip,name),ending="";
- if(opts.ending==="death")ending="The journey ends there; "+name+" does not return to town.";
- else if(trip.trollLessonReturn)ending=name+" returns to town.";
- else if(mission.bossWon)ending="With the objective secured, "+name+" returns to town.";
- else if(trip.returnedEarly)ending="The journey ends early, and "+name+" returns to town before the objective is completed.";
- else ending=name+" returns to town.";
- return [opening,middle,combat,ending].filter(Boolean).join("\n\n")
+ if((important.length?important:journal).length>chosen.length)middle+=" Other incidents follow before the return journey begins.";
+ let combat=taleCombatScene(trip,name),facts=taleJourneyFacts(trip,name),rewards=taleJourneyRewards(trip,name),ending="";
+ if(opts.ending==="death")ending="The journey ends in disaster. "+name+" falls before reaching town, and the journey is brought to an abrupt end. After the death recall, "+name+" is returned home.";
+ else if(trip.trollLessonReturn)ending="With no reason to press the danger further, "+name+" turns back and makes for town.";
+ else if(mission.bossWon)ending="With the objective secured, "+name+" begins the road home and eventually passes back through the town gates.";
+ else if(trip.returnedEarly)ending="The journey is cut short. "+name+" turns back before the objective is completed and returns safely to town.";
+ else ending="When there is nothing more to be gained by remaining on the road, "+name+" turns homeward and returns to town.";
+ return [opening,middle,combat,facts,rewards,ending].filter(Boolean).join("\n\n")
 }
 
 function buildAdventureReport(){
