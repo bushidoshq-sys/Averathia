@@ -551,7 +551,7 @@ function page(id){
  if(h?.deadUntil&&Date.now()<h.deadUntil&&id!=="death"&&id!=="settings"){renderDeathPage();return}
  $$(".page").forEach(x=>x.classList.add("hide"));$("#"+id).classList.remove("hide");$$("[data-page]").forEach(x=>x.classList.toggle("on",x.dataset.page===id));updateNavigationLock();if(id!=="settings")refresh()
 }
-$("[data-page]").forEach(b=>b.onclick=()=>page(b.dataset.page));$("[data-go]").forEach(b=>b.onclick=()=>page(b.dataset.go));
+$$("[data-page]").forEach(b=>b.onclick=()=>page(b.dataset.page));$$("[data-go]").forEach(b=>b.onclick=()=>page(b.dataset.go));
 function journeyReturnVibrationEnabled(){return localStorage.getItem("averathia-vibrate-journey-return")!=="0"}
 function setJourneyReturnVibrationEnabled(on){localStorage.setItem("averathia-vibrate-journey-return",on?"1":"0")}
 function vibrateJourneyReturn(){if(!journeyReturnVibrationEnabled()||typeof navigator==="undefined"||typeof navigator.vibrate!=="function")return;try{navigator.vibrate([300,150,300])}catch(e){}}
