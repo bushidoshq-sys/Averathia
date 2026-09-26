@@ -2943,8 +2943,36 @@ function autonomousChoice(ev){
  }else choice=choices[0];
  return choice
 }
+const JOURNEY_FLAVOR=[
+ "You find shallow marks on a stone that look almost like archaic writing.",
+ "For several minutes the air smells strangely of rotten straw, then the scent disappears.",
+ "A short piece of string lies beside the trail with three careful knots tied into it.",
+ "You pass a tree with a single old iron nail driven high into the trunk.",
+ "Small footprints cross the path and vanish at a patch of bare stone.",
+ "A few black feathers have been arranged in a rough circle beside the road.",
+ "You hear three knocks from somewhere in the woods. They do not repeat.",
+ "A smooth white pebble sits on top of a weathered milestone.",
+ "Someone has scratched a crooked arrow into a flat rock. It points nowhere useful.",
+ "You find the remains of a tiny fire, cold enough to have been abandoned long ago.",
+ "A strip of faded blue cloth is caught on a thorn bush.",
+ "For a moment you can hear running water, although there is no stream nearby.",
+ "An old boot print in dried mud is much larger than your own.",
+ "A little bundle of dry grass has been tied around a branch with red thread.",
+ "You notice a line of mushrooms growing in an almost perfectly straight line.",
+ "A rusted key lies in the dirt. Whatever lock it belonged to is nowhere in sight.",
+ "There is a patch of ground where absolutely nothing seems to grow.",
+ "A distant bell rings once, far beyond the road.",
+ "Someone has stacked five flat stones beside the trail, smallest on top.",
+ "You find a tiny carved wooden bird with one wing missing."
+];
+function maybeJourneyFlavor(){
+ if(!h?.trip||h.combat||h.pendingEvent||journeyInSleepWindow())return;
+ let pool=JOURNEY_FLAVOR,last=h.trip.lastFlavorText||"",choices=pool.filter(x=>x!==last),t=choices[d(choices.length)-1]||pool[0];
+ h.trip.lastFlavorText=t;addlog(t,"Quiet")
+}
 function event(){
  if(!h||!h.trip||h.combat||h.pendingEvent)return;
+ if(d(100)<=35)maybeJourneyFlavor();
  let ev=pickEvent();
  if(ev.choices.length&&h.trip.mode==="present"){beginTripPause();adventureLog(`${ev.title}: ${ev.text}`,ev.type||"Event");h.pendingEvent=ev;renderPendingEvent();save();return}
  if(ev.choices.length){applyEventChoice(ev,autonomousChoice(ev));return}
