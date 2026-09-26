@@ -552,6 +552,21 @@ function page(id){
  $$(".page").forEach(x=>x.classList.add("hide"));$("#"+id).classList.remove("hide");$$("[data-page]").forEach(x=>x.classList.toggle("on",x.dataset.page===id));updateNavigationLock();if(id!=="settings")refresh()
 }
 $$("[data-page]").forEach(b=>b.onclick=()=>page(b.dataset.page));$$("[data-go]").forEach(b=>b.onclick=()=>page(b.dataset.go));
+let swipeStart=null;
+document.addEventListener("touchstart",e=>{
+ if(e.touches.length!==1)return;
+ if(e.target.closest("button,input,select,textarea,[contenteditable]"))return;
+ swipeStart={x:e.touches[0].clientX,y:e.touches[0].clientY,t:Date.now()}
+},{passive:true});
+document.addEventListener("touchend",e=>{
+ let s=swipeStart;swipeStart=null;if(!s||e.changedTouches.length!==1)return;
+ let dx=e.changedTouches[0].clientX-s.x,dy=e.changedTouches[0].clientY-s.y;
+ if(Date.now()-s.t>800||Math.abs(dx)<70||Math.abs(dx)<Math.abs(dy)*1.5)return;
+ if(h?.combat||h?.deadUntil&&Date.now()<h.deadUntil||h?.trip)return;
+ let current=document.querySelector(".page:not(.hide)")?.id;
+ let tabs=$$("[data-page]").filter(b=>!b.disabled&&!b.classList.contains("hide")&&b.offsetParent!==null).map(b=>b.dataset.page).filter((x,i,a)=>a.indexOf(x)===i);
+ let i=tabs.indexOf(current),n=dx<0?i+1:i-1;if(i>=0&&n>=0&&n<tabs.length)page(tabs[n])
+},{passive:true});
 function journeyReturnVibrationEnabled(){return localStorage.getItem("averathia-vibrate-journey-return")!=="0"}
 function setJourneyReturnVibrationEnabled(on){localStorage.setItem("averathia-vibrate-journey-return",on?"1":"0")}
 function vibrateJourneyReturn(){if(!journeyReturnVibrationEnabled()||typeof navigator==="undefined"||typeof navigator.vibrate!=="function")return;try{navigator.vibrate([300,150,300])}catch(e){}}
