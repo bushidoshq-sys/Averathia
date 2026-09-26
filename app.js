@@ -1,4 +1,4 @@
-const RC_AVERATHIA_SPELL_AUDIT={"Arcanist/Elf":{"1":{"NOW":["Magic Missile","Shield","Sleep","Light"],"LATER":["Charm Person","Detect Magic","Floating Disc","Hold Portal","Read Languages","Read Magic","Ventriloquism"],"NO":[]},"2":{"NOW":["Mirror Image","Web"],"LATER":["Continual Light","Detect Evil","Detect Invisible","ESP","Invisibility","Knock","Levitate","Locate Object","Wizard Lock"],"NO":[]},"3":{"NOW":["Fireball","Lightning Bolt","Haste","Slow","Hold Person","Protection from Normal Missiles"],"LATER":["Clairvoyance","Create Air","Dispel Magic","Fly","Infravision","Invisibility 10' Radius","Water Breathing"],"NO":[]}},"Cleric":{"1":{"NOW":["Cure Light Wounds","Protection from Evil","Remove Fear","Resist Cold"],"LATER":["Detect Evil","Detect Magic","Light","Purify Food and Water"],"NO":[]},"2":{"NOW":["Bless","Hold Person","Resist Fire"],"LATER":["Find Traps","Know Alignment","Silence 15' Radius","Snake Charm","Speak with Animal"],"NO":[]},"3":{"NOW":["Cure Disease","Striking"],"LATER":["Continual Light","Cure Blindness","Dispel Magic","Growth of Animals","Locate Object","Speak with the Dead"],"NO":[]}}};
+const AV_AVERATHIA_SPELL_AUDIT={"Arcanist/Elf":{"1":{"NOW":["Magic Missile","Shield","Sleep","Light"],"LATER":["Charm Person","Detect Magic","Floating Disc","Hold Portal","Read Languages","Read Magic","Ventriloquism"],"NO":[]},"2":{"NOW":["Mirror Image","Web"],"LATER":["Continual Light","Detect Evil","Detect Invisible","ESP","Invisibility","Knock","Levitate","Locate Object","Wizard Lock"],"NO":[]},"3":{"NOW":["Fireball","Lightning Bolt","Haste","Slow","Hold Person","Protection from Normal Missiles"],"LATER":["Clairvoyance","Create Air","Dispel Magic","Fly","Infravision","Invisibility 10' Radius","Water Breathing"],"NO":[]}},"Cleric":{"1":{"NOW":["Cure Light Wounds","Protection from Evil","Remove Fear","Resist Cold"],"LATER":["Detect Evil","Detect Magic","Light","Purify Food and Water"],"NO":[]},"2":{"NOW":["Bless","Hold Person","Resist Fire"],"LATER":["Find Traps","Know Alignment","Silence 15' Radius","Snake Charm","Speak with Animal"],"NO":[]},"3":{"NOW":["Cure Disease","Striking"],"LATER":["Continual Light","Cure Blindness","Dispel Magic","Growth of Animals","Locate Object","Speak with the Dead"],"NO":[]}}};
 const $=s=>document.querySelector(s),$$=s=>[...document.querySelectorAll(s)],d=n=>1+Math.floor(Math.random()*n);
 let sex="Male",avatar=0,cs=[],pick=null,h=null,tab="Weapons",inventoryTab="Inventory",mode="present",risk="Normal",mins=1,customDurationActive=false,timer=null,autonomousCombatRunning=false,homeCoinMode="take",homeCoinDenom="gp",homeCoinAmount="";
 const classSlug=c=>c.toLowerCase();
@@ -409,7 +409,7 @@ function journeyBlockingCondition(){let now=averathiaNow();return ensureDiseases
 function diseaseJourneyBlocked(){return Math.max(diseaseBedRestUntilAT(),diseaseActivityBlockedUntilAT())>averathiaNow()}
 function ensureTimedConditions(obj=h){if(!obj)return[];obj.timedConditions=Array.isArray(obj.timedConditions)?obj.timedConditions:[];return obj.timedConditions}
 function timedConditionStatusText(){
- return ensureTimedConditions().map(x=>{let turns=Math.max(0,Math.ceil((Number(x.rounds)||0)/RC_ROUNDS_PER_TURN)),bits=[x.name||"Condition",turns?`${turns} turn${turns===1?"":"s"}`:"ending"];if(x.helpless)bits.push("helpless");return bits.join(" · ")}).join(" | ")
+ return ensureTimedConditions().map(x=>{let turns=Math.max(0,Math.ceil((Number(x.rounds)||0)/AV_ROUNDS_PER_TURN)),bits=[x.name||"Condition",turns?`${turns} turn${turns===1?"":"s"}`:"ending"];if(x.helpless)bits.push("helpless");return bits.join(" · ")}).join(" | ")
 }
 function timedConditionJourneyBlocked(){return ensureTimedConditions().some(x=>x.blocksJourney&&(Number(x.rounds)||0)>0)}
 function timedConditionBlockingName(){return ensureTimedConditions().find(x=>x.blocksJourney&&(Number(x.rounds)||0)>0)?.name||"Current condition"}
@@ -435,7 +435,7 @@ function ageTimedConditionsByRounds(rounds,inCombat=false){
  rounds=Math.max(0,Number(rounds)||0);if(!rounds)return true;
  for(const x of [...ensureTimedConditions()]){
   let before=Math.max(0,Number(x.rounds)||0),used=Math.min(before,rounds);x.rounds=Math.max(0,before-used);x.elapsedRounds=(Number(x.elapsedRounds)||0)+used;
-  if(x.type==="tarantellaDance"&&!x.helpless&&x.elapsedRounds>=5*RC_ROUNDS_PER_TURN&&x.rounds>0){
+  if(x.type==="tarantellaDance"&&!x.helpless&&x.elapsedRounds>=5*AV_ROUNDS_PER_TURN&&x.rounds>0){
    x.helpless=true;
    if(inCombat&&h.combat){h.combat.paralyzed=true;h.combat.tarantellaHelpless=true;clog(`${h.name} collapses from the Tarantella dance and is helpless.`)}
   }
@@ -646,14 +646,14 @@ const RESOURCE_SKUS=new Set(["Rations — 7 days","Waterskin","Torch","6 Torches
 function isResourceSku(name){return RESOURCE_SKUS.has(name)}
 
 const BP_BASE_CAPACITY=1600;
-const RC_ARMOR_BP={"Shield":100,"Leather Armor":200,"Scale Mail":300,"Chain Mail":400,"Banded Mail":450,"Plate Mail":500,"Suit Armor":750};
-const RC_WEAPON_BP={
+const AV_ARMOR_BP={"Shield":100,"Leather Armor":200,"Scale Mail":300,"Chain Mail":400,"Banded Mail":450,"Plate Mail":500,"Suit Armor":750};
+const AV_WEAPON_BP={
  "Battle Axe":60,"Hand Axe":30,"Short Bow":10,"Long Bow":20,"Light Crossbow":40,"Heavy Crossbow":70,
  "Club":50,"Throwing Hammer":25,"War Hammer":50,"Mace":30,"Staff":40,"Dagger":10,"Silver Dagger":10,
  "Halberd":150,"Javelin":20,"Lance":180,"Pike":80,"Polearm":150,"Poleaxe":120,"Spear":30,"Trident":25,
  "Short Sword":30,"Sword":60,"Bastard Sword (1H)":80,"Bastard Sword (2H)":80,"Two-Handed Sword":100,"Cestus":10,"Sling":14
 };
-const RC_GEAR_BP={
+const AV_GEAR_BP={
  "Backpack":20,"50-foot Rope":50,"Tinder Box":5,"Grappling Hook":80,"Garlic":1,"Hammer":10,"Holy Water":1,
  "Iron Spike":1,"12 Iron Spikes":5,"Steel Mirror":5,"10-foot Pole":100,"Belt Pouch":2,"Quiver":5,
  "Small Sack":1,"Large Sack":5,"3 Stakes + Mallet":10,"Wine — 1 quart":30,"Wolfsbane":1,"Healing Potion":10,
@@ -662,9 +662,9 @@ const RC_GEAR_BP={
  "Basic Canvas Shoes":8,"Canvas Tunic":20,"Hemp Rope Belt":5,"Holy Symbol":1,"Thief's Tools":10,"Spellbook":200
 };
 function maxCarryBP(obj=h){let s=Math.max(9,Math.trunc(Number(obj?.stats?.STR)||9)),base=BP_BASE_CAPACITY+(s>=18?300:s>=16?200:s>=13?100:0);return base+(retainerSelected(obj)?RETAINER_CARRY_BP:0)}
-function rcJewelryBulkPoints(value){value=Math.max(0,Number(value)||0);return value>=20000?50:value>=3000?25:10}
-function rcMagicBulkPoints(item){
- let cat=item?.rcCategory||"",name=String(item?.rcItem||item?.n||"");
+function avJewelryBulkPoints(value){value=Math.max(0,Number(value)||0);return value>=20000?50:value>=3000?25:10}
+function avMagicBulkPoints(item){
+ let cat=item?.avCategory||"",name=String(item?.avItem||item?.n||"");
  if(cat==="potion")return 10;if(cat==="scroll")return 1;if(cat==="ring")return 1;
  if(cat==="wandStaffRod"){if(/^Staff\b/i.test(name))return 40;if(/^Rod\b/i.test(name))return 20;return 10}
  if(/Crystal Ball/i.test(name))return 130;if(/\bBroom\b/i.test(name))return 40;if(/\bBoots\b/i.test(name))return 10;
@@ -675,13 +675,13 @@ function rcMagicBulkPoints(item){
 function itemBulkPoints(item){
  if(!item)return 0;
  if(Number.isFinite(Number(item.bp)))return Math.max(0,Number(item.bp));
- if(Number.isFinite(Number(item.rcEncumbrance)))return Math.max(0,Number(item.rcEncumbrance));
- if(item.rcGem)return 1;if(item.rcJewelry)return rcJewelryBulkPoints(item.gpValue);
+ if(Number.isFinite(Number(item.avEncumbrance)))return Math.max(0,Number(item.avEncumbrance));
+ if(item.avGem)return 1;if(item.avJewelry)return avJewelryBulkPoints(item.gpValue);
  let base=item.baseWeapon||item.baseArmor||item.n;
- if(Object.prototype.hasOwnProperty.call(RC_WEAPON_BP,base))return RC_WEAPON_BP[base];
- if(Object.prototype.hasOwnProperty.call(RC_ARMOR_BP,base))return RC_ARMOR_BP[base];
- if(Object.prototype.hasOwnProperty.call(RC_GEAR_BP,base))return RC_GEAR_BP[base];
- if(item.rcMagic)return rcMagicBulkPoints(item);
+ if(Object.prototype.hasOwnProperty.call(AV_WEAPON_BP,base))return AV_WEAPON_BP[base];
+ if(Object.prototype.hasOwnProperty.call(AV_ARMOR_BP,base))return AV_ARMOR_BP[base];
+ if(Object.prototype.hasOwnProperty.call(AV_GEAR_BP,base))return AV_GEAR_BP[base];
+ if(item.avMagic)return avMagicBulkPoints(item);
  return 0
 }
 function resourceBulkPoints(obj=h){
@@ -776,66 +776,66 @@ function waterskinSummaryRows(){
  return rows.join("")
 }
 function discardInventoryItem(i){let q=h.inv[i];if(!q||q.kind!=="clothing")return;h.inv.splice(i,1);save()}
-function rcMagicUseKind(item){
- if(!item?.rcMagic)return null;
- if(item.rcCategory==="potion"&&item.rcItem==="Super-Healing")return"superHeal";
- if(item.rcCategory==="potion"&&item.rcItem==="Fire Resistance")return"fireResistPotion";
- if(item.rcCategory==="potion"&&item.rcItem==="Speed")return"speedPotion";
- if(item.rcCategory==="potion"&&item.rcItem==="Defense")return"defensePotion";
- if(item.rcCategory==="potion"&&item.rcItem==="Freedom")return"freedomPotion";
- if(item.rcCategory==="potion"&&item.rcItem==="Antidote")return"antidotePotion";
- if(item.rcCategory==="wandStaffRod"&&item.rcItem==="Wand of Fireballs")return"wandFireball";
- if(item.rcCategory==="wandStaffRod"&&item.rcItem==="Wand of Lightning Bolts")return"wandLightning";
- if(item.rcCategory==="wandStaffRod"&&item.rcItem==="Staff of Healing")return"staffHeal";
- if(item.rcCategory==="wandStaffRod"&&item.rcItem==="Rod of Health")return"rodHeal";
+function avMagicUseKind(item){
+ if(!item?.avMagic)return null;
+ if(item.avCategory==="potion"&&item.avItem==="Super-Healing")return"superHeal";
+ if(item.avCategory==="potion"&&item.avItem==="Fire Resistance")return"fireResistPotion";
+ if(item.avCategory==="potion"&&item.avItem==="Speed")return"speedPotion";
+ if(item.avCategory==="potion"&&item.avItem==="Defense")return"defensePotion";
+ if(item.avCategory==="potion"&&item.avItem==="Freedom")return"freedomPotion";
+ if(item.avCategory==="potion"&&item.avItem==="Antidote")return"antidotePotion";
+ if(item.avCategory==="wandStaffRod"&&item.avItem==="Wand of Fireballs")return"wandFireball";
+ if(item.avCategory==="wandStaffRod"&&item.avItem==="Wand of Lightning Bolts")return"wandLightning";
+ if(item.avCategory==="wandStaffRod"&&item.avItem==="Staff of Healing")return"staffHeal";
+ if(item.avCategory==="wandStaffRod"&&item.avItem==="Rod of Health")return"rodHeal";
  return null
 }
-function rcMagicDailyDay(){return Math.floor(averathiaNow()/86400000)}
-function rcMagicCanClassUse(item){
- let k=rcMagicUseKind(item);
+function avMagicDailyDay(){return Math.floor(averathiaNow()/86400000)}
+function avMagicCanClassUse(item){
+ let k=avMagicUseKind(item);
  if(k==="wandFireball"||k==="wandLightning")return ["Arcanist","Elf"].includes(h.className);
  if(k==="staffHeal"||k==="rodHeal")return h.className==="Cleric";
  return !!k
 }
-function rcMagicHealReady(item){let k=rcMagicUseKind(item);return !["staffHeal","rodHeal"].includes(k)||item.lastRcHealDay!==rcMagicDailyDay()}
-function rcMagicItemStatus(item){
- let k=rcMagicUseKind(item),bits=[];
+function avMagicHealReady(item){let k=avMagicUseKind(item);return !["staffHeal","rodHeal"].includes(k)||item.lastRcHealDay!==avMagicDailyDay()}
+function avMagicItemStatus(item){
+ let k=avMagicUseKind(item),bits=[];
  if(Number.isFinite(Number(item?.charges)))bits.push(`${Math.max(0,Math.trunc(item.charges))} charge${Math.trunc(item.charges)===1?"":"s"}`);
- if(["staffHeal","rodHeal"].includes(k))bits.push(rcMagicHealReady(item)?"heal ready":"heal used today");
- if(k&&!rcMagicCanClassUse(item))bits.push("class restricted");
+ if(["staffHeal","rodHeal"].includes(k))bits.push(avMagicHealReady(item)?"heal ready":"heal used today");
+ if(k&&!avMagicCanClassUse(item))bits.push("class restricted");
  return bits.length?` · ${bits.join(" · ")}`:""
 }
-function rcMagicTownUsable(item){let k=rcMagicUseKind(item);return ["superHeal","staffHeal","rodHeal"].includes(k)&&rcMagicCanClassUse(item)&&rcMagicHealReady(item)&&h.hp<h.maxhp}
-function rcMagicCombatUsable(item){
- let k=rcMagicUseKind(item);if(!k||!rcMagicCanClassUse(item))return false;
+function avMagicTownUsable(item){let k=avMagicUseKind(item);return ["superHeal","staffHeal","rodHeal"].includes(k)&&avMagicCanClassUse(item)&&avMagicHealReady(item)&&h.hp<h.maxhp}
+function avMagicCombatUsable(item){
+ let k=avMagicUseKind(item);if(!k||!avMagicCanClassUse(item))return false;
  if(["wandFireball","wandLightning"].includes(k))return Number(item.charges)>0&&combatDistance()<=240;
- if(["staffHeal","rodHeal"].includes(k))return rcMagicHealReady(item)&&h.hp<h.maxhp;
+ if(["staffHeal","rodHeal"].includes(k))return avMagicHealReady(item)&&h.hp<h.maxhp;
  if(k==="superHeal")return h.hp<h.maxhp;
  if(["fireResistPotion","speedPotion","defensePotion","freedomPotion","antidotePotion"].includes(k))return true;
  return false
 }
 function resolveRcMagicHeal(item,index,inCombat=false){
- let k=rcMagicUseKind(item);if(!["superHeal","staffHeal","rodHeal"].includes(k)||!rcMagicCanClassUse(item)||!rcMagicHealReady(item))return false;
+ let k=avMagicUseKind(item);if(!["superHeal","staffHeal","rodHeal"].includes(k)||!avMagicCanClassUse(item)||!avMagicHealReady(item))return false;
  if(k==="superHeal")h.inv.splice(index,1);
- if(["staffHeal","rodHeal"].includes(k))item.lastRcHealDay=rcMagicDailyDay();
- if(magicalHealingBlockedByDisease()){let msg=`${item.rcItem||item.n} is used, but Tomb Rot prevents magical healing.`;inCombat?clog(msg):addlog(msg)}
- else{let heal=k==="superHeal"?d(6)+d(6)+d(6)+3:d(6)+1,before=h.hp;h.hp=Math.min(h.maxhp,h.hp+heal);let msg=`${item.rcItem||item.n} restores ${h.hp-before} HP.`;inCombat?clog(msg):addlog(msg)}
+ if(["staffHeal","rodHeal"].includes(k))item.lastRcHealDay=avMagicDailyDay();
+ if(magicalHealingBlockedByDisease()){let msg=`${item.avItem||item.n} is used, but Tomb Rot prevents magical healing.`;inCombat?clog(msg):addlog(msg)}
+ else{let heal=k==="superHeal"?d(6)+d(6)+d(6)+3:d(6)+1,before=h.hp;h.hp=Math.min(h.maxhp,h.hp+heal);let msg=`${item.avItem||item.n} restores ${h.hp-before} HP.`;inCombat?clog(msg):addlog(msg)}
  return true
 }
 function useRcMagicItemTown(index){
- if(h?.trip||h?.combat)return false;let item=h.inv[index];if(!item||!rcMagicTownUsable(item))return false;
+ if(h?.trip||h?.combat)return false;let item=h.inv[index];if(!item||!avMagicTownUsable(item))return false;
  if(resolveRcMagicHeal(item,index,false)){save();return true}return false
 }
-function rcMagicFixedDamage(expr="6d6"){let total=0,n=+expr.split("d")[0]||1,sides=+expr.split("d")[1]||6;while(n--)total+=d(sides);return total}
+function avMagicFixedDamage(expr="6d6"){let total=0,n=+expr.split("d")[0]||1,sides=+expr.split("d")[1]||6;while(n--)total+=d(sides);return total}
 function resolveRcWandAttack(item){
- let k=rcMagicUseKind(item),t=h.combat?.enemies?.find(e=>e.id===h.combat.target&&monsterCombatActive(e))||living()[0];
- if(!t||!["wandFireball","wandLightning"].includes(k)||!rcMagicCanClassUse(item)||Number(item.charges)<=0||combatDistance()>240)return false;
+ let k=avMagicUseKind(item),t=h.combat?.enemies?.find(e=>e.id===h.combat.target&&monsterCombatActive(e))||living()[0];
+ if(!t||!["wandFireball","wandLightning"].includes(k)||!avMagicCanClassUse(item)||Number(item.charges)<=0||combatDistance()>240)return false;
  item.charges=Math.max(0,Math.trunc(item.charges)-1);
- let targets=k==="wandFireball"?gridlessAreaTargets(t,40):gridlessLineTargets(t),base=rcMagicFixedDamage("6d6");
+ let targets=k==="wandFireball"?gridlessAreaTargets(t,40):gridlessLineTargets(t),base=avMagicFixedDamage("6d6");
  for(const q of targets){
   let dmg=base,sv=monsterSpellSave(q,"Wands");if(sv.success)dmg=Math.floor(dmg/2);if(q.mummy)dmg=Math.floor(dmg/2);
   applyMonsterDamage(q,dmg,k==="wandFireball"?"fire":"magic");
-  clog(`${item.rcItem}: ${q.n} save ${sv.roll} vs ${sv.target} [${sv.saveAs||"RC"}] — ${sv.success?"success":"FAIL"}; ${dmg} damage.`);
+  clog(`${item.avItem}: ${q.n} save ${sv.roll} vs ${sv.target} [${sv.saveAs||"Averathia"}] — ${sv.success?"success":"FAIL"}; ${dmg} damage.`);
   if(k==="wandFireball"&&q.webbed&&q.hp>0){let burn=d(6);if(q.mummy)burn=Math.floor(burn/2);applyMonsterDamage(q,burn,"fire");q.disabledRounds=Math.min(Math.max(1,q.disabledRounds||2),2);clog(`The burning web deals ${burn} extra fire damage to ${q.n}.`)}
   if(q.hp<=0)resolveMonsterDefeat(q)
  }
@@ -843,16 +843,16 @@ function resolveRcWandAttack(item){
 }
 function activeRcTimedPotion(){ensureSpellState();return h.spells.buffs.find(b=>b.potionEffect)||null}
 function resolveRcTimedPotion(item,index){
- let k=rcMagicUseKind(item);if(!["fireResistPotion","speedPotion","defensePotion","freedomPotion","antidotePotion"].includes(k))return false;
+ let k=avMagicUseKind(item);if(!["fireResistPotion","speedPotion","defensePotion","freedomPotion","antidotePotion"].includes(k))return false;
  h.inv.splice(index,1);ensureSpellState();
  let active=activeRcTimedPotion();
  if(active){
   h.spells.buffs=h.spells.buffs.filter(b=>!b.potionEffect);
-  h.combat.paralyzed=true;h.combat.fearParalyzed=false;h.combat.potionSick=true;h.combat.paralyzedRounds=3*RC_ROUNDS_PER_TURN;
+  h.combat.paralyzed=true;h.combat.fearParalyzed=false;h.combat.potionSick=true;h.combat.paralyzedRounds=3*AV_ROUNDS_PER_TURN;
   clog(`Mixing active potions makes ${h.name} violently sick; both potion effects end and ${h.name} cannot act for 3 turns.`);
   return true
  }
- let turns=k==="defensePotion"?1:d(6)+6,rounds=turns*RC_ROUNDS_PER_TURN;
+ let turns=k==="defensePotion"?1:d(6)+6,rounds=turns*AV_ROUNDS_PER_TURN;
  if(k==="fireResistPotion"){h.spells.buffs.push({rc:"Potion of Fire Resistance",potionEffect:true,resist:"fire",saveBonusVs:"fire",damagePerDieReduction:1,normalFireImmune:true,rounds});clog(`Potion of Fire Resistance takes effect for ${turns} turns.`)}
  else if(k==="speedPotion"){h.spells.buffs.push({rc:"Potion of Speed",potionEffect:true,speedSource:"potion",rounds});clog(`Potion of Speed takes effect for ${turns} turns.`)}
  else if(k==="defensePotion"){let roll=d(10),bonus=roll<=3?1:roll<=5?2:roll<=7?3:roll<=9?4:5;h.spells.buffs.push({rc:"Potion of Defense",potionEffect:true,ac:-bonus,defenseBonus:bonus,rounds});clog(`Potion of Defense grants AC +${bonus} for 1 turn (roll ${roll}).`)}
@@ -861,24 +861,24 @@ function resolveRcTimedPotion(item,index){
  return true
 }
 function useRcMagicItemCombat(index){
- if(!h?.combat||h.combat.paralyzed)return false;let item=h.inv[index];if(!item||!rcMagicCombatUsable(item))return false;
+ if(!h?.combat||h.combat.paralyzed)return false;let item=h.inv[index];if(!item||!avMagicCombatUsable(item))return false;
  if(!preemptiveEnemiesAct())return false;
- let k=rcMagicUseKind(item),ok=["wandFireball","wandLightning"].includes(k)?resolveRcWandAttack(item):["fireResistPotion","speedPotion","defensePotion","freedomPotion","antidotePotion"].includes(k)?resolveRcTimedPotion(item,index):resolveRcMagicHeal(item,index,true);if(!ok)return false;
+ let k=avMagicUseKind(item),ok=["wandFireball","wandLightning"].includes(k)?resolveRcWandAttack(item):["fireResistPotion","speedPotion","defensePotion","freedomPotion","antidotePotion"].includes(k)?resolveRcTimedPotion(item,index):resolveRcMagicHeal(item,index,true);if(!ok)return false;
  if(!living().length)return finishCombat();
  enemyStrike(e=>!e.alwaysWinInitiative);if(h.combat)advanceCombatRound(h.combat,true);return true
 }
-function supportedRcMagicItems(){return h.inv.map((item,index)=>({item,index})).filter(x=>rcMagicUseKind(x.item))}
+function supportedRcMagicItems(){return h.inv.map((item,index)=>({item,index})).filter(x=>avMagicUseKind(x.item))}
 function renderMagicItemButton(){
  let b=$("#magicItemBtn"),menu=$("#magicItemMenu");if(!b||!menu||!h?.combat)return;
- let items=supportedRcMagicItems(),usable=items.filter(x=>rcMagicCombatUsable(x.item));b.classList.toggle("hide",!items.length);b.disabled=!!h.combat.paralyzed||!usable.length;b.textContent=items.length?`🔮 Magic Item (${usable.length}/${items.length})`:"🔮 Magic Item";
- b.onclick=()=>{menu.innerHTML=items.map(({item,index})=>{let k=rcMagicUseKind(item),range=["wandFireball","wandLightning"].includes(k)?" · 240 ft":"",disabled=!rcMagicCombatUsable(item);return `<button data-magic-use="${index}" ${disabled?"disabled":""}><b>${item.rcItem||item.n}</b><span class="small">${rcMagicItemStatus(item)}${range}${disabled&&!rcMagicCanClassUse(item)?" · WRONG CLASS":""}</span></button>`}).join("");menu.classList.toggle("hide");$("[data-cast-spell]")?.closest("#spellMenu")?.classList.add("hide");$$("[data-magic-use]").forEach(x=>x.onclick=()=>{menu.classList.add("hide");useRcMagicItemCombat(+x.dataset.magicUse)})}
+ let items=supportedRcMagicItems(),usable=items.filter(x=>avMagicCombatUsable(x.item));b.classList.toggle("hide",!items.length);b.disabled=!!h.combat.paralyzed||!usable.length;b.textContent=items.length?`🔮 Magic Item (${usable.length}/${items.length})`:"🔮 Magic Item";
+ b.onclick=()=>{menu.innerHTML=items.map(({item,index})=>{let k=avMagicUseKind(item),range=["wandFireball","wandLightning"].includes(k)?" · 240 ft":"",disabled=!avMagicCombatUsable(item);return `<button data-magic-use="${index}" ${disabled?"disabled":""}><b>${item.avItem||item.n}</b><span class="small">${avMagicItemStatus(item)}${range}${disabled&&!avMagicCanClassUse(item)?" · WRONG CLASS":""}</span></button>`}).join("");menu.classList.toggle("hide");$("[data-cast-spell]")?.closest("#spellMenu")?.classList.add("hide");$$("[data-magic-use]").forEach(x=>x.onclick=()=>{menu.classList.add("hide");useRcMagicItemCombat(+x.dataset.magicUse)})}
 }
 function autoRcHealingIndex(){
  let ratio=h.hp/h.maxhp;if(ratio>autoPotionThreshold())return-1;
- let ranked=supportedRcMagicItems().filter(x=>["staffHeal","rodHeal","superHeal"].includes(rcMagicUseKind(x.item))&&rcMagicCombatUsable(x.item)).sort((a,b)=>{let ka=rcMagicUseKind(a.item),kb=rcMagicUseKind(b.item),r={staffHeal:0,rodHeal:1,superHeal:2};return r[ka]-r[kb]});
+ let ranked=supportedRcMagicItems().filter(x=>["staffHeal","rodHeal","superHeal"].includes(avMagicUseKind(x.item))&&avMagicCombatUsable(x.item)).sort((a,b)=>{let ka=avMagicUseKind(a.item),kb=avMagicUseKind(b.item),r={staffHeal:0,rodHeal:1,superHeal:2};return r[ka]-r[kb]});
  return ranked.length?ranked[0].index:-1
 }
-function autoRcOffensiveIndex(){return supportedRcMagicItems().find(x=>["wandFireball","wandLightning"].includes(rcMagicUseKind(x.item))&&rcMagicCombatUsable(x.item))?.index??-1}
+function autoRcOffensiveIndex(){return supportedRcMagicItems().find(x=>["wandFireball","wandLightning"].includes(avMagicUseKind(x.item))&&avMagicCombatUsable(x.item))?.index??-1}
 function sheetInventory(){
  normalizeInventoryOrder();
  let cs=combatStats(),box=$("#sheetInv"),tabs=`<div class="row inventoryTabs"><button data-invtab="Inventory" class="${inventoryTab==="Inventory"?"on":""}">Inventory</button><button data-invtab="Clothing" class="${inventoryTab==="Clothing"?"on":""}">Clothing</button></div>`;
@@ -894,8 +894,8 @@ function sheetInventory(){
    (equip.length?equip.map(({x,i},order)=>{let buttons;if(x.kind==="weapon"){let opts=weaponSlotOptions(x);buttons=opts.map(slot=>`<button data-eq="${i}" data-eq-slot="${slot}">${x.eq&&x.eqSlot===slot?"Unequip":slot==="melee"?"Melee":"Ranged"}</button>`).join(" ")}else buttons=`<button data-eq="${i}">${x.eq?"Unequip":"Equip"}</button>`;let mark=x.kind==="weapon"&&x.eq?`✓ ${x.eqSlot==="ranged"?"Ranged":"Melee"} · `:(x.eq?"✓ ":"");return `<div class="sheetEquipRow invDrag" data-equip-index="${order}" data-inv="${i}"><span>☰ ${mark}${x.n}</span><span>${buttons}</span></div>`}).join(""):"<div class=small>None.</div>")+
    `<div class="inventoryGroupLabel">Resources</div>`+resourceSummaryRows()+
    `<div class="inventoryGroupLabel">Gear & Items</div>`+
-   (other.length?other.map(({x,i})=>`<div class="sheetEquipRow"><span>${x.n}${rcMagicItemStatus(x)}</span>${rcMagicTownUsable(x)?`<button data-rc-town-use="${i}">Use</button>`:"<span></span>"}</div>`).join(""):"<div class=small>No other items.</div>");
-  enableInventoryDrag(box);$$("[data-rc-town-use]").forEach(b=>b.onclick=()=>useRcMagicItemTown(+b.dataset.rcTownUse))
+   (other.length?other.map(({x,i})=>`<div class="sheetEquipRow"><span>${x.n}${avMagicItemStatus(x)}</span>${avMagicTownUsable(x)?`<button data-rc-town-use="${i}">Use</button>`:"<span></span>"}</div>`).join(""):"<div class=small>No other items.</div>");
+  enableInventoryDrag(box);$$("[data-rc-town-use]").forEach(b=>b.onclick=()=>useRcMagicItemTown(+b.dataset.avTownUse))
  }
  $$("[data-invtab]").forEach(b=>b.onclick=()=>{inventoryTab=b.dataset.invtab;sheetInventory()})
 }
@@ -940,28 +940,28 @@ function visibleAmmoStatus(){
 function walletCP(){return Math.round((h.gp??h.gold??0)*100)+Math.trunc(h.sp||0)*10+Math.trunc(h.cp||0)}
 function setWalletCP(cp){cp=Math.max(0,Math.round(cp));h.gp=Math.floor(cp/100);h.gold=h.gp;h.sp=Math.floor((cp%100)/10);h.cp=cp%10}
 function addCoins(gp=0,sp=0,cp=0){return creditWalletValueCP(Math.trunc(gp||0)*100+Math.trunc(sp||0)*10+Math.trunc(cp||0),!!h?.trip)}
-function rcTreasureCashFeePct(item){
- if(Number.isFinite(Number(item?.rcCashFeePct)))return Math.max(item.rcGem?1:2,Math.min(item.rcGem?5:12,Math.trunc(Number(item.rcCashFeePct))));
- let key=`${item?.n||""}|${item?.gpValue||0}|${item?.rcQuantity||0}`,hash=0;for(let i=0;i<key.length;i++)hash=((hash<<5)-hash+key.charCodeAt(i))|0;
- let min=item?.rcGem?1:2,max=item?.rcGem?5:12;return min+(Math.abs(hash)%(max-min+1))
+function avTreasureCashFeePct(item){
+ if(Number.isFinite(Number(item?.avCashFeePct)))return Math.max(item.avGem?1:2,Math.min(item.avGem?5:12,Math.trunc(Number(item.avCashFeePct))));
+ let key=`${item?.n||""}|${item?.gpValue||0}|${item?.avQuantity||0}`,hash=0;for(let i=0;i<key.length;i++)hash=((hash<<5)-hash+key.charCodeAt(i))|0;
+ let min=item?.avGem?1:2,max=item?.avGem?5:12;return min+(Math.abs(hash)%(max-min+1))
 }
-function rcTreasureSalePriceCP(item){
+function avTreasureSalePriceCP(item){
  let value=Math.max(0,Math.trunc(Number(item?.treasureValueCP)||0));if(!value)return 0;
- if(item.rcGem||item.rcJewelry){let fee=rcTreasureCashFeePct(item);return Math.round(value*(100-fee)/100)}
- if(item.rcSpecial)return value;
+ if(item.avGem||item.avJewelry){let fee=avTreasureCashFeePct(item);return Math.round(value*(100-fee)/100)}
+ if(item.avSpecial)return value;
  return 0
 }
 function sellPriceCP(item){
  if(item?.oreSack)return Math.max(0,Math.trunc(Number(item.oreValueCP)||0));
- if(item?.rcTreasure)return rcTreasureSalePriceCP(item);
+ if(item?.avTreasure)return avTreasureSalePriceCP(item);
  if(item?.starterClothing)return (h?.stats?.CHA||0)>=16?1:0;
  let d=shopData(item.n);if(!d)return 0;return Math.round(gpToCP(d[1])*.5*(1+chaSellBonus()))
 }
 function sellDescriptor(item){
  if(item?.oreSack)return "Ore value · empty sack returned";
- if(item?.rcGem)return `Cashing fee ${rcTreasureCashFeePct(item)}%`;
- if(item?.rcJewelry)return `Cashing fee ${rcTreasureCashFeePct(item)}%`;
- if(item?.rcSpecial)return "Market value";
+ if(item?.avGem)return `Cashing fee ${avTreasureCashFeePct(item)}%`;
+ if(item?.avJewelry)return `Cashing fee ${avTreasureCashFeePct(item)}%`;
+ if(item?.avSpecial)return "Market value";
  if(item?.starterClothing)return (h?.stats?.CHA||0)>=16?"High CHA found a 1 CP buyer":"Starter clothing · discard / 0 CP";
  return "Sell price"
 }
@@ -1000,7 +1000,7 @@ function sell(i){
  removeSoldResource(q.n);
  h.inv.splice(i,1);
  setWalletCP(walletCP()+price);
- if(q.rcSpecial){let baseXP=Math.floor(price/100);if(baseXP)awardXP(baseXP)}
+ if(q.avSpecial){let baseXP=Math.floor(price/100);if(baseXP)awardXP(baseXP)}
  save()
 }
 const CLASS_EQUIPMENT={
@@ -1178,7 +1178,7 @@ function diceExpressionRange(expr){
 }
 function missionObjectiveBaseGP(minutes){
  let m=Math.max(1,Math.min(1440,Math.round(Number(minutes)||1))),exact=MISSION_OBJECTIVE_TREASURE_GP[m];
- if(exact)return rcRollScaled(exact);
+ if(exact)return avRollScaled(exact);
  let hi=MISSION_OBJECTIVE_TREASURE_MINUTES.find(x=>x>m)||1440,lo=[...MISSION_OBJECTIVE_TREASURE_MINUTES].reverse().find(x=>x<m)||1;
  let a=diceExpressionRange(MISSION_OBJECTIVE_TREASURE_GP[lo]),b=diceExpressionRange(MISSION_OBJECTIVE_TREASURE_GP[hi]);
  if(!a||!b)return 0;
@@ -1194,7 +1194,7 @@ function awardMissionObjectiveTreasure(){
  h.trip.mission.objectiveTreasureAwarded=true;
  h.trip.mission.objectiveTreasureRolledGP=gp;
  h.trip.mission.objectiveTreasureKeptCP=credit.cpValue;
- if(credit.cpValue>0)h.trip.rcTreasureXpCP=Math.max(0,Number(h.trip.rcTreasureXpCP)||0)+credit.cpValue;
+ if(credit.cpValue>0)h.trip.avTreasureXpCP=Math.max(0,Number(h.trip.avTreasureXpCP)||0)+credit.cpValue;
  journal({id:"MISSION-OBJECTIVE-TREASURE",type:"Treasure",title:"Mission Objective Treasure",text:`Mission objective secured: ${gp} GP found.`,result:"objectiveTreasure",xp:0,coins:coinArrayFromCP(credit.cpValue),leftCoinCP:credit.leftCP||0});
  addlog(`Mission Objective Treasure: ${gp} GP found.${credit.cpValue?` ${coinTextCP(credit.cpValue)} kept.`:""}${credit.leftCP?` ${coinTextCP(credit.leftCP)} left behind at the carry limit.`:""}`,"Loot");
  return{rolledGP:gp,...credit}
@@ -1218,7 +1218,7 @@ function ensureTripSchedule(trip=h?.trip){
  if(typeof trip.midBossDone!=="boolean")trip.midBossDone=!!trip.mission?.bossWon||!!trip.mission?.resolved;
  if(!Array.isArray(trip.journal))trip.journal=[];
  if(!Array.isArray(trip.adventureLog))trip.adventureLog=[];
- if(!Number.isFinite(Number(trip.rcTreasureXpCP)))trip.rcTreasureXpCP=0;
+ if(!Number.isFinite(Number(trip.avTreasureXpCP)))trip.avTreasureXpCP=0;
  if(!Number.isFinite(Number(trip.nextEvent))){
   let firstDelay=Math.min(15000,Math.max(5000,total/(trip.eventTarget+1))),done=trip.journal.length;
   trip.nextEvent=trip.start+firstDelay+done*trip.eventIntervalMs;
@@ -1276,7 +1276,7 @@ function consumeTripSurvivalResources(now=Date.now()){
  if(h.water<=0&&t<h.trip.half&&!h.trip.forcedReturnWater){h.trip.forcedReturnWater=true;returnEarly("You are out of water. You turn back toward town.");return false}
  return true
 }
-function begin(){let rb=$("#recall");if(rb){rb.disabled=false;rb.textContent="↩ Return Early"}if(!hasBackpack()){alert("You need a Backpack before beginning a Journey.");return}if(carriedBulkPoints()>maxCarryBP()+1e-9){alert(`You are carrying ${formatBP(carriedBulkPoints())}/${formatBP(maxCarryBP())} BP. Reduce your load before beginning a Journey.`);return}if(diseaseJourneyBlocked()){alert(`${journeyBlockingCondition()?.name||"Current condition"} prevents travel. You cannot begin a Journey.`);return}if(timedConditionJourneyBlocked()){alert(`${timedConditionBlockingName()} prevents travel. You cannot begin a Journey.`);return}let ret=retainerSelected(),mounts=plannedHorseCount(),horseAttempt=hasHouse()&&h.mounts.useOnJourney;if(horseAttempt&&!mounts){alert("Not enough Riding Horses for mounted travel with this party.");return}let needs=survivalNeedsForMinutes(mins),nw=needs.waterSkins,nf=needs.foodDays,nl=needs.activeATHours*60/AT_RATE;if(h.waterCapacity<nw){alert(`You need ${nw} Waterskins for this party.`);return}if(h.water+1e-9<nw){alert(`Fill ${nw} Waterskins before beginning the Journey.`);return}if(h.rations<nf){alert("Not enough rations.");return}if(mounts&&h.mounts.feedDays+1e-9<needs.mountFeedDays){alert("Not enough Mount Feed.");return}if(journeyUsableLightMinutes()<nl){alert("Not enough usable light. A Lantern is required to use lamp oil.");return}let journeyLight=consumeJourneyLight(nl);if(!journeyLight.ok){alert("Not enough usable light.");return}let now=Date.now(),total=mins*60000,eventTarget=adventureEventTarget(mins),eventIntervalMs=Math.max(5000,total/eventTarget);if(!hasRoom()){h.lastAdventure=null;h.lastAdventureTitle=null}h.pendingEvent=null;ensureTrophies();let mission=createMission();h.trip={journal:[],adventureLog:[],mission,start:now,end:now+total,half:now+total/2,midBossDone:false,rcTreasureXpCP:0,mode,risk,durationMinutes:mins,eventTarget,eventIntervalMs,resourceModel:"at-elapsed-v3-water-refill",resourceAt:now,waterRefillMode:"normal",waterStart:h.water,forcedReturnWater:false,retainer:ret,mountsUsed:mounts,mountedTravel:!!mounts,lightSource:journeyLight.source,plannedActiveATHours:needs.activeATHours,plannedSleepATHours:needs.sleepATHours,startHP:h.hp,startXP:h.xp,startWalletCP:walletCP(),completedSleeps:0,nextEvent:now+Math.min(15000,Math.max(5000,total/(eventTarget+1)))};$("#departSetup").classList.add("hide");$("#travel").classList.remove("hide");$("#departedAt").textContent=clock(h.trip.start);$("#returnAt").textContent=clock(h.trip.end);$("#runner").innerHTML=spriteHTML(h.sex,h.avatar,h.className);$("#log").innerHTML="";addlog(`${mission.title} — ${mission.brief} Planned duration: ${mins} min. Risk: ${risk}. Mode: ${mode==="auto"?"Autonomous":"Player-present"}.`,"Departure");
+function begin(){let rb=$("#recall");if(rb){rb.disabled=false;rb.textContent="↩ Return Early"}if(!hasBackpack()){alert("You need a Backpack before beginning a Journey.");return}if(carriedBulkPoints()>maxCarryBP()+1e-9){alert(`You are carrying ${formatBP(carriedBulkPoints())}/${formatBP(maxCarryBP())} BP. Reduce your load before beginning a Journey.`);return}if(diseaseJourneyBlocked()){alert(`${journeyBlockingCondition()?.name||"Current condition"} prevents travel. You cannot begin a Journey.`);return}if(timedConditionJourneyBlocked()){alert(`${timedConditionBlockingName()} prevents travel. You cannot begin a Journey.`);return}let ret=retainerSelected(),mounts=plannedHorseCount(),horseAttempt=hasHouse()&&h.mounts.useOnJourney;if(horseAttempt&&!mounts){alert("Not enough Riding Horses for mounted travel with this party.");return}let needs=survivalNeedsForMinutes(mins),nw=needs.waterSkins,nf=needs.foodDays,nl=needs.activeATHours*60/AT_RATE;if(h.waterCapacity<nw){alert(`You need ${nw} Waterskins for this party.`);return}if(h.water+1e-9<nw){alert(`Fill ${nw} Waterskins before beginning the Journey.`);return}if(h.rations<nf){alert("Not enough rations.");return}if(mounts&&h.mounts.feedDays+1e-9<needs.mountFeedDays){alert("Not enough Mount Feed.");return}if(journeyUsableLightMinutes()<nl){alert("Not enough usable light. A Lantern is required to use lamp oil.");return}let journeyLight=consumeJourneyLight(nl);if(!journeyLight.ok){alert("Not enough usable light.");return}let now=Date.now(),total=mins*60000,eventTarget=adventureEventTarget(mins),eventIntervalMs=Math.max(5000,total/eventTarget);if(!hasRoom()){h.lastAdventure=null;h.lastAdventureTitle=null}h.pendingEvent=null;ensureTrophies();let mission=createMission();h.trip={journal:[],adventureLog:[],mission,start:now,end:now+total,half:now+total/2,midBossDone:false,avTreasureXpCP:0,mode,risk,durationMinutes:mins,eventTarget,eventIntervalMs,resourceModel:"at-elapsed-v3-water-refill",resourceAt:now,waterRefillMode:"normal",waterStart:h.water,forcedReturnWater:false,retainer:ret,mountsUsed:mounts,mountedTravel:!!mounts,lightSource:journeyLight.source,plannedActiveATHours:needs.activeATHours,plannedSleepATHours:needs.sleepATHours,startHP:h.hp,startXP:h.xp,startWalletCP:walletCP(),completedSleeps:0,nextEvent:now+Math.min(15000,Math.max(5000,total/(eventTarget+1)))};$("#departSetup").classList.add("hide");$("#travel").classList.remove("hide");$("#departedAt").textContent=clock(h.trip.start);$("#returnAt").textContent=clock(h.trip.end);$("#runner").innerHTML=spriteHTML(h.sex,h.avatar,h.className);$("#log").innerHTML="";addlog(`${mission.title} — ${mission.brief} Planned duration: ${mins} min. Risk: ${risk}. Mode: ${mode==="auto"?"Autonomous":"Player-present"}.`,"Departure");
  let mountText=mounts===1?" Mount secured.":mounts>1?" Mounts secured.":"";
  addlog(`Destination reached.${mountText} You light your ${journeyLight.source} and venture forward.`,"Travel");
  renderAdventureLog();save();tick()}
@@ -1289,8 +1289,8 @@ function journeySummaryText(trip=h?.trip){
 }
 function tick(){clearTimeout(timer);if(ageTimedConditionsClock(Date.now())===false)return;if(!h.trip)return;ensureTripSchedule();let now=h.trip.pauseStart||Date.now();processJourneySleep(now);if(!consumeTripSurvivalResources(now))return;let total=h.trip.end-h.trip.start,elapsed=Math.max(0,now-h.trip.start),pct=Math.min(1,elapsed/total),outbound=pct<=0.5,runnerPct=outbound?pct*200:(1-pct)*200;let recall=$("#recall");if(recall){recall.disabled=!outbound;recall.textContent=outbound?"↩ Return Early":"Returning…"}$("#fill").style.width="0%";$("#runner").style.left=runnerPct+"%";$("#runner").style.transform=outbound?"translate(-50%,-62%) scaleX(-1)":"translate(-50%,-62%) scaleX(1)";$("#phase").textContent=(journeyInSleepWindow(now)?"SLEEPING":(outbound?"OUTBOUND / ADVENTURING":"RETURNING"))+(h.trip.mission?` · ${h.trip.mission.title}`:"");let remaining=Math.max(0,h.trip.end-now);$("#remainingClock").textContent=`${Math.floor(remaining/60000)}:${String(Math.floor(remaining/1000)%60).padStart(2,"0")}`;$("#returnAt").textContent=clock(h.trip.end);$("#timeText").textContent=`Elapsed ${Math.floor(elapsed/60000)}:${String(Math.floor(elapsed/1000)%60).padStart(2,"0")} · Remaining ${Math.floor(remaining/60000)}:${String(Math.floor(remaining/1000)%60).padStart(2,"0")}`;if(now>=h.trip.half&&!h.trip.midBossDone&&!h.combat&&!h.pendingEvent&&!journeyInSleepWindow(now)){if(h.trip.mode==="auto")autonomousCombat(true);else makeCombat(true);if(!h.trip)return;h.trip.midBossDone=true;save()}if(now>=h.trip.nextEvent&&now<h.trip.end&&!h.combat&&!h.pendingEvent&&!journeyInSleepWindow(now)){event();if(!h.trip)return;h.trip.nextEvent+=h.trip.eventIntervalMs;save()}if(now>=h.trip.end){if(h.trip.trollLessonReturn&&!h.trollWeaknessKnown){h.trollWeaknessKnown=true}addlog("Returned to town.","Home");settleTripTreasureXP();addlog(journeySummaryText(h.trip),"Summary");recordLastAdventureFromTrip(h.trip);h.trip=null;$("#travel").classList.add("hide");$("#departSetup").classList.remove("hide");home();page("town");return}timer=setTimeout(tick,500)}
 const FIGHTER_EVENTS=[{"id":"FTR-001","type":"Discovery","title":"Abandoned Cart","text":"An overturned merchant cart lies beside the road.","choices":[{"label":"Search","result":"search","xp":2,"coins":[0,1,0]},{"label":"Leave it","result":"leave"}],"xp":0,"coins":[0,0,0]},{"id":"FTR-002","type":"Discovery","title":"Old Milestone","text":"A weathered milestone bears marks beneath the moss.","choices":[{"label":"Search","result":"search","xp":3,"coins":[1,4,7]},{"label":"Leave it","result":"leave"}],"xp":0,"coins":[0,0,0]},{"id":"FTR-003","type":"Discovery","title":"Ruined Shrine","text":"A roofless roadside shrine stands among the weeds.","choices":[{"label":"Search","result":"search","xp":4,"coins":[2,7,14]},{"label":"Leave it","result":"leave"}],"xp":0,"coins":[0,0,0]},{"id":"FTR-004","type":"Discovery","title":"Freshwater Spring","text":"Clear water bubbles from stone beneath an oak.","choices":[{"label":"Search","result":"search","xp":5,"coins":[0,1,4]},{"label":"Leave it","result":"leave"}],"xp":0,"coins":[0,0,0]},{"id":"FTR-005","type":"Discovery","title":"Hunter's Cache","text":"A waxed bundle is wedged beneath exposed roots.","choices":[{"label":"Search","result":"search","xp":6,"coins":[1,4,11]},{"label":"Leave it","result":"leave"}],"xp":0,"coins":[0,0,0]},{"id":"FTR-006","type":"Discovery","title":"Collapsed Camp","text":"A cold campfire and torn bedrolls mark an abandoned camp.","choices":[{"label":"Search","result":"search","xp":2,"coins":[2,7,1]},{"label":"Leave it","result":"leave"}],"xp":0,"coins":[0,0,0]},{"id":"FTR-007","type":"Discovery","title":"Broken Strongbox","text":"A split wooden strongbox lies half-buried in mud.","choices":[{"label":"Search","result":"search","xp":3,"coins":[0,1,8]},{"label":"Leave it","result":"leave"}],"xp":0,"coins":[0,0,0]},{"id":"FTR-008","type":"Discovery","title":"Lost Satchel","text":"A leather satchel hangs from a thorn bush.","choices":[{"label":"Search","result":"search","xp":4,"coins":[1,4,15]},{"label":"Leave it","result":"leave"}],"xp":0,"coins":[0,0,0]},{"id":"FTR-009","type":"Discovery","title":"Ancient Cairn","text":"A low cairn of stacked stones rises beside the trail.","choices":[{"label":"Search","result":"search","xp":5,"coins":[2,7,5]},{"label":"Leave it","result":"leave"}],"xp":0,"coins":[0,0,0]},{"id":"FTR-010","type":"Discovery","title":"Charred Wagon","text":"The blackened frame of a wagon blocks part of the road.","choices":[{"label":"Search","result":"search","xp":6,"coins":[0,1,12]},{"label":"Leave it","result":"leave"}],"xp":0,"coins":[0,0,0]},{"id":"FTR-011","type":"Discovery","title":"Fallen Courier","text":"A courier's torn pouch lies near a set of hurried tracks.","choices":[{"label":"Search","result":"search","xp":2,"coins":[1,4,2]},{"label":"Leave it","result":"leave"}],"xp":0,"coins":[0,0,0]},{"id":"FTR-012","type":"Discovery","title":"Hidden Hollow","text":"A narrow hollow opens behind a curtain of ivy.","choices":[{"label":"Search","result":"search","xp":3,"coins":[2,7,9]},{"label":"Leave it","result":"leave"}],"xp":0,"coins":[0,0,0]},{"id":"FTR-013","type":"Discovery","title":"Old Well","text":"A stone well stands in a clearing, its rope still intact.","choices":[{"label":"Search","result":"search","xp":4,"coins":[0,1,16]},{"label":"Leave it","result":"leave"}],"xp":0,"coins":[0,0,0]},{"id":"FTR-014","type":"Discovery","title":"Battlefield Remains","text":"Rusting scraps and old bones lie beneath the grass.","choices":[{"label":"Search","result":"search","xp":5,"coins":[1,4,6]},{"label":"Leave it","result":"leave"}],"xp":0,"coins":[0,0,0]},{"id":"FTR-015","type":"Discovery","title":"Forgotten Pack","text":"A travel pack has been concealed under a fallen log.","choices":[{"label":"Search","result":"search","xp":6,"coins":[2,7,13]},{"label":"Leave it","result":"leave"}],"xp":0,"coins":[0,0,0]},{"id":"FTR-016","type":"Discovery","title":"River Wreckage","text":"Crates and planks have washed onto the riverbank.","choices":[{"label":"Search","result":"search","xp":2,"coins":[0,1,3]},{"label":"Leave it","result":"leave"}],"xp":0,"coins":[0,0,0]},{"id":"FTR-017","type":"Discovery","title":"Stone Marker","text":"A carved stone marker points toward an overgrown path.","choices":[{"label":"Search","result":"search","xp":3,"coins":[1,4,10]},{"label":"Leave it","result":"leave"}],"xp":0,"coins":[0,0,0]},{"id":"FTR-018","type":"Discovery","title":"Hermit's Camp","text":"A tiny camp appears recently abandoned.","choices":[{"label":"Search","result":"search","xp":4,"coins":[2,7,0]},{"label":"Leave it","result":"leave"}],"xp":0,"coins":[0,0,0]},{"id":"FTR-019","type":"Discovery","title":"Cave Mouth","text":"A shallow cave opens in the hillside.","choices":[{"label":"Search","result":"search","xp":5,"coins":[0,1,7]},{"label":"Leave it","result":"leave"}],"xp":0,"coins":[0,0,0]},{"id":"FTR-020","type":"Discovery","title":"Rope Bridge Cache","text":"Something glints beneath the far anchor of an old rope bridge.","choices":[{"label":"Search","result":"search","xp":6,"coins":[1,4,14]},{"label":"Leave it","result":"leave"}],"xp":0,"coins":[0,0,0]},{"id":"FTR-021","type":"Discovery","title":"Buried Jar","text":"Rain has exposed the rim of a clay jar in the path.","choices":[{"label":"Search","result":"search","xp":2,"coins":[2,7,4]},{"label":"Leave it","result":"leave"}],"xp":0,"coins":[0,0,0]},{"id":"FTR-022","type":"Discovery","title":"Torn Map","text":"A fragment of a hand-drawn map is caught beneath a stone.","choices":[{"label":"Search","result":"search","xp":3,"coins":[0,1,11]},{"label":"Leave it","result":"leave"}],"xp":0,"coins":[0,0,0]},{"id":"FTR-023","type":"Discovery","title":"Watchman's Post","text":"A ruined wooden watch post overlooks the road.","choices":[{"label":"Search","result":"search","xp":4,"coins":[1,4,1]},{"label":"Leave it","result":"leave"}],"xp":0,"coins":[0,0,0]},{"id":"FTR-024","type":"Discovery","title":"Smuggler's Nook","text":"Loose stones conceal a narrow storage recess.","choices":[{"label":"Search","result":"search","xp":5,"coins":[2,7,8]},{"label":"Leave it","result":"leave"}],"xp":0,"coins":[0,0,0]},{"id":"FTR-025","type":"Discovery","title":"Old Orchard","text":"Wild fruit trees surround the remains of a cottage.","choices":[{"label":"Search","result":"search","xp":6,"coins":[0,1,15]},{"label":"Leave it","result":"leave"}],"xp":0,"coins":[0,0,0]},{"id":"FTR-026","type":"Discovery","title":"Wayside Grave","text":"A lonely grave has been disturbed by recent rain.","choices":[{"label":"Search","result":"search","xp":2,"coins":[1,4,5]},{"label":"Leave it","result":"leave"}],"xp":0,"coins":[0,0,0]},{"id":"FTR-027","type":"Discovery","title":"Flooded Cellar","text":"Stone steps descend into a partially flooded cellar.","choices":[{"label":"Search","result":"search","xp":3,"coins":[2,7,12]},{"label":"Leave it","result":"leave"}],"xp":0,"coins":[0,0,0]},{"id":"FTR-028","type":"Discovery","title":"Woodcutter's Shed","text":"An unlocked shed stands deep among the trees.","choices":[{"label":"Search","result":"search","xp":4,"coins":[0,1,2]},{"label":"Leave it","result":"leave"}],"xp":0,"coins":[0,0,0]},{"id":"FTR-029","type":"Discovery","title":"Forgotten Tollhouse","text":"A ruined tollhouse leans beside an ancient road.","choices":[{"label":"Search","result":"search","xp":5,"coins":[1,4,9]},{"label":"Leave it","result":"leave"}],"xp":0,"coins":[0,0,0]},{"id":"FTR-030","type":"Discovery","title":"Moonlit Clearing","text":"A ring of pale stones surrounds a quiet clearing.","choices":[{"label":"Search","result":"search","xp":6,"coins":[2,7,16]},{"label":"Leave it","result":"leave"}],"xp":0,"coins":[0,0,0]},{"id":"FTR-031","type":"Decision","title":"Fork in the Road","text":"The trail divides around a steep wooded ridge.","choices":[{"label":"Take the ridge path","result":"risk","xp":3,"coins":[0,0,0]},{"label":"Take the valley path","result":"safe","xp":1}],"xp":0,"coins":[0,0,0]},{"id":"FTR-032","type":"Decision","title":"Distant Cry","text":"A human cry carries from somewhere beyond the trees.","choices":[{"label":"Investigate","result":"risk","xp":4,"coins":[1,2,5]},{"label":"Keep moving","result":"safe","xp":2}],"xp":0,"coins":[0,0,0]},{"id":"FTR-033","type":"Decision","title":"Suspicious Tracks","text":"Fresh boot prints leave the road toward dense brush.","choices":[{"label":"Follow them","result":"risk","xp":5,"coins":[0,4,10]},{"label":"Ignore them","result":"safe","xp":3}],"xp":0,"coins":[0,0,0]},{"id":"FTR-034","type":"Decision","title":"Blocked Bridge","text":"A fallen tree blocks the safest bridge crossing.","choices":[{"label":"Climb across","result":"risk","xp":6,"coins":[1,6,2]},{"label":"Find another route","result":"safe","xp":1}],"xp":0,"coins":[0,0,0]},{"id":"FTR-035","type":"Decision","title":"Stray Horse","text":"A saddled horse wanders alone beside the road.","choices":[{"label":"Approach it","result":"risk","xp":7,"coins":[0,1,7]},{"label":"Leave it","result":"safe","xp":2}],"xp":0,"coins":[0,0,0]},{"id":"FTR-036","type":"Decision","title":"Smoke Ahead","text":"A thin column of smoke rises beyond the next hill.","choices":[{"label":"Scout the smoke","result":"risk","xp":8,"coins":[1,3,12]},{"label":"Avoid it","result":"safe","xp":3}],"xp":0,"coins":[0,0,0]},{"id":"FTR-037","type":"Decision","title":"Locked Chest","text":"A small iron-bound chest sits beneath a dead tree.","choices":[{"label":"Force it open","result":"risk","xp":3,"coins":[0,5,4]},{"label":"Leave it","result":"safe","xp":1}],"xp":0,"coins":[0,0,0]},{"id":"FTR-038","type":"Decision","title":"Narrow Ledge","text":"The direct path crosses a narrow rocky ledge.","choices":[{"label":"Cross carefully","result":"risk","xp":4,"coins":[1,0,9]},{"label":"Take the long way","result":"safe","xp":2}],"xp":0,"coins":[0,0,0]},{"id":"FTR-039","type":"Decision","title":"Merchant in Trouble","text":"A merchant struggles with a broken wagon wheel.","choices":[{"label":"Help","result":"risk","xp":5,"coins":[0,2,1]},{"label":"Continue","result":"safe","xp":3}],"xp":0,"coins":[0,0,0]},{"id":"FTR-040","type":"Decision","title":"Old Tunnel","text":"A dark tunnel cuts through the hillside.","choices":[{"label":"Enter","result":"risk","xp":6,"coins":[1,4,6]},{"label":"Go around","result":"safe","xp":1}],"xp":0,"coins":[0,0,0]},{"id":"FTR-041","type":"Decision","title":"Flooded Ford","text":"The usual ford is running high.","choices":[{"label":"Cross now","result":"risk","xp":7,"coins":[0,6,11]},{"label":"Search upstream","result":"safe","xp":2}],"xp":0,"coins":[0,0,0]},{"id":"FTR-042","type":"Decision","title":"Howling in the Woods","text":"Several howls sound uncomfortably close.","choices":[{"label":"Stand your ground","result":"risk","xp":8,"coins":[1,1,3]},{"label":"Move quietly away","result":"safe","xp":3}],"xp":0,"coins":[0,0,0]},{"id":"FTR-043","type":"Decision","title":"Dropped Purse","text":"A coin purse lies conspicuously in the road.","choices":[{"label":"Pick it up","result":"risk","xp":3,"coins":[0,3,8]},{"label":"Leave it","result":"safe","xp":1}],"xp":0,"coins":[0,0,0]},{"id":"FTR-044","type":"Decision","title":"Wounded Traveller","text":"A wounded traveller sits against a tree.","choices":[{"label":"Offer aid","result":"risk","xp":4,"coins":[1,5,0]},{"label":"Keep distance","result":"safe","xp":2}],"xp":0,"coins":[0,0,0]},{"id":"FTR-045","type":"Decision","title":"Rope Across Trail","text":"A thin rope has been stretched across the path.","choices":[{"label":"Inspect it","result":"risk","xp":5,"coins":[0,0,5]},{"label":"Detour","result":"safe","xp":3}],"xp":0,"coins":[0,0,0]},{"id":"FTR-046","type":"Decision","title":"Unmarked Door","text":"A stone door is set into a low hillside.","choices":[{"label":"Open it","result":"risk","xp":6,"coins":[1,2,10]},{"label":"Pass by","result":"safe","xp":1}],"xp":0,"coins":[0,0,0]},{"id":"FTR-047","type":"Decision","title":"Fresh Campfire","text":"A fire still burns in an apparently empty camp.","choices":[{"label":"Call out","result":"risk","xp":7,"coins":[0,4,2]},{"label":"Avoid the camp","result":"safe","xp":2}],"xp":0,"coins":[0,0,0]},{"id":"FTR-048","type":"Decision","title":"Fallen Tree","text":"A huge tree blocks the road.","choices":[{"label":"Climb over","result":"risk","xp":8,"coins":[1,6,7]},{"label":"Go around","result":"safe","xp":3}],"xp":0,"coins":[0,0,0]},{"id":"FTR-049","type":"Decision","title":"Shallow Cave","text":"Rain begins as a shallow cave offers shelter.","choices":[{"label":"Take shelter","result":"risk","xp":3,"coins":[0,1,12]},{"label":"Press on","result":"safe","xp":1}],"xp":0,"coins":[0,0,0]},{"id":"FTR-050","type":"Decision","title":"Old Ferry","text":"An unattended ferry is tied to the near bank.","choices":[{"label":"Use it","result":"risk","xp":4,"coins":[1,3,4]},{"label":"Follow the river","result":"safe","xp":2}],"xp":0,"coins":[0,0,0]},{"id":"FTR-051","type":"Decision","title":"Footprints in Mud","text":"Small footprints circle your own trail.","choices":[{"label":"Track them","result":"risk","xp":5,"coins":[0,5,9]},{"label":"Ignore them","result":"safe","xp":3}],"xp":0,"coins":[0,0,0]},{"id":"FTR-052","type":"Decision","title":"Bell in Distance","text":"A lone bell rings somewhere off the road.","choices":[{"label":"Seek it","result":"risk","xp":6,"coins":[1,0,1]},{"label":"Stay on course","result":"safe","xp":1}],"xp":0,"coins":[0,0,0]},{"id":"FTR-053","type":"Decision","title":"Cracked Statue","text":"A warrior statue holds a stone bowl.","choices":[{"label":"Inspect the bowl","result":"risk","xp":7,"coins":[0,2,6]},{"label":"Move on","result":"safe","xp":2}],"xp":0,"coins":[0,0,0]},{"id":"FTR-054","type":"Decision","title":"Ravens Gathering","text":"Ravens cluster noisily over a nearby field.","choices":[{"label":"Investigate","result":"risk","xp":8,"coins":[1,4,11]},{"label":"Avoid","result":"safe","xp":3}],"xp":0,"coins":[0,0,0]},{"id":"FTR-055","type":"Decision","title":"Narrow Ravine","text":"A shortcut descends through a narrow ravine.","choices":[{"label":"Take shortcut","result":"risk","xp":3,"coins":[0,6,3]},{"label":"Stay high","result":"safe","xp":1}],"xp":0,"coins":[0,0,0]},{"id":"FTR-056","type":"Decision","title":"Lantern at Night","text":"A lantern moves between distant trees.","choices":[{"label":"Approach","result":"risk","xp":4,"coins":[1,1,8]},{"label":"Extinguish your light","result":"safe","xp":2}],"xp":0,"coins":[0,0,0]},{"id":"FTR-057","type":"Decision","title":"Abandoned Boat","text":"A small boat is tied beside a quiet lake.","choices":[{"label":"Search it","result":"risk","xp":5,"coins":[0,3,0]},{"label":"Leave it","result":"safe","xp":3}],"xp":0,"coins":[0,0,0]},{"id":"FTR-058","type":"Decision","title":"Old Barricade","text":"A decayed barricade spans the road.","choices":[{"label":"Pass through","result":"risk","xp":6,"coins":[1,5,5]},{"label":"Circle around","result":"safe","xp":1}],"xp":0,"coins":[0,0,0]},{"id":"FTR-059","type":"Decision","title":"Crumbling Tower","text":"A ruined tower offers a commanding view.","choices":[{"label":"Climb it","result":"risk","xp":7,"coins":[0,0,10]},{"label":"Continue","result":"safe","xp":2}],"xp":0,"coins":[0,0,0]},{"id":"FTR-060","type":"Decision","title":"Unusual Silence","text":"The forest suddenly becomes completely silent.","choices":[{"label":"Investigate cautiously","result":"risk","xp":8,"coins":[1,2,2]},{"label":"Withdraw","result":"safe","xp":3}],"xp":0,"coins":[0,0,0]},{"id":"FTR-061","type":"Encounter","title":"Roadside Ambush","text":"Movement erupts from the ditch ahead.","choices":[{"label":"Fight","result":"combat"},{"label":"Try to avoid","result":"avoid"}],"xp":0,"coins":[0,0,0]},{"id":"FTR-062","type":"Encounter","title":"Bridge Toll","text":"Armed figures step onto a narrow bridge.","choices":[{"label":"Fight","result":"combat"},{"label":"Try to avoid","result":"avoid"}],"xp":0,"coins":[0,0,0]},{"id":"FTR-063","type":"Encounter","title":"Camp Raiders","text":"Shapes move around an abandoned campsite.","choices":[{"label":"Fight","result":"combat"},{"label":"Try to avoid","result":"avoid"}],"xp":0,"coins":[0,0,0]},{"id":"FTR-064","type":"Encounter","title":"Forest Stalkers","text":"You hear footsteps matching your pace.","choices":[{"label":"Fight","result":"combat"},{"label":"Try to avoid","result":"avoid"}],"xp":0,"coins":[0,0,0]},{"id":"FTR-065","type":"Encounter","title":"Ruined Farm","text":"Something moves inside a ruined farmhouse.","choices":[{"label":"Fight","result":"combat"},{"label":"Try to avoid","result":"avoid"}],"xp":0,"coins":[0,0,0]},{"id":"FTR-066","type":"Encounter","title":"Rocky Pass","text":"A hostile silhouette blocks the pass.","choices":[{"label":"Fight","result":"combat"},{"label":"Try to avoid","result":"avoid"}],"xp":0,"coins":[0,0,0]},{"id":"FTR-067","type":"Encounter","title":"Riverbank Threat","text":"Figures emerge from reeds along the river.","choices":[{"label":"Fight","result":"combat"},{"label":"Try to avoid","result":"avoid"}],"xp":0,"coins":[0,0,0]},{"id":"FTR-068","type":"Encounter","title":"Night Intruders","text":"Branches snap just beyond the firelight.","choices":[{"label":"Fight","result":"combat"},{"label":"Try to avoid","result":"avoid"}],"xp":0,"coins":[0,0,0]},{"id":"FTR-069","type":"Encounter","title":"Old Quarry","text":"Voices echo from the quarry below.","choices":[{"label":"Fight","result":"combat"},{"label":"Try to avoid","result":"avoid"}],"xp":0,"coins":[0,0,0]},{"id":"FTR-070","type":"Encounter","title":"Hilltop Watchers","text":"Several figures watch from the ridge.","choices":[{"label":"Fight","result":"combat"},{"label":"Try to avoid","result":"avoid"}],"xp":0,"coins":[0,0,0]},{"id":"FTR-071","type":"Encounter","title":"Broken Gate","text":"Something waits beyond a broken gate.","choices":[{"label":"Fight","result":"combat"},{"label":"Try to avoid","result":"avoid"}],"xp":0,"coins":[0,0,0]},{"id":"FTR-072","type":"Encounter","title":"Marsh Movement","text":"Ripples move against the current.","choices":[{"label":"Fight","result":"combat"},{"label":"Try to avoid","result":"avoid"}],"xp":0,"coins":[0,0,0]},{"id":"FTR-073","type":"Encounter","title":"Cave Occupants","text":"A growl comes from the darkness ahead.","choices":[{"label":"Fight","result":"combat"},{"label":"Try to avoid","result":"avoid"}],"xp":0,"coins":[0,0,0]},{"id":"FTR-074","type":"Encounter","title":"Abandoned Mill","text":"The mill door swings open from within.","choices":[{"label":"Fight","result":"combat"},{"label":"Try to avoid","result":"avoid"}],"xp":0,"coins":[0,0,0]},{"id":"FTR-075","type":"Encounter","title":"Narrow Causeway","text":"Hostile shapes spread across the causeway.","choices":[{"label":"Fight","result":"combat"},{"label":"Try to avoid","result":"avoid"}],"xp":0,"coins":[0,0,0]},{"id":"FTR-076","type":"Encounter","title":"Fogbound Road","text":"A figure appears suddenly in the fog.","choices":[{"label":"Fight","result":"combat"},{"label":"Try to avoid","result":"avoid"}],"xp":0,"coins":[0,0,0]},{"id":"FTR-077","type":"Encounter","title":"Stone Circle","text":"You are not alone among the standing stones.","choices":[{"label":"Fight","result":"combat"},{"label":"Try to avoid","result":"avoid"}],"xp":0,"coins":[0,0,0]},{"id":"FTR-078","type":"Encounter","title":"Forest Crossing","text":"Armed strangers emerge at the crossing.","choices":[{"label":"Fight","result":"combat"},{"label":"Try to avoid","result":"avoid"}],"xp":0,"coins":[0,0,0]},{"id":"FTR-079","type":"Encounter","title":"Ravine Ambush","text":"Loose stones tumble from above.","choices":[{"label":"Fight","result":"combat"},{"label":"Try to avoid","result":"avoid"}],"xp":0,"coins":[0,0,0]},{"id":"FTR-080","type":"Encounter","title":"Old Mine","text":"Scratching sounds come from the mine entrance.","choices":[{"label":"Fight","result":"combat"},{"label":"Try to avoid","result":"avoid"}],"xp":0,"coins":[0,0,0]},{"id":"FTR-081","type":"Encounter","title":"Burned Village","text":"Movement flickers between ruined houses.","choices":[{"label":"Fight","result":"combat"},{"label":"Try to avoid","result":"avoid"}],"xp":0,"coins":[0,0,0]},{"id":"FTR-082","type":"Encounter","title":"Watchtower Ruin","text":"A lookout spots you from the tower.","choices":[{"label":"Fight","result":"combat"},{"label":"Try to avoid","result":"avoid"}],"xp":0,"coins":[0,0,0]},{"id":"FTR-083","type":"Encounter","title":"Mountain Trail","text":"A hostile group rounds the bend.","choices":[{"label":"Fight","result":"combat"},{"label":"Try to avoid","result":"avoid"}],"xp":0,"coins":[0,0,0]},{"id":"FTR-084","type":"Encounter","title":"Swamp Path","text":"Something follows just beneath the reeds.","choices":[{"label":"Fight","result":"combat"},{"label":"Try to avoid","result":"avoid"}],"xp":0,"coins":[0,0,0]},{"id":"FTR-085","type":"Encounter","title":"Moonlit Road","text":"Several shapes step into the road.","choices":[{"label":"Fight","result":"combat"},{"label":"Try to avoid","result":"avoid"}],"xp":0,"coins":[0,0,0]},{"id":"FTR-086","type":"Encounter","title":"Forgotten Chapel","text":"A shadow moves behind the broken altar.","choices":[{"label":"Fight","result":"combat"},{"label":"Try to avoid","result":"avoid"}],"xp":0,"coins":[0,0,0]},{"id":"FTR-087","type":"Encounter","title":"Border Stone","text":"Armed travellers refuse to yield the road.","choices":[{"label":"Fight","result":"combat"},{"label":"Try to avoid","result":"avoid"}],"xp":0,"coins":[0,0,0]},{"id":"FTR-088","type":"Encounter","title":"Wooden Palisade","text":"A crude gate opens and armed figures emerge.","choices":[{"label":"Fight","result":"combat"},{"label":"Try to avoid","result":"avoid"}],"xp":0,"coins":[0,0,0]},{"id":"FTR-089","type":"Encounter","title":"Dry Riverbed","text":"Movement appears among the boulders.","choices":[{"label":"Fight","result":"combat"},{"label":"Try to avoid","result":"avoid"}],"xp":0,"coins":[0,0,0]},{"id":"FTR-090","type":"Encounter","title":"Deep Woods","text":"A sudden rustle becomes an immediate threat.","choices":[{"label":"Fight","result":"combat"},{"label":"Try to avoid","result":"avoid"}],"xp":0,"coins":[0,0,0]},{"id":"FTR-091","type":"Quiet","title":"Clear Road","text":"For a time the road is clear and easy.","choices":[],"xp":1,"coins":[0,0,0]},{"id":"FTR-092","type":"Quiet","title":"Cold Wind","text":"A cold wind follows you across open ground.","choices":[],"xp":0,"coins":[0,0,0]},{"id":"FTR-093","type":"Quiet","title":"Passing Rain","text":"A brief shower darkens the road.","choices":[],"xp":0,"coins":[0,0,0]},{"id":"FTR-094","type":"Quiet","title":"Birdsong","text":"Birdsong returns as the woods thin.","choices":[],"xp":0,"coins":[0,0,0]},{"id":"FTR-095","type":"Quiet","title":"Long Climb","text":"The trail climbs steadily toward higher ground.","choices":[],"xp":0,"coins":[0,0,0]},{"id":"FTR-096","type":"Quiet","title":"Distant Mountains","text":"Snowy peaks appear briefly through the clouds.","choices":[],"xp":0,"coins":[0,0,0]},{"id":"FTR-097","type":"Quiet","title":"Old Road","text":"You follow worn paving stones from an older age.","choices":[],"xp":1,"coins":[0,0,0]},{"id":"FTR-098","type":"Quiet","title":"Quiet Forest","text":"Only leaves and your own footsteps break the silence.","choices":[],"xp":0,"coins":[0,0,0]},{"id":"FTR-099","type":"Quiet","title":"Open Fields","text":"The route crosses broad empty fields.","choices":[],"xp":0,"coins":[0,0,0]},{"id":"FTR-100","type":"Quiet","title":"River Road","text":"The road follows a slow river for several miles.","choices":[],"xp":0,"coins":[0,0,0]},{"id":"FTR-101","type":"Quiet","title":"Morning Mist","text":"Mist hangs low over the ground.","choices":[],"xp":0,"coins":[0,0,0]},{"id":"FTR-102","type":"Quiet","title":"Warm Sun","text":"Sunlight breaks through after a long grey stretch.","choices":[],"xp":0,"coins":[0,0,0]},{"id":"FTR-103","type":"Quiet","title":"Evening Shadows","text":"Long shadows stretch across the trail.","choices":[],"xp":1,"coins":[0,0,0]},{"id":"FTR-104","type":"Quiet","title":"Distant Thunder","text":"Thunder rolls beyond the horizon.","choices":[],"xp":0,"coins":[0,0,0]},{"id":"FTR-105","type":"Quiet","title":"Pine Ridge","text":"The scent of pine fills the cool air.","choices":[],"xp":0,"coins":[0,0,0]},{"id":"FTR-106","type":"Quiet","title":"High Meadow","text":"Wildflowers cover a high meadow.","choices":[],"xp":0,"coins":[0,0,0]},{"id":"FTR-107","type":"Quiet","title":"Stone Road","text":"Ancient stones make the walking easier.","choices":[],"xp":0,"coins":[0,0,0]},{"id":"FTR-108","type":"Quiet","title":"Wind in Grass","text":"Tall grass bends in waves around the path.","choices":[],"xp":0,"coins":[0,0,0]},{"id":"FTR-109","type":"Quiet","title":"Cloud Break","text":"A shaft of sunlight crosses the road.","choices":[],"xp":1,"coins":[0,0,0]},{"id":"FTR-110","type":"Quiet","title":"Quiet Stream","text":"A shallow stream runs beside the trail.","choices":[],"xp":0,"coins":[0,0,0]},{"id":"FTR-111","type":"Quiet","title":"Frosted Ground","text":"A thin frost crunches beneath your boots.","choices":[],"xp":0,"coins":[0,0,0]},{"id":"FTR-112","type":"Quiet","title":"Autumn Leaves","text":"Dry leaves gather in drifts along the road.","choices":[],"xp":0,"coins":[0,0,0]},{"id":"FTR-113","type":"Quiet","title":"Distant Bells","text":"Faint bells carry from far away.","choices":[],"xp":0,"coins":[0,0,0]},{"id":"FTR-114","type":"Quiet","title":"Old Oak","text":"A huge oak marks a peaceful bend in the road.","choices":[],"xp":0,"coins":[0,0,0]},{"id":"FTR-115","type":"Quiet","title":"Night Sky","text":"The clouds clear enough to reveal the stars.","choices":[],"xp":1,"coins":[0,0,0]},{"id":"FTR-116","type":"Quiet","title":"Dawn Light","text":"The horizon brightens as another day begins.","choices":[],"xp":0,"coins":[0,0,0]},{"id":"FTR-117","type":"Quiet","title":"Low Hills","text":"The road winds through gentle hills.","choices":[],"xp":0,"coins":[0,0,0]},{"id":"FTR-118","type":"Quiet","title":"Cool Shade","text":"Dense trees give welcome shade.","choices":[],"xp":0,"coins":[0,0,0]},{"id":"FTR-119","type":"Quiet","title":"Stone Bridge","text":"An old stone bridge crosses a narrow stream.","choices":[],"xp":0,"coins":[0,0,0]},{"id":"FTR-120","type":"Quiet","title":"Homeward Thoughts","text":"For a while your thoughts turn toward home.","choices":[],"xp":0,"coins":[0,0,0]}];
-// RC Chapter 16 treasure data. Staged only; not wired into live loot until the remaining integration decisions are locked.
-const RC_TREASURE_CARRIED={
+// Averathia Chapter 16 treasure data. Staged only; not wired into live loot until the remaining integration decisions are locked.
+const AV_TREASURE_CARRIED={
  P:{coins:{cp:{chance:100,dice:"3d8"}}},
  Q:{coins:{sp:{chance:100,dice:"3d6"}}},
  R:{coins:{ep:{chance:100,dice:"2d6"}}},
@@ -1299,7 +1299,7 @@ const RC_TREASURE_CARRIED={
  U:{coins:{cp:{chance:10,dice:"1d100"},sp:{chance:10,dice:"1d100"},gp:{chance:5,dice:"1d100"}},gems:{chance:5,dice:"1d2"},jewelry:{chance:5,dice:"1d4"},special:{chance:2,dice:"1"},magic:{chance:2,dice:"1"}},
  V:{coins:{sp:{chance:10,dice:"1d100"},ep:{chance:5,dice:"1d100"},gp:{chance:10,dice:"1d100"},pp:{chance:5,dice:"1d100"}},gems:{chance:10,dice:"1d2"},jewelry:{chance:10,dice:"1d4"},special:{chance:5,dice:"1"},magic:{chance:5,dice:"1"}}
 };
-const RC_TREASURE_LAIR={
+const AV_TREASURE_LAIR={
  A:{coins:{cp:[25,"1d6"],sp:[30,"1d6"],ep:[20,"1d4"],gp:[35,"2d6"],pp:[25,"1d2"]},gems:[50,"6d6"],jewelry:[50,"6d6"],special:[10,"1d2"],magic:[30,{any:3}]},
  B:{coins:{cp:[50,"1d8"],sp:[25,"1d6"],ep:[25,"1d4"],gp:[35,"1d3"]},gems:[25,"1d6"],jewelry:[25,"1d6"],magic:[10,{oneOf:["sword","miscWeapon","armor"]}]},
  C:{coins:{cp:[20,"1d12"],sp:[30,"1d4"],ep:[10,"1d4"]},gems:[25,"1d4"],jewelry:[25,"1d4"],special:[5,"1d2"],magic:[10,{any:2}]},
@@ -1316,19 +1316,19 @@ const RC_TREASURE_LAIR={
  N:{coins:{},special:[10,"1d2"],magic:[40,{potions:"2d4"}]},
  O:{coins:{},special:[10,"1d3"],magic:[50,{scrolls:"1d4"}]}
 };
-const RC_GEM_VALUE=[
+const AV_GEM_VALUE=[
  [3,10],[10,50],[25,100],[46,500],[71,1000],[90,5000],[97,10000],[100,"special"]
 ];
-const RC_JEWELRY_VALUE=[
+const AV_JEWELRY_VALUE=[
  [1,100],[3,500],[6,1000],[10,1500],[16,2000],[24,2500],[34,3000],[45,4000],[58,5000],
  [69,7500],[78,10000],[85,15000],[90,20000],[94,25000],[97,30000],[99,40000],[100,50000]
 ];
-const RC_MAGIC_MAIN=[
+const AV_MAGIC_MAIN=[
  [25,"potion"],[37,"scroll"],[46,"wandStaffRod"],[52,"ring"],[62,"miscMagic"],
  [72,"armorShield"],[83,"missileWeaponOrMissile"],[92,"sword"],[100,"miscWeapon"]
 ];
-const RC_COIN_TO_CP={cp:1,sp:10,ep:50,gp:100,pp:500};
-const RC_POTION_TABLE=[
+const AV_COIN_TO_CP={cp:1,sp:10,ep:50,gp:100,pp:500};
+const AV_POTION_TABLE=[
  [2,"Agility"],[3,"Animal Control"],[6,"Antidote"],[8,"Blending"],[10,"Bug Repellent"],
  [12,"Clairaudience"],[14,"Clairvoyance"],[16,"Climbing"],[18,"Defense"],[22,"Delusion"],
  [24,"Diminution"],[25,"Dragon Control"],[27,"Dreamspeech"],[28,"Elasticity"],[30,"Elemental Form"],
@@ -1340,7 +1340,7 @@ const RC_POTION_TABLE=[
  [90,"Strength"],[93,"Super-Healing"],[96,"Swimming"],[97,"Treasure Finding"],[98,"Undead Control"],
  [100,"Water Breathing"]
 ];
-const RC_SCROLL_TABLE=[
+const AV_SCROLL_TABLE=[
  [3,"Communication"],[5,"Creation"],[13,"Curse"],[14,"Delay"],[17,"Equipment"],[19,"Illumination"],
  [21,"Mages"],[25,"Map to normal treasure"],[28,"Map to magical treasure"],[30,"Map to combined treasure"],
  [31,"Map to special treasure"],[34,"Mapping"],[36,"Portals"],[42,"Protection from Elementals"],
@@ -1348,10 +1348,10 @@ const RC_SCROLL_TABLE=[
  [63,"Questioning"],[64,"Repetition"],[66,"Seeing"],[68,"Shelter"],[71,"Spell Catching"],
  [96,"Spell"],[98,"Trapping"],[100,"Truth"]
 ];
-const RC_SCROLL_SPELL_COUNT=[[50,1],[83,2],[100,3]];
-const RC_SCROLL_SPELL_LEVEL_CLERICAL=[[34,1],[58,2],[76,3],[88,4],[95,5],[99,6],[100,7]];
-const RC_SCROLL_SPELL_LEVEL_MAGICAL=[[28,1],[49,2],[64,3],[75,4],[84,5],[91,6],[96,7],[99,8],[100,9]];
-const RC_SCROLL_LOW_SPELLS={
+const AV_SCROLL_SPELL_COUNT=[[50,1],[83,2],[100,3]];
+const AV_SCROLL_SPELL_LEVEL_CLERICAL=[[34,1],[58,2],[76,3],[88,4],[95,5],[99,6],[100,7]];
+const AV_SCROLL_SPELL_LEVEL_MAGICAL=[[28,1],[49,2],[64,3],[75,4],[84,5],[91,6],[96,7],[99,8],[100,9]];
+const AV_SCROLL_LOW_SPELLS={
  Magical:{
   1:["Analyze","Charm Person","Detect Magic","Floating Disc","Hold Portal","Light","Magic Missile","Protection from Evil","Read Languages","Read Magic","Shield","Sleep","Ventriloquism"],
   2:["Continual Light","Detect Evil","Detect Invisible","Entangle","ESP","Invisibility","Knock","Levitate","Locate Object","Mirror Image","Phantasmal Force","Web","Wizard Lock"],
@@ -1363,28 +1363,28 @@ const RC_SCROLL_LOW_SPELLS={
   3:["Continual Light","Cure Disease","Growth of Animals","Locate Object","Remove Curse","Striking"]
  }
 };
-function rcScrollSpellType(){let r=d(100);return r<=70?"Magical":r<=95?"Clerical":"Druidic"}
-function rcScrollSpellLevel(type){
- let table=type==="Magical"?RC_SCROLL_SPELL_LEVEL_MAGICAL:RC_SCROLL_SPELL_LEVEL_CLERICAL;
- return rcTablePick(table)
+function avScrollSpellType(){let r=d(100);return r<=70?"Magical":r<=95?"Clerical":"Druidic"}
+function avScrollSpellLevel(type){
+ let table=type==="Magical"?AV_SCROLL_SPELL_LEVEL_MAGICAL:AV_SCROLL_SPELL_LEVEL_CLERICAL;
+ return avTablePick(table)
 }
-function rcImplementedSpellLink(type,name,level){
+function avImplementedSpellLink(type,name,level){
  let list=type==="Magical"?(typeof ARCANE_NOW!=="undefined"?ARCANE_NOW:[]):type==="Clerical"?(typeof CLERIC_NOW!=="undefined"?CLERIC_NOW:[]):[];
  let hit=list.find(x=>x.sl===level&&(x.rc===name||x.name===name));
  return hit?{id:hit.id,name:hit.name,rc:hit.rc,sl:hit.sl}:null
 }
-function rcRollSpellScrollDetail(){
- let type=rcScrollSpellType(),count=rcTablePick(RC_SCROLL_SPELL_COUNT),spells=[];
+function avRollSpellScrollDetail(){
+ let type=avScrollSpellType(),count=avTablePick(AV_SCROLL_SPELL_COUNT),spells=[];
  for(let i=0;i<count;i++){
-  let level=rcScrollSpellLevel(type),names=RC_SCROLL_LOW_SPELLS[type]?.[level]||null,name=names?names[d(names.length)-1]:null;
+  let level=avScrollSpellLevel(type),names=AV_SCROLL_LOW_SPELLS[type]?.[level]||null,name=names?names[d(names.length)-1]:null;
   let entry={type,level,name:name||null};
-  if(name)entry.implemented=rcImplementedSpellLink(type,name,level);
+  if(name)entry.implemented=avImplementedSpellLink(type,name,level);
   spells.push(entry)
  }
  return{type,count,spells}
 }
 
-const RC_WAND_STAFF_ROD_TABLE=[
+const AV_WAND_STAFF_ROD_TABLE=[
  [5,"Wand of Cold"],[10,"Wand of Enemy Detection"],[14,"Wand of Fear"],[19,"Wand of Fireballs"],
  [23,"Wand of Illusion"],[28,"Wand of Lightning Bolts"],[33,"Wand of Magic Detection"],
  [38,"Wand of Metal Detection"],[42,"Wand of Negation"],[47,"Wand of Paralyzation"],
@@ -1395,7 +1395,7 @@ const RC_WAND_STAFF_ROD_TABLE=[
  [90,"Rod of Cancellation"],[91,"Rod of Dominion"],[92,"Rod of Health"],[94,"Rod of Inertia"],
  [95,"Rod of Parrying"],[96,"Rod of Victory"],[99,"Rod of Weaponry"],[100,"Rod of the Wyrm"]
 ];
-const RC_RING_TABLE=[
+const AV_RING_TABLE=[
  [2,"Animal Control"],[8,"Delusion"],[9,"Djinni Summoning"],[13,"Ear"],[17,"Elemental Adaptation"],
  [23,"Fire Resistance"],[26,"Holiness"],[27,"Human Control"],[32,"Invisibility"],[35,"Life Protection"],
  [38,"Memory"],[40,"Plant Control"],[45,"Protection +1"],[48,"Protection +2"],[50,"Protection +3"],
@@ -1404,7 +1404,7 @@ const RC_RING_TABLE=[
  [77,"Telekinesis"],[81,"Truth"],[84,"Truthfulness"],[86,"Truthlessness"],[91,"Water Walking"],
  [96,"Weakness"],[98,"Wishes"],[100,"X-ray Vision"]
 ];
-const RC_MISC_MAGIC_TABLE=[
+const AV_MISC_MAGIC_TABLE=[
  [2,"Amulet of Protection from Crystal Balls and ESP"],[4,"Bag of Devouring"],[9,"Bag of Holding"],
  [12,"Boat, Undersea"],[14,"Boots of Levitation"],[17,"Boots of Speed"],[19,"Boots of Traveling/Leaping"],
  [20,"Bowl of Commanding Water Elementals"],[21,"Brazier of Commanding Fire Elementals"],[23,"Broom of Flying"],
@@ -1419,21 +1419,21 @@ const RC_MISC_MAGIC_TABLE=[
  [92,"Stone of Controlling Earth Elementals"],[94,"Talisman of Elemental Travel"],[97,"Wheel of Floating"],
  [98,"Wheel of Fortune"],[100,"Wheel, Square"]
 ];
-const RC_ARMOR_SIZE=[[68,"Human"],[81,"Dwarf"],[91,"Elf"],[98,"Halfling"],[100,"Giant"]];
-const RC_ARMOR_TYPE=[
+const AV_ARMOR_SIZE=[[68,"Human"],[81,"Dwarf"],[91,"Elf"],[98,"Halfling"],[100,"Giant"]];
+const AV_ARMOR_TYPE=[
  [10,"Leather Armor"],[17,"Scale Mail"],[30,"Chain Mail"],[39,"Banded Mail"],[50,"Plate Mail"],
  [55,"Suit Armor"],[75,"Shield"],[77,"Scale Mail & Shield"],[85,"Chain Mail & Shield"],
  [90,"Banded Mail & Shield"],[100,"Plate Mail & Shield"]
 ];
-const RC_ARMOR_SPECIAL=[[7,"Absorption"],[17,"Charm"],[32,"Cure Wounds"],[42,"Electricity"],[47,"Energy Drain"],[50,"Ethereality"],[60,"Fly"],[66,"Gaseous Form"],[75,"Haste"],[85,"Invisibility"],[93,"Reflection"],[100,"Remove Curse"]];
-const RC_SIMPLE_MAGIC_MISSILE=[
+const AV_ARMOR_SPECIAL=[[7,"Absorption"],[17,"Charm"],[32,"Cure Wounds"],[42,"Electricity"],[47,"Energy Drain"],[50,"Ethereality"],[60,"Fly"],[66,"Gaseous Form"],[75,"Haste"],[85,"Invisibility"],[93,"Reflection"],[100,"Remove Curse"]];
+const AV_SIMPLE_MAGIC_MISSILE=[
  [6,"Arrows +1 (2d10)"],[11,"Arrows +2 (2d6)"],[15,"Arrows +3 (2d4)"],[18,"Arrow +1, silver"],[20,"Arrow +2, silver"],[21,"Arrow +3, silver"],
  [25,"Blowgun +1"],[28,"Bola +1"],[33,"Short Bow +1"],[37,"Short Bow +2"],[40,"Short Bow +3"],
  [45,"Long Bow +1"],[49,"Long Bow +2"],[52,"Long Bow +3"],[57,"Light Crossbow +1"],[61,"Light Crossbow +2"],[64,"Light Crossbow +3"],
  [69,"Heavy Crossbow +1"],[73,"Heavy Crossbow +2"],[76,"Heavy Crossbow +3"],[82,"Quarrels +1 (2d10)"],[87,"Quarrels +2 (2d6)"],
  [91,"Quarrels +3 (2d4)"],[94,"Quarrel +1, silver"],[96,"Quarrel +2, silver"],[97,"Quarrel +3, silver"],[100,"Sling +1"]
 ];
-const RC_SIMPLE_MAGIC_SWORD=[
+const AV_SIMPLE_MAGIC_SWORD=[
  [10,"Short Sword +1"],[20,"Short Sword +2"],[30,"Short Sword +3"],[34,"Sword +1"],[35,"Sword +1, +3 vs dragonkind"],
  [36,"Sword +1, +3 vs giantkind"],[37,"Sword +1, +3 vs lycanthropes"],[38,"Sword +1, +3 vs regenerating monsters"],
  [39,"Sword +1, +3 vs spellcasters"],[40,"Sword +1, +3 vs undead"],[50,"Sword +2"],[60,"Sword +3"],[64,"Bastard Sword +1"],
@@ -1443,7 +1443,7 @@ const RC_SIMPLE_MAGIC_SWORD=[
  [86,"Two-Handed Sword +1, +3 vs giantkind"],[87,"Two-Handed Sword +1, +3 vs lycanthropes"],[88,"Two-Handed Sword +1, +3 vs regenerating monsters"],
  [89,"Two-Handed Sword +1, +3 vs spellcasters"],[90,"Two-Handed Sword +1, +3 vs undead"],[95,"Two-Handed Sword +2"],[100,"Two-Handed Sword +3"]
 ];
-const RC_SIMPLE_MAGIC_MISC_WEAPON=[
+const AV_SIMPLE_MAGIC_MISC_WEAPON=[
  [5,"Battle Axe +1"],[8,"Battle Axe +2"],[10,"Battle Axe +3"],[15,"Hand Axe +1"],[18,"Hand Axe +2"],[20,"Hand Axe +3"],
  [25,"Dagger +1"],[28,"Dagger +2"],[30,"Dagger +3"],[35,"Throwing Hammer +1"],[38,"Throwing Hammer +2"],[40,"Throwing Hammer +3"],
  [45,"War Hammer +1"],[48,"War Hammer +2"],[50,"War Hammer +3"],[55,"Mace +1"],[58,"Mace +2"],[60,"Mace +3"],
@@ -1451,37 +1451,37 @@ const RC_SIMPLE_MAGIC_MISC_WEAPON=[
  [80,"Tusked Shield +1"],[85,"Spear +1"],[88,"Spear +2"],[90,"Spear +3"],[95,"Staff +1"],[98,"Staff +2"],[100,"Staff +3"]
 ];
 
-function rcTablePick(table,roll=d(100)){for(const [max,value] of table)if(roll<=max)return value;return table.at(-1)?.[1]}
-function rcRollScaled(expr){
+function avTablePick(table,roll=d(100)){for(const [max,value] of table)if(roll<=max)return value;return table.at(-1)?.[1]}
+function avRollScaled(expr){
  let m=/^(\d+d\d+(?:[+-]\d+)?|\d+)(?:x(\d+))?$/i.exec(String(expr||"").replace(/\s+/g,""));
  if(!m)return 0;
  let base=/d/i.test(m[1])?rollExpr(m[1]):+m[1],mult=+(m[2]||1);
  return Math.max(0,base*mult);
 }
-function rcCoinValueCP(kind,count){return Math.max(0,Math.floor(Number(count)||0))*(RC_COIN_TO_CP[kind]||0)}
-function rcCreditCoins(coins={}){
+function avCoinValueCP(kind,count){return Math.max(0,Math.floor(Number(count)||0))*(AV_COIN_TO_CP[kind]||0)}
+function avCreditCoins(coins={}){
  let total=0,converted={ep:0,pp:0};
- for(const [kind,count] of Object.entries(coins)){total+=rcCoinValueCP(kind,count);if(kind==="ep"||kind==="pp")converted[kind]+=count}
+ for(const [kind,count] of Object.entries(coins)){total+=avCoinValueCP(kind,count);if(kind==="ep"||kind==="pp")converted[kind]+=count}
  let credited=creditWalletValueCP(total,!!h?.trip);
  return{cpValue:credited.cpValue,leftCP:credited.leftCP,converted};
 }
-function rcMagicInventoryItem(category,name){
- if(category==="potion"&&name==="Healing")return{n:"Healing Potion",kind:"gear",can:false,eq:false,rcMagic:true,rcCategory:"potion",rcItem:"Healing"};
+function avMagicInventoryItem(category,name){
+ if(category==="potion"&&name==="Healing")return{n:"Healing Potion",kind:"gear",can:false,eq:false,avMagic:true,avCategory:"potion",avItem:"Healing"};
  let supported=(category==="potion"&&["Super-Healing","Fire Resistance","Speed","Defense","Freedom","Antidote"].includes(name))||(category==="wandStaffRod"&&["Wand of Fireballs","Wand of Lightning Bolts","Staff of Healing","Rod of Health"].includes(name));
- return{n:`RC ${category}: ${name}`,kind:"gear",can:false,eq:false,rcMagic:true,rcCategory:category,rcItem:name,unsupportedMagic:!supported};
+ return{n:`Averathia ${category}: ${name}`,kind:"gear",can:false,eq:false,avMagic:true,avCategory:category,avItem:name,unsupportedMagic:!supported};
 }
-function rollRcPotion(){let name=rcTablePick(RC_POTION_TABLE);return rcMagicInventoryItem("potion",name)}
-function rcChargesFor(name){
+function rollRcPotion(){let name=avTablePick(AV_POTION_TABLE);return avMagicInventoryItem("potion",name)}
+function avChargesFor(name){
  if(name.startsWith("Wand "))return rollExpr("3d10");
  if(name.startsWith("Staff ")||name==="Snake Staff")return rollExpr("2d20");
  return null
 }
-function rcArmorBonusFor(type){
+function avArmorBonusFor(type){
  let r=d(100),group=/Shield/.test(type)&&!/Mail/.test(type)?"shield":/Plate|Suit/.test(type)?"plate":/Chain/.test(type)?"chain":"light";
  let cuts=group==="shield"?[[40,1],[67,2],[84,3],[94,4],[100,5]]:group==="plate"?[[50,1],[74,2],[88,3],[96,4],[100,5]]:group==="chain"?[[60,1],[81,2],[92,3],[98,4],[100,5]]:[[70,1],[88,2],[96,3],[99,4],[100,5]];
- return rcTablePick(cuts,r)
+ return avTablePick(cuts,r)
 }
-const RC_SUPPORTED_MAGIC_WEAPON_BASES=new Set(["Short Sword","Sword","Two-Handed Sword","Battle Axe","Hand Axe","Dagger","Throwing Hammer","War Hammer","Mace","Polearm","Spear","Staff","Short Bow","Long Bow","Light Crossbow","Heavy Crossbow","Sling"]);
+const AV_SUPPORTED_MAGIC_WEAPON_BASES=new Set(["Short Sword","Sword","Two-Handed Sword","Battle Axe","Hand Axe","Dagger","Throwing Hammer","War Hammer","Mace","Polearm","Spear","Staff","Short Bow","Long Bow","Light Crossbow","Heavy Crossbow","Sling"]);
 const AVERATHIA_MAGIC_TIER_NAMES={1:"Gilded",2:"Etched",3:"Runed",4:"Touched",5:"Blessed"};
 const AVERATHIA_BANE_NAMES={
  "dragonkind":"Dragon Bane","giantkind":"Giant Bane","lycanthropes":"Lycanthrope Bane",
@@ -1497,64 +1497,64 @@ function formatMagicArmorName(size,type,bonus,power=null,cursed=false){
  return `${magicTierName(bonus)} ${curse}${special}${sizePart}${type} (+${bonus})`
 }
 function refreshRcMagicDisplayName(item){
- if(!item?.rcMagic)return item;
- if(item.kind==="weapon"&&item.baseWeapon&&item.magicBonus){item.n=formatMagicWeaponName(item.baseWeapon,item.magicBonus,item.rcVsBonus,item.rcVs);return item}
- if(["armor","shield"].includes(item.kind)&&item.baseArmor&&item.magicBonus){item.n=formatMagicArmorName(item.rcSize,item.baseArmor,item.magicBonus,item.rcSpecialPower,item.cursed);return item}
+ if(!item?.avMagic)return item;
+ if(item.kind==="weapon"&&item.baseWeapon&&item.magicBonus){item.n=formatMagicWeaponName(item.baseWeapon,item.magicBonus,item.avVsBonus,item.avVs);return item}
+ if(["armor","shield"].includes(item.kind)&&item.baseArmor&&item.magicBonus){item.n=formatMagicArmorName(item.avSize,item.baseArmor,item.magicBonus,item.avSpecialPower,item.cursed);return item}
  return item
 }
-function rcParseMagicWeaponName(name){
+function avParseMagicWeaponName(name){
  let m=/^(.*) \+(\d)(?:, \+(\d) vs (.+))?$/.exec(String(name||""));if(!m)return null;
  let base=m[1],bonus=+m[2],vsBonus=m[3]?+m[3]:0,vs=m[4]||null;
- if(!RC_SUPPORTED_MAGIC_WEAPON_BASES.has(base))return null;
+ if(!AV_SUPPORTED_MAGIC_WEAPON_BASES.has(base))return null;
  return{base,bonus,vsBonus,vs}
 }
-function rcMagicWeaponItem(category,name){
- let p=rcParseMagicWeaponName(name);if(!p)return{n:name,kind:"gear",can:false,eq:false,rcMagic:true,rcCategory:category,rcItem:name,unsupportedMagic:true,rcWeaponGeneration:"simple"};
- let item={n:formatMagicWeaponName(p.base,p.bonus,p.vsBonus,p.vs),kind:"weapon",can:true,eq:false,rcMagic:true,magical:true,rcCategory:category,rcItem:name,baseWeapon:p.base,magicBonus:p.bonus,rcVsBonus:p.vsBonus,rcVs:p.vs,unsupportedMagic:!!p.vs,partialMagic:!!p.vs,rcWeaponGeneration:"simple"};
+function avMagicWeaponItem(category,name){
+ let p=avParseMagicWeaponName(name);if(!p)return{n:name,kind:"gear",can:false,eq:false,avMagic:true,avCategory:category,avItem:name,unsupportedMagic:true,avWeaponGeneration:"simple"};
+ let item={n:formatMagicWeaponName(p.base,p.bonus,p.vsBonus,p.vs),kind:"weapon",can:true,eq:false,avMagic:true,magical:true,avCategory:category,avItem:name,baseWeapon:p.base,magicBonus:p.bonus,avVsBonus:p.vsBonus,avVs:p.vs,unsupportedMagic:!!p.vs,partialMagic:!!p.vs,avWeaponGeneration:"simple"};
  return item
 }
-function rcArmorNormalSize(size){return ["Human","Dwarf","Elf"].includes(size)}
-function rcMagicArmorItem(size,type,bonus,power,cursed,name){
- let single=type==="Shield"||SHOP.Armor.some(x=>x[0]===type),normal=rcArmorNormalSize(size),display=formatMagicArmorName(size,type,bonus,power,cursed);
- if(!single||!normal||cursed)return{n:display,kind:"gear",can:false,eq:false,rcMagic:true,rcCategory:"armorShield",rcItem:type,rcOriginalName:name,rcSize:size,magicBonus:bonus,rcSpecialPower:power,cursed,unsupportedMagic:true};
- let kind=type==="Shield"?"shield":"armor";return{n:display,kind,can:true,eq:false,rcMagic:true,magical:true,rcCategory:"armorShield",rcItem:type,rcOriginalName:name,baseArmor:type,rcSize:size,magicBonus:bonus,rcSpecialPower:power,cursed:false,unsupportedMagic:!!power,partialMagic:!!power}
+function avArmorNormalSize(size){return ["Human","Dwarf","Elf"].includes(size)}
+function avMagicArmorItem(size,type,bonus,power,cursed,name){
+ let single=type==="Shield"||SHOP.Armor.some(x=>x[0]===type),normal=avArmorNormalSize(size),display=formatMagicArmorName(size,type,bonus,power,cursed);
+ if(!single||!normal||cursed)return{n:display,kind:"gear",can:false,eq:false,avMagic:true,avCategory:"armorShield",avItem:type,avOriginalName:name,avSize:size,magicBonus:bonus,avSpecialPower:power,cursed,unsupportedMagic:true};
+ let kind=type==="Shield"?"shield":"armor";return{n:display,kind,can:true,eq:false,avMagic:true,magical:true,avCategory:"armorShield",avItem:type,avOriginalName:name,baseArmor:type,avSize:size,magicBonus:bonus,avSpecialPower:power,cursed:false,unsupportedMagic:!!power,partialMagic:!!power}
 }
 function rollRcArmorShield(){
- let size=rcTablePick(RC_ARMOR_SIZE),type=rcTablePick(RC_ARMOR_TYPE),bonus=rcArmorBonusFor(type),chance={1:10,2:15,3:20,4:25,5:30}[bonus],power=rcChance(chance)?rcTablePick(RC_ARMOR_SPECIAL):null,cursed=d(8)===1;
+ let size=avTablePick(AV_ARMOR_SIZE),type=avTablePick(AV_ARMOR_TYPE),bonus=avArmorBonusFor(type),chance={1:10,2:15,3:20,4:25,5:30}[bonus],power=avChance(chance)?avTablePick(AV_ARMOR_SPECIAL):null,cursed=d(8)===1;
  let name=`${size} ${type} ${cursed?"cursed ":""}+${bonus}${power?" — "+power:""}`;
- return rcMagicArmorItem(size,type,bonus,power,cursed,name)
+ return avMagicArmorItem(size,type,bonus,power,cursed,name)
 }
 function rollRcSimpleMagicWeapon(category){
- let table=category==="missileWeaponOrMissile"?RC_SIMPLE_MAGIC_MISSILE:category==="sword"?RC_SIMPLE_MAGIC_SWORD:RC_SIMPLE_MAGIC_MISC_WEAPON;
- let name=rcTablePick(table);return rcMagicWeaponItem(category,name)
+ let table=category==="missileWeaponOrMissile"?AV_SIMPLE_MAGIC_MISSILE:category==="sword"?AV_SIMPLE_MAGIC_SWORD:AV_SIMPLE_MAGIC_MISC_WEAPON;
+ let name=avTablePick(table);return avMagicWeaponItem(category,name)
 }
 function rollRcNamedMagic(category){
  if(category==="armorShield")return rollRcArmorShield();
  if(["missileWeaponOrMissile","sword","miscWeapon"].includes(category))return rollRcSimpleMagicWeapon(category);
- let table={scroll:RC_SCROLL_TABLE,wandStaffRod:RC_WAND_STAFF_ROD_TABLE,ring:RC_RING_TABLE,miscMagic:RC_MISC_MAGIC_TABLE}[category];
- if(!table)return rcMagicInventoryItem(category,"Unresolved RC subtable item");
- let name=rcTablePick(table),item=rcMagicInventoryItem(category,name),charges=rcChargesFor(name);
+ let table={scroll:AV_SCROLL_TABLE,wandStaffRod:AV_WAND_STAFF_ROD_TABLE,ring:AV_RING_TABLE,miscMagic:AV_MISC_MAGIC_TABLE}[category];
+ if(!table)return avMagicInventoryItem(category,"Unresolved Averathia subtable item");
+ let name=avTablePick(table),item=avMagicInventoryItem(category,name),charges=avChargesFor(name);
  if(charges!=null)item.charges=charges;
  if(category==="scroll"&&name==="Spell"){
-   let detail=rcRollSpellScrollDetail();item.rcSpellScroll=true;item.rcScrollType=detail.type;item.spellCount=detail.count;item.rcScrollSpells=detail.spells;
-   item.n=`RC Spell Scroll — ${detail.type} (${detail.count} spell${detail.count===1?"":"s"})`;
+   let detail=avRollSpellScrollDetail();item.avSpellScroll=true;item.avScrollType=detail.type;item.spellCount=detail.count;item.avScrollSpells=detail.spells;
+   item.n=`Averathia Spell Scroll — ${detail.type} (${detail.count} spell${detail.count===1?"":"s"})`;
  }
  return item
 }
 function rollRcMagicAny(allowed=null){
- let candidates=RC_MAGIC_MAIN.filter(([,c])=>!allowed||allowed.includes(c)),roll=d(100),cat;
- if(!allowed)cat=rcTablePick(RC_MAGIC_MAIN,roll);
- else{let guard=0;do{cat=rcTablePick(RC_MAGIC_MAIN)}while(!allowed.includes(cat)&&++guard<100);if(!allowed.includes(cat))cat=allowed[d(allowed.length)-1]}
+ let candidates=AV_MAGIC_MAIN.filter(([,c])=>!allowed||allowed.includes(c)),roll=d(100),cat;
+ if(!allowed)cat=avTablePick(AV_MAGIC_MAIN,roll);
+ else{let guard=0;do{cat=avTablePick(AV_MAGIC_MAIN)}while(!allowed.includes(cat)&&++guard<100);if(!allowed.includes(cat))cat=allowed[d(allowed.length)-1]}
  if(cat==="potion")return rollRcPotion();
  return rollRcNamedMagic(cat)
 }
 
-const RC_JEWELRY_TYPES={
+const AV_JEWELRY_TYPES={
  common:["Anklet","Beads","Bracelet","Brooch","Buckle","Cameo","Chain","Clasp","Locket","Pin"],
  uncommon:["Armband","Belt","Collar","Earring","Four-Leaf Clover","Heart","Leaf","Necklace","Pendant","Rabbit's Foot"],
  rare:["Amulet","Crown","Diadem","Medallion","Orb","Ring (nonmagical)","Scarab","Scepter","Talisman","Tiara"]
 };
-const RC_SPECIAL_TREASURE_TABLE=[
+const AV_SPECIAL_TREASURE_TABLE=[
  {max:10,n:"Rare Book",enc:"2d100",value:"1d100x10"},
  {max:12,n:"Common Fur Pelt",enc:"1d6x10",value:"1d4"},
  {max:17,n:"Common Fur Cape",enc:"1d8+4x10",value:"1d6x100"},
@@ -1572,50 +1572,50 @@ const RC_SPECIAL_TREASURE_TABLE=[
  {max:95,n:"Statuette",enc:"1d100",value:"1d10x100"},
  {max:100,n:"Rare Wine",encBottles:"1d6+3",value:"1d6",unit:"bottle"}
 ];
-function rcChance(p){return d(100)<=p}
-function rcBlankTreasure(source,type){return{source,type,coins:{cp:0,sp:0,ep:0,gp:0,pp:0},gems:[],jewelry:[],special:[],magic:[]}}
-function rcMergeTreasure(a,b,mult=1){
+function avChance(p){return d(100)<=p}
+function avBlankTreasure(source,type){return{source,type,coins:{cp:0,sp:0,ep:0,gp:0,pp:0},gems:[],jewelry:[],special:[],magic:[]}}
+function avMergeTreasure(a,b,mult=1){
  for(const k of ["cp","sp","ep","gp","pp"])a.coins[k]+=(b.coins[k]||0)*mult;
  for(const k of ["gems","jewelry","special","magic"])for(const x of b[k]||[])for(let i=0;i<mult;i++)a[k].push({...x});
  return a
 }
-const RC_STARSTONE_BASES=[
+const AV_STARSTONE_BASES=[
  {name:"Star Carbuncle",value:1000},{name:"Star Opal",value:1000},{name:"Star Emerald",value:5000},
  {name:"Star Ruby",value:5000},{name:"Star Sapphire",value:5000},{name:"Star Jacinth",value:10000}
 ];
-function rcSpecialGemItem(){
- if(d(2)===1){let base=RC_STARSTONE_BASES[d(RC_STARSTONE_BASES.length)-1],value=base.value*2;return{n:`${base.name} — ${value.toLocaleString()} GP`,kind:"treasure",rcTreasure:true,rcGem:true,rcSpecialGem:"starstone",gpValue:value,treasureValueCP:gpToCP(value),rcCashFeePct:d(5),rcEncumbrance:1}}
- let value=50000;return{n:`Tristal — ${value.toLocaleString()} GP`,kind:"treasure",rcTreasure:true,rcGem:true,rcSpecialGem:"tristal",gpValue:value,treasureValueCP:gpToCP(value),rcCashFeePct:d(5),rcEncumbrance:1}
+function avSpecialGemItem(){
+ if(d(2)===1){let base=AV_STARSTONE_BASES[d(AV_STARSTONE_BASES.length)-1],value=base.value*2;return{n:`${base.name} — ${value.toLocaleString()} GP`,kind:"treasure",avTreasure:true,avGem:true,avSpecialGem:"starstone",gpValue:value,treasureValueCP:gpToCP(value),avCashFeePct:d(5),avEncumbrance:1}}
+ let value=50000;return{n:`Tristal — ${value.toLocaleString()} GP`,kind:"treasure",avTreasure:true,avGem:true,avSpecialGem:"tristal",gpValue:value,treasureValueCP:gpToCP(value),avCashFeePct:d(5),avEncumbrance:1}
 }
-function rcGemItem(level=h?.level||1){
+function avGemItem(level=h?.level||1){
  let roll=d(100);if(level<9)roll=Math.max(1,roll-10);
- let v=rcTablePick(RC_GEM_VALUE,roll);
- if(v==="special")return rcSpecialGemItem();
- return{n:`Gem — ${v.toLocaleString()} GP`,kind:"treasure",rcTreasure:true,rcGem:true,treasureValueCP:gpToCP(v),gpValue:v,rcCashFeePct:d(5),rcEncumbrance:1}
+ let v=avTablePick(AV_GEM_VALUE,roll);
+ if(v==="special")return avSpecialGemItem();
+ return{n:`Gem — ${v.toLocaleString()} GP`,kind:"treasure",avTreasure:true,avGem:true,treasureValueCP:gpToCP(v),gpValue:v,avCashFeePct:d(5),avEncumbrance:1}
 }
-function rcJewelryItem(level=h?.level||1){
+function avJewelryItem(level=h?.level||1){
  let roll=d(100);if(level<9)roll=Math.max(1,roll-10);
- let value=rcTablePick(RC_JEWELRY_VALUE,roll),band=value<4000?"common":value<15000?"uncommon":"rare";
- let types=RC_JEWELRY_TYPES[band],name=types[d(types.length)-1];
- return{n:`${name} — ${value.toLocaleString()} GP`,kind:"treasure",rcTreasure:true,rcJewelry:true,treasureValueCP:gpToCP(value),gpValue:value,rcCashFeePct:d(6)+d(6),rcEncumbrance:rcJewelryBulkPoints(value)}
+ let value=avTablePick(AV_JEWELRY_VALUE,roll),band=value<4000?"common":value<15000?"uncommon":"rare";
+ let types=AV_JEWELRY_TYPES[band],name=types[d(types.length)-1];
+ return{n:`${name} — ${value.toLocaleString()} GP`,kind:"treasure",avTreasure:true,avJewelry:true,treasureValueCP:gpToCP(value),gpValue:value,avCashFeePct:d(6)+d(6),avEncumbrance:avJewelryBulkPoints(value)}
 }
-function rcSpecialTreasureItem(){
- let roll=d(100),row=RC_SPECIAL_TREASURE_TABLE.find(x=>roll<=x.max)||RC_SPECIAL_TREASURE_TABLE.at(-1),item={n:row.n,kind:"treasure",rcTreasure:true,rcSpecial:true};
+function avSpecialTreasureItem(){
+ let roll=d(100),row=AV_SPECIAL_TREASURE_TABLE.find(x=>roll<=x.max)||AV_SPECIAL_TREASURE_TABLE.at(-1),item={n:row.n,kind:"treasure",avTreasure:true,avSpecial:true};
  if(row.encBottles){
-   let qty=rcRollScaled(row.encBottles),per=rcRollScaled(row.value);
-   item.rcQuantity=qty;item.rcUnit=row.unit;item.rcEncumbrance=qty*10;item.rcValuePerGP=per;item.gpValue=qty*per;item.treasureValueCP=gpToCP(item.gpValue);return item
+   let qty=avRollScaled(row.encBottles),per=avRollScaled(row.value);
+   item.avQuantity=qty;item.avUnit=row.unit;item.avEncumbrance=qty*10;item.avValuePerGP=per;item.gpValue=qty*per;item.treasureValueCP=gpToCP(item.gpValue);return item
  }
- let enc=rcRollScaled(row.enc),value=rcRollScaled(row.value);
+ let enc=avRollScaled(row.enc),value=avRollScaled(row.value);
  if(row.quantityUnspecified){
-   let qty=d(6);item.rcQuantity=qty;item.rcUnit=row.unit;item.rcQuantityRule="Averathia 1d6 square yards";item.rcEncumbrancePerUnit=enc;item.rcValuePerGP=value;item.rcEncumbrance=qty*enc;item.gpValue=qty*value;item.treasureValueCP=gpToCP(item.gpValue);item.n=`${row.n} — ${qty} sq yd`;return item
+   let qty=d(6);item.avQuantity=qty;item.avUnit=row.unit;item.avQuantityRule="Averathia 1d6 square yards";item.avEncumbrancePerUnit=enc;item.avValuePerGP=value;item.avEncumbrance=qty*enc;item.gpValue=qty*value;item.treasureValueCP=gpToCP(item.gpValue);item.n=`${row.n} — ${qty} sq yd`;return item
  }
- item.rcEncumbrance=enc;
+ item.avEncumbrance=enc;
  if(row.valuePerEnc){
-   item.rcValuePerGP=value;item.rcValuePer="cn encumbrance";item.gpValue=enc*value;item.treasureValueCP=gpToCP(item.gpValue);return item
+   item.avValuePerGP=value;item.avValuePer="cn encumbrance";item.gpValue=enc*value;item.treasureValueCP=gpToCP(item.gpValue);return item
  }
- item.gpValue=value;item.treasureValueCP=gpToCP(value);if(row.unit)item.rcUnit=row.unit;return item
+ item.gpValue=value;item.treasureValueCP=gpToCP(value);if(row.unit)item.avUnit=row.unit;return item
 }
-function rcRollMagicSpec(spec){
+function avRollMagicSpec(spec){
  let out=[];
  if(!spec)return out;
  if(spec.oneOf){let map={sword:"sword",miscWeapon:"miscWeapon",armor:"armorShield"},cats=spec.oneOf.map(x=>map[x]||x);out.push(rollRcMagicAny(cats))}
@@ -1623,89 +1623,89 @@ function rcRollMagicSpec(spec){
  for(let i=0;i<(spec.potion||0);i++)out.push(rollRcPotion());
  for(let i=0;i<(spec.scroll||0);i++)out.push(rollRcNamedMagic("scroll"));
  for(let i=0;i<(spec.anyButWeapons||0);i++)out.push(rollRcMagicAny(["potion","scroll","wandStaffRod","ring","miscMagic","armorShield"]));
- let np=spec.potions?rcRollScaled(spec.potions):0;for(let i=0;i<np;i++)out.push(rollRcPotion());
- let ns=spec.scrolls?rcRollScaled(spec.scrolls):0;for(let i=0;i<ns;i++)out.push(rollRcNamedMagic("scroll"));
+ let np=spec.potions?avRollScaled(spec.potions):0;for(let i=0;i<np;i++)out.push(rollRcPotion());
+ let ns=spec.scrolls?avRollScaled(spec.scrolls):0;for(let i=0;i<ns;i++)out.push(rollRcNamedMagic("scroll"));
  return out
 }
-function rcRollCarriedType(type,mult=1,level=h?.level||1){
- let row=RC_TREASURE_CARRIED[type],out=rcBlankTreasure("carried",type);if(!row)return out;
- for(const [kind,spec] of Object.entries(row.coins||{}))if(spec.chance===100||rcChance(spec.chance))out.coins[kind]+=rcRollScaled(spec.dice)*mult;
- if(row.gems&&(row.gems.chance===100||rcChance(row.gems.chance))){let n=rcRollScaled(row.gems.dice)*mult;if(type==="U"||type==="V")n=Math.min(1,n);while(n--)out.gems.push(rcGemItem(level))}
- if(row.jewelry&&(row.jewelry.chance===100||rcChance(row.jewelry.chance))){let n=rcRollScaled(row.jewelry.dice)*mult;if(type==="U"||type==="V")n=Math.min(1,n);while(n--)out.jewelry.push(rcJewelryItem(level))}
- if(row.special&&(row.special.chance===100||rcChance(row.special.chance))){let n=rcRollScaled(row.special.dice)*mult;while(n--)out.special.push(rcSpecialTreasureItem())}
- if(row.magic&&(row.magic.chance===100||rcChance(row.magic.chance))){let n=rcRollScaled(row.magic.dice)*mult;while(n--)out.magic.push(rollRcMagicAny())}
+function avRollCarriedType(type,mult=1,level=h?.level||1){
+ let row=AV_TREASURE_CARRIED[type],out=avBlankTreasure("carried",type);if(!row)return out;
+ for(const [kind,spec] of Object.entries(row.coins||{}))if(spec.chance===100||avChance(spec.chance))out.coins[kind]+=avRollScaled(spec.dice)*mult;
+ if(row.gems&&(row.gems.chance===100||avChance(row.gems.chance))){let n=avRollScaled(row.gems.dice)*mult;if(type==="U"||type==="V")n=Math.min(1,n);while(n--)out.gems.push(avGemItem(level))}
+ if(row.jewelry&&(row.jewelry.chance===100||avChance(row.jewelry.chance))){let n=avRollScaled(row.jewelry.dice)*mult;if(type==="U"||type==="V")n=Math.min(1,n);while(n--)out.jewelry.push(avJewelryItem(level))}
+ if(row.special&&(row.special.chance===100||avChance(row.special.chance))){let n=avRollScaled(row.special.dice)*mult;while(n--)out.special.push(avSpecialTreasureItem())}
+ if(row.magic&&(row.magic.chance===100||avChance(row.magic.chance))){let n=avRollScaled(row.magic.dice)*mult;while(n--)out.magic.push(rollRcMagicAny())}
  return out
 }
-function rcRollLairType(type,level=h?.level||1){
- let row=RC_TREASURE_LAIR[type],out=rcBlankTreasure("lair",type);if(!row)return out;
- for(const [kind,spec] of Object.entries(row.coins||{}))if(rcChance(spec[0]))out.coins[kind]+=rcRollScaled(spec[1])*1000;
- if(row.gems&&rcChance(row.gems[0])){let n=rcRollScaled(row.gems[1]);while(n--)out.gems.push(rcGemItem(level))}
- if(row.jewelry&&rcChance(row.jewelry[0])){let n=rcRollScaled(row.jewelry[1]);while(n--)out.jewelry.push(rcJewelryItem(level))}
- if(row.special&&rcChance(row.special[0])){let n=rcRollScaled(row.special[1]);while(n--)out.special.push(rcSpecialTreasureItem())}
- if(row.magic&&rcChance(row.magic[0]))out.magic.push(...rcRollMagicSpec(row.magic[1]));
+function avRollLairType(type,level=h?.level||1){
+ let row=AV_TREASURE_LAIR[type],out=avBlankTreasure("lair",type);if(!row)return out;
+ for(const [kind,spec] of Object.entries(row.coins||{}))if(avChance(spec[0]))out.coins[kind]+=avRollScaled(spec[1])*1000;
+ if(row.gems&&avChance(row.gems[0])){let n=avRollScaled(row.gems[1]);while(n--)out.gems.push(avGemItem(level))}
+ if(row.jewelry&&avChance(row.jewelry[0])){let n=avRollScaled(row.jewelry[1]);while(n--)out.jewelry.push(avJewelryItem(level))}
+ if(row.special&&avChance(row.special[0])){let n=avRollScaled(row.special[1]);while(n--)out.special.push(avSpecialTreasureItem())}
+ if(row.magic&&avChance(row.magic[0]))out.magic.push(...avRollMagicSpec(row.magic[1]));
  return out
 }
 function monsterKey(m){return m?.monsterId??m?.id}
-function rcMonsterTreasureProfile(m){
- let tt=String(m?.rcTreasureType||"Nil").trim();if(!tt||tt==="Nil")return{carried:[],lair:[]};
+function avMonsterTreasureProfile(m){
+ let tt=String(m?.avTreasureType||"Nil").trim();if(!tt||tt==="Nil")return{carried:[],lair:[]};
  if(monsterKey(m)==="ogre")return{carried:[{type:"S",mult:10}],lair:[{type:"S",mult:100,carriedStyle:true},{type:"C",mult:1}]};
  let carried=[],lair=[],paren=tt.match(/^\(([P-V])\)\s*(.*)$/);
  if(paren){carried.push({type:paren[1],mult:1});tt=paren[2].trim()}
  for(const letter of tt.match(/[A-V]/g)||[]){if(/[P-V]/.test(letter))carried.push({type:letter,mult:1});else lair.push({type:letter,mult:1})}
  return{carried,lair}
 }
-function rcRollMonsterCarried(m,level=h?.level||1){
- let p=rcMonsterTreasureProfile(m),out=rcBlankTreasure("monster",m?.n||m?.id||"monster");
- for(const x of p.carried)rcMergeTreasure(out,rcRollCarriedType(x.type,x.mult,level));
+function avRollMonsterCarried(m,level=h?.level||1){
+ let p=avMonsterTreasureProfile(m),out=avBlankTreasure("monster",m?.n||m?.id||"monster");
+ for(const x of p.carried)avMergeTreasure(out,avRollCarriedType(x.type,x.mult,level));
  return out
 }
 function journeySpoilsForMonster(m){
- let out=rcBlankTreasure("journey-spoils",m?.n||m?.id||"monster");
- // Averathia fallback: humanoid enemies with no RC individual treasure still carry a useful personal purse.
+ let out=avBlankTreasure("journey-spoils",m?.n||m?.id||"monster");
+ // Averathia fallback: humanoid enemies with no Averathia individual treasure still carry a useful personal purse.
  if(m?.humanoid){out.coins.gp+=d(6);out.coins.sp+=d(6);out.coins.cp+=d(6)}
  return out
 }
-function rcRollMonsterLair(m,level=h?.level||1){
- let p=rcMonsterTreasureProfile(m),out=rcBlankTreasure("monster-lair",m?.n||m?.id||"monster");
+function avRollMonsterLair(m,level=h?.level||1){
+ let p=avMonsterTreasureProfile(m),out=avBlankTreasure("monster-lair",m?.n||m?.id||"monster");
  for(const x of p.lair){
-  if(x.carriedStyle)rcMergeTreasure(out,rcRollCarriedType(x.type,x.mult,level));
-  else rcMergeTreasure(out,rcRollLairType(x.type,level),x.mult||1)
+  if(x.carriedStyle)avMergeTreasure(out,avRollCarriedType(x.type,x.mult,level));
+  else avMergeTreasure(out,avRollLairType(x.type,level),x.mult||1)
  }
  return out
 }
-function rcTreasureCoinCP(t){return Object.entries(t?.coins||{}).reduce((sum,[k,v])=>sum+rcCoinValueCP(k,v),0)}
-function rcTreasureItemValueCP(t){return["gems","jewelry","special"].flatMap(k=>t?.[k]||[]).reduce((sum,x)=>sum+(Number.isFinite(x.treasureValueCP)?x.treasureValueCP:0),0)}
+function avTreasureCoinCP(t){return Object.entries(t?.coins||{}).reduce((sum,[k,v])=>sum+avCoinValueCP(k,v),0)}
+function avTreasureItemValueCP(t){return["gems","jewelry","special"].flatMap(k=>t?.[k]||[]).reduce((sum,x)=>sum+(Number.isFinite(x.treasureValueCP)?x.treasureValueCP:0),0)}
 function settleTripTreasureXP(){
- let cp=Math.max(0,Math.trunc(Number(h?.trip?.rcTreasureXpCP)||0)),baseXP=Math.floor(cp/100);if(!baseXP)return{baseXP:0,gained:0,cp};
+ let cp=Math.max(0,Math.trunc(Number(h?.trip?.avTreasureXpCP)||0)),baseXP=Math.floor(cp/100);if(!baseXP)return{baseXP:0,gained:0,cp};
  let gained=awardXP(baseXP);
- journal({id:"RC-TREASURE-XP",type:"Progression",title:"Treasure XP",text:`${baseXP} GP eligible treasure value recovered.`,result:"treasureXP",xp:gained,coins:[0,0,0]});
+ journal({id:"Averathia-TREASURE-XP",type:"Progression",title:"Treasure XP",text:`${baseXP} GP eligible treasure value recovered.`,result:"treasureXP",xp:gained,coins:[0,0,0]});
  addlog(`Treasure XP: ${baseXP} GP eligible value → +${gained} XP.`,"Progression");
  return{baseXP,gained,cp}
 }
 
-function rcUnguardedBracket(level=h?.level||1){return RC_UNGUARDED_TREASURE.find(x=>level>=x.levels[0]&&level<=x.levels[1])||RC_UNGUARDED_TREASURE.at(-1)}
-function rcRollUnguardedTreasure(level=h?.level||1){
- let row=rcUnguardedBracket(level),out=rcBlankTreasure("unguarded",`Level ${level}`);
- if(row.sp)out.coins.sp+=rcRollScaled(row.sp);
- if(row.gp){if(typeof row.gp==="string"||rcChance(row.gp[0]))out.coins.gp+=rcRollScaled(typeof row.gp==="string"?row.gp:row.gp[1])}
- if(row.gems&&rcChance(row.gems[0])){let n=rcRollScaled(row.gems[1]);while(n--)out.gems.push(rcGemItem(level))}
- if(row.jewelry&&rcChance(row.jewelry[0])){let n=rcRollScaled(row.jewelry[1]);while(n--)out.jewelry.push(rcJewelryItem(level))}
- if(row.magic&&rcChance(row.magic[0]))out.magic.push(...rcRollMagicSpec(row.magic[1]));
+function avUnguardedBracket(level=h?.level||1){return AV_UNGUARDED_TREASURE.find(x=>level>=x.levels[0]&&level<=x.levels[1])||AV_UNGUARDED_TREASURE.at(-1)}
+function avRollUnguardedTreasure(level=h?.level||1){
+ let row=avUnguardedBracket(level),out=avBlankTreasure("unguarded",`Level ${level}`);
+ if(row.sp)out.coins.sp+=avRollScaled(row.sp);
+ if(row.gp){if(typeof row.gp==="string"||avChance(row.gp[0]))out.coins.gp+=avRollScaled(typeof row.gp==="string"?row.gp:row.gp[1])}
+ if(row.gems&&avChance(row.gems[0])){let n=avRollScaled(row.gems[1]);while(n--)out.gems.push(avGemItem(level))}
+ if(row.jewelry&&avChance(row.jewelry[0])){let n=avRollScaled(row.jewelry[1]);while(n--)out.jewelry.push(avJewelryItem(level))}
+ if(row.magic&&avChance(row.magic[0]))out.magic.push(...avRollMagicSpec(row.magic[1]));
  return out
 }
-function rcTreasureAllItems(t){return["gems","jewelry","special","magic"].flatMap(k=>t?.[k]||[])}
-function rcApplyTreasure(t){
- let items=rcTreasureAllItems(t),accepted=[],left=[];
+function avTreasureAllItems(t){return["gems","jewelry","special","magic"].flatMap(k=>t?.[k]||[])}
+function avApplyTreasure(t){
+ let items=avTreasureAllItems(t),accepted=[],left=[];
  h.inv=h.inv||[];
  for(const item of items){if(!h.trip||canCarryAdditionalBP(itemBulkPoints(item))){h.inv.push(item);accepted.push(item)}else left.push(item)}
- let credited=rcCreditCoins(t?.coins||{});
- let gemJewelryCP=accepted.filter(x=>x?.rcGem||x?.rcJewelry).reduce((sum,x)=>sum+(Number.isFinite(x?.treasureValueCP)?x.treasureValueCP:0),0);
+ let credited=avCreditCoins(t?.coins||{});
+ let gemJewelryCP=accepted.filter(x=>x?.avGem||x?.avJewelry).reduce((sum,x)=>sum+(Number.isFinite(x?.treasureValueCP)?x.treasureValueCP:0),0);
  let eligibleXPcp=credited.cpValue+gemJewelryCP;
- if(h.trip&&eligibleXPcp>0)h.trip.rcTreasureXpCP=Math.max(0,Number(h.trip.rcTreasureXpCP)||0)+eligibleXPcp;
+ if(h.trip&&eligibleXPcp>0)h.trip.avTreasureXpCP=Math.max(0,Number(h.trip.avTreasureXpCP)||0)+eligibleXPcp;
  if(h.trip&&(left.length||credited.leftCP)){let bits=[];if(left.length)bits.push(`${left.length} item${left.length===1?"":"s"}`);if(credited.leftCP)bits.push(coinTextCP(credited.leftCP)+" in coins");addlog(`Carry limit: left behind ${bits.join(" and ")}.`,"Loot")}
  return{creditedCP:credited.cpValue,leftCoinCP:credited.leftCP||0,items:accepted.length,leftItems:left,converted:credited.converted,eligibleXPcp}
 }
-function rcTreasureSummary(t){
+function avTreasureSummary(t){
  let c=t?.coins||{},parts=[];
  for(const [k,label] of [["gp","GP"],["sp","SP"],["cp","CP"],["ep","EP→converted"],["pp","PP→converted"]])if(c[k])parts.push(`${c[k]} ${label}`);
  let counts=[["gems","gems"],["jewelry","jewelry"],["special","special treasure"],["magic","magic items"]];
@@ -1713,35 +1713,35 @@ function rcTreasureSummary(t){
  return parts.join(", ")||"no treasure"
 }
 
-function rcRollCombatTreasure(enemies=[],isBoss=false,level=h?.level||1,includeLair=false){
- let out=rcBlankTreasure(includeLair?"lair-combat":(isBoss?"boss-combat":"combat"),includeLair?"lair":(isBoss?"boss":"ordinary")),ogres=enemies.filter(e=>monsterKey(e)==="ogre");
+function avRollCombatTreasure(enemies=[],isBoss=false,level=h?.level||1,includeLair=false){
+ let out=avBlankTreasure(includeLair?"lair-combat":(isBoss?"boss-combat":"combat"),includeLair?"lair":(isBoss?"boss":"ordinary")),ogres=enemies.filter(e=>monsterKey(e)==="ogre");
  for(const e of enemies){
-  if(monsterKey(e)==="ogre")continue; // RC Ogre prose overrides generic carried notation for the encountered group.
-  let profile=rcMonsterTreasureProfile(e),carried=rcRollMonsterCarried(e,level);
+  if(monsterKey(e)==="ogre")continue; // Averathia Ogre prose overrides generic carried notation for the encountered group.
+  let profile=avMonsterTreasureProfile(e),carried=avRollMonsterCarried(e,level);
   if(!profile.carried.length)carried=journeySpoilsForMonster(e);
-  rcMergeTreasure(out,carried)
+  avMergeTreasure(out,carried)
  }
- if(ogres.length)out.coins.gp+=d(6)*100; // RC: an ogre group encountered outside its lair carries 1d6 x 100 gp.
+ if(ogres.length)out.coins.gp+=d(6)*100; // Averathia: an ogre group encountered outside its lair carries 1d6 x 100 gp.
  if(includeLair&&enemies.length){
   let hoardOwner=enemies.find(e=>e?.boss)||enemies[0];
-  rcMergeTreasure(out,rcRollMonsterLair(hoardOwner,level))
+  avMergeTreasure(out,avRollMonsterLair(hoardOwner,level))
  }
  return out
 }
-function rcAwardTreasure(t,label="Treasure"){
- let applied=rcApplyTreasure(t),summary=rcTreasureSummary(t);
+function avAwardTreasure(t,label="Treasure"){
+ let applied=avApplyTreasure(t),summary=avTreasureSummary(t);
  addlog(`${label}: ${summary}.`,"Loot");
  return{...applied,summary}
 }
 
-const RC_UNGUARDED_TREASURE=[
+const AV_UNGUARDED_TREASURE=[
  {levels:[1,1],sp:"1d6x100",gp:[50,"1d6x10"],gems:[5,"1d6"],jewelry:[2,"1d6"],magic:[2,{any:1}]},
  {levels:[2,3],sp:"1d12x100",gp:[50,"1d6x100"],gems:[10,"1d6"],jewelry:[5,"1d6"],magic:[8,{any:1}]},
  {levels:[4,5],sp:"1d6x1000",gp:"1d6x200",gems:[20,"1d8"],jewelry:[10,"1d8"],magic:[10,{any:1}]},
  {levels:[6,7],sp:"1d6x2000",gp:"1d6x500",gems:[30,"1d10"],jewelry:[15,"1d10"],magic:[15,{any:1}]},
  {levels:[8,Infinity],sp:"1d6x5000",gp:"1d6x1000",gems:[40,"1d12"],jewelry:[20,"1d12"],magic:[20,{any:1}]}
 ];
-const MONSTERS=[{"id":"kobold","n":"Kobold","saveAs":"NM","intelligence":9,"ac":7,"hdDice":0.5,"hdAdj":0,"hpDie":4,"damage":["1d4-1"],"meleeDamage":"1d4-1","rangedDamage":"1d4-1","meleeWeapon":"Dagger","rangedWeapon":"Sling","xp":5,"source":"RC-adapted","humanoid":true,"rcTreasureType":"(P) J"},{"id":"goblin","n":"Goblin","saveAs":"NM","intelligence":9,"ac":6,"hdDice":1,"hdAdj":-1,"damage":["1d6"],"meleeDamage":"1d6","rangedDamage":"1d6","meleeWeapon":"Short Sword","rangedWeapon":"Short Bow","daylightAttackPenalty":-1,"xp":5,"source":"RC-adapted","humanoid":true,"rcTreasureType":"(R) C"},{"id":"orc","n":"Orc","saveAs":"F1","intelligence":7,"ac":6,"hdDice":1,"hdAdj":0,"damage":["1d6"],"meleeDamage":"1d6","rangedDamage":"1d6","meleeWeapon":"Spear","rangedWeapon":"Short Bow","daylightAttackPenalty":-1,"xp":10,"source":"RC-adapted","humanoid":true,"rcTreasureType":"(P) D"},{"id":"hobgoblin","n":"Hobgoblin","saveAs":"F1","intelligence":10,"ac":6,"hdDice":1,"hdAdj":1,"damage":["1d8"],"meleeDamage":"1d8","rangedDamage":"1d6","meleeWeapon":"Sword","rangedWeapon":"Short Bow","xp":15,"source":"RC-adapted","humanoid":true,"rcTreasureType":"(Q) D"},{"id":"gnoll","n":"Gnoll","saveAs":"F2","intelligence":7,"ac":5,"hdDice":2,"hdAdj":0,"damage":["1d8+1"],"meleeDamage":"1d8+1","rangedDamage":"1d6+1","meleeWeapon":"Battle Axe","rangedWeapon":"Long Bow","xp":20,"source":"RC-adapted","humanoid":true,"rcTreasureType":"(P) D"},{"id":"skeleton","n":"Skeleton","saveAs":"F1","intelligence":1,"ac":7,"hdDice":1,"hdAdj":0,"damage":["1d6"],"xp":10,"undead":true,"source":"RC-adapted","humanoid":false,"rcTreasureType":"Nil"},{"id":"zombie","n":"Zombie","saveAs":"F1","intelligence":1,"ac":8,"hdDice":2,"hdAdj":0,"damage":["1d8"],"xp":20,"undead":true,"slow":true,"alwaysLoseInitiative":true,"source":"RC-adapted","humanoid":false,"rcTreasureType":"Nil"},{"id":"ghoul","n":"Ghoul","saveAs":"F2","intelligence":3,"ac":6,"hdDice":2,"hdAdj":0,"damage":["1d3"],"attacks":[{"name":"claw","damage":"1d3","special":"paralysis"},{"name":"claw","damage":"1d3","special":"paralysis"},{"name":"bite","damage":"1d3","special":"paralysis"}],"xp":25,"undead":true,"special":"paralysis","rcPowerBonuses":1,"rcAsterisks":1,"source":"RC-adapted","humanoid":false,"rcTreasureType":"B"},{"id":"giant_rat","n":"Giant Rat","saveAs":"NM","intelligence":2,"ac":7,"hdDice":0.5,"hdAdj":0,"hpDie":4,"damage":["1d3"],"xp":5,"special":"disease","rcPowerBonuses":1,"rcAsterisks":1,"source":"RC-adapted","humanoid":false,"rcTreasureType":"L"},{"id":"wolf","n":"Wolf","saveAs":"F1","intelligence":2,"ac":7,"hdDice":2,"hdAdj":2,"damage":["1d6"],"xp":25,"source":"RC-adapted","humanoid":false,"rcTreasureType":"Nil"},{"id":"dire_wolf","n":"Dire Wolf","saveAs":"F2","intelligence":4,"ac":6,"hdDice":4,"hdAdj":1,"damage":["2d4"],"xp":125,"source":"RC-adapted","humanoid":false,"rcTreasureType":"Nil"},{"id":"bear","n":"Black Bear","saveAs":"F2","intelligence":2,"ac":6,"hdDice":4,"hdAdj":0,"damage":["1d3"],"attacks":[{"name":"claw","damage":"1d3","claw":true},{"name":"claw","damage":"1d3","claw":true},{"name":"bite","damage":"1d6"}],"bearHug":"2d8","xp":75,"source":"RC-adapted","humanoid":false,"rcTreasureType":"U"},{"id":"crab_spider","n":"Crab Spider","saveAs":"F1","intelligence":0,"ac":7,"hdDice":2,"hdAdj":0,"damage":["1d8"],"xp":25,"special":"crabSpiderPoison","surpriseMax":4,"rcTerrains":["cavern","ruins"],"rcPowerBonuses":1,"rcAsterisks":1,"source":"RC-adapted","humanoid":false,"rcTreasureType":"U"},{"id":"black_widow","n":"Black Widow","saveAs":"F2","intelligence":0,"ac":6,"hdDice":3,"hdAdj":0,"damage":["2d6"],"xp":50,"special":"blackWidowPoison","webLair":true,"rcTerrains":["ruins","woods"],"webMoveFeet":120,"webBreakAs":"Web","webBurnable":true,"rcPowerBonuses":1,"rcAsterisks":1,"source":"RC-adapted","humanoid":false,"rcTreasureType":"U"},{"id":"tarantella","n":"Tarantella","saveAs":"F2","intelligence":0,"ac":5,"hdDice":4,"hdAdj":0,"damage":["1d8"],"xp":125,"special":"tarantellaPoison","rcTerrains":["ruins","woods"],"rcPowerBonuses":1,"rcAsterisks":1,"source":"RC-adapted","humanoid":false,"rcTreasureType":"U"},{"id":"giant_centipede","n":"Giant Centipede","saveAs":"NM","intelligence":0,"ac":9,"hdDice":0.5,"hdAdj":0,"hpDie":4,"damage":["0"],"xp":6,"special":"centipedePoison","rcPowerBonuses":1,"rcAsterisks":1,"source":"RC-adapted","humanoid":false,"rcTreasureType":"Nil"},{"id":"giant_scorpion","n":"Giant Scorpion","saveAs":"F2","intelligence":0,"ac":2,"hdDice":4,"hdAdj":0,"damage":["1d10"],"attacks":[{"name":"claw","damage":"1d10","claw":true},{"name":"claw","damage":"1d10","claw":true},{"name":"sting","damage":"1d4","special":"poison","sting":true}],"xp":125,"special":"poison","rcPowerBonuses":1,"rcAsterisks":1,"source":"RC-adapted","humanoid":false,"rcTreasureType":"V"},{"id":"giant_racer","n":"Giant Racer","saveAs":"F1","intelligence":2,"ac":5,"hdDice":2,"hdAdj":0,"damage":["1d6"],"xp":20,"source":"RC-adapted","humanoid":false,"rcTreasureType":"Nil"},{"id":"pit_viper","n":"Pit Viper","saveAs":"F1","intelligence":2,"ac":6,"hdDice":2,"hdAdj":0,"damage":["1d4"],"xp":25,"special":"poison","alwaysWinInitiative":true,"rcPowerBonuses":1,"rcAsterisks":1,"source":"RC-adapted","humanoid":false,"rcTreasureType":"Nil"},{"id":"lizard_man","n":"Lizard Man","saveAs":"F2","intelligence":6,"ac":5,"hdDice":2,"hdAdj":1,"damage":["1d6+1"],"meleeDamage":"1d6+1","rangedDamage":"1d6+1","meleeWeapon":"Spear","rangedWeapon":"Spear","swimSpeedFeet":120,"xp":25,"source":"RC-adapted","humanoid":true,"rcTreasureType":"D"},{"id":"bandit","n":"Bandit","saveAs":"T1","intelligence":11,"ac":6,"hdDice":1,"hdAdj":0,"damage":["1d6"],"meleeDamage":"1d6","rangedDamage":"1d6","meleeWeapon":"Short Sword","rangedWeapon":"Short Bow","xp":10,"source":"RC-adapted","humanoid":true,"rcTreasureType":"(U) A"},{"id":"brigand","n":"Brigand","saveAs":"F1","intelligence":11,"ac":6,"hdDice":1,"hdAdj":0,"damage":["1d6"],"meleeDamage":"1d6","rangedDamage":"1d6","meleeWeapon":"Sword","rangedWeapon":"Light Crossbow","xp":10,"source":"RC-adapted","humanoid":true,"rcTreasureType":"A"},{"id":"berserker","n":"Berserker","saveAs":"F1","intelligence":9,"ac":7,"hdDice":1,"hdAdj":1,"damage":["1d8"],"meleeDamage":"1d8","meleeWeapon":"Battle Axe","xp":19,"ferocityAttackBonus":2,"rcPowerBonuses":1,"rcAsterisks":1,"source":"RC-adapted","humanoid":true,"rcTreasureType":"(P) B"},{"id":"ogre","n":"Ogre","saveAs":"F4","intelligence":6,"ac":5,"hdDice":4,"hdAdj":1,"damage":["1d4+2"],"meleeDamage":"1d4+2","meleeWeapon":"Club","xp":125,"source":"RC-adapted","humanoid":true,"rcTreasureType":"(S x 10) S x 100 + C"},{"id":"troll","n":"Troll","saveAs":"F6","intelligence":6,"ac":4,"hdDice":6,"hdAdj":3,"damage":["1d6"],"attacks":[{"name":"claw","damage":"1d6"},{"name":"claw","damage":"1d6"},{"name":"bite","damage":"1d10"}],"xp":650,"special":"regeneration","rcPowerBonuses":1,"rcAsterisks":1,"source":"RC-adapted","humanoid":false,"rcTreasureType":"D"},{"id":"minotaur","n":"Minotaur","saveAs":"F6","intelligence":5,"ac":6,"hdDice":6,"hdAdj":0,"damage":["1d6"],"attacks":[{"name":"gore","damage":"1d6"},{"name":"bite","damage":"1d6"}],"xp":275,"source":"RC-adapted","humanoid":false,"rcTreasureType":"C"},{"id":"mummy","n":"Mummy","saveAs":"F5","intelligence":6,"ac":3,"hdDice":5,"hdAdj":1,"damage":["1d12"],"xp":575,"undead":true,"enchanted":true,"mummy":true,"special":"disease","rcTerrains":["ruins"],"rcPowerBonuses":2,"rcAsterisks":2,"source":"RC-adapted","humanoid":false,"rcTreasureType":"D"}];
+const MONSTERS=[{"id":"kobold","n":"Kobold","saveAs":"NM","intelligence":9,"ac":7,"hdDice":0.5,"hdAdj":0,"hpDie":4,"damage":["1d4-1"],"meleeDamage":"1d4-1","rangedDamage":"1d4-1","meleeWeapon":"Dagger","rangedWeapon":"Sling","xp":5,"source":"Averathia-adapted","humanoid":true,"avTreasureType":"(P) J"},{"id":"goblin","n":"Goblin","saveAs":"NM","intelligence":9,"ac":6,"hdDice":1,"hdAdj":-1,"damage":["1d6"],"meleeDamage":"1d6","rangedDamage":"1d6","meleeWeapon":"Short Sword","rangedWeapon":"Short Bow","daylightAttackPenalty":-1,"xp":5,"source":"Averathia-adapted","humanoid":true,"avTreasureType":"(R) C"},{"id":"orc","n":"Orc","saveAs":"F1","intelligence":7,"ac":6,"hdDice":1,"hdAdj":0,"damage":["1d6"],"meleeDamage":"1d6","rangedDamage":"1d6","meleeWeapon":"Spear","rangedWeapon":"Short Bow","daylightAttackPenalty":-1,"xp":10,"source":"Averathia-adapted","humanoid":true,"avTreasureType":"(P) D"},{"id":"hobgoblin","n":"Hobgoblin","saveAs":"F1","intelligence":10,"ac":6,"hdDice":1,"hdAdj":1,"damage":["1d8"],"meleeDamage":"1d8","rangedDamage":"1d6","meleeWeapon":"Sword","rangedWeapon":"Short Bow","xp":15,"source":"Averathia-adapted","humanoid":true,"avTreasureType":"(Q) D"},{"id":"gnoll","n":"Gnoll","saveAs":"F2","intelligence":7,"ac":5,"hdDice":2,"hdAdj":0,"damage":["1d8+1"],"meleeDamage":"1d8+1","rangedDamage":"1d6+1","meleeWeapon":"Battle Axe","rangedWeapon":"Long Bow","xp":20,"source":"Averathia-adapted","humanoid":true,"avTreasureType":"(P) D"},{"id":"skeleton","n":"Skeleton","saveAs":"F1","intelligence":1,"ac":7,"hdDice":1,"hdAdj":0,"damage":["1d6"],"xp":10,"undead":true,"source":"Averathia-adapted","humanoid":false,"avTreasureType":"Nil"},{"id":"zombie","n":"Zombie","saveAs":"F1","intelligence":1,"ac":8,"hdDice":2,"hdAdj":0,"damage":["1d8"],"xp":20,"undead":true,"slow":true,"alwaysLoseInitiative":true,"source":"Averathia-adapted","humanoid":false,"avTreasureType":"Nil"},{"id":"ghoul","n":"Ghoul","saveAs":"F2","intelligence":3,"ac":6,"hdDice":2,"hdAdj":0,"damage":["1d3"],"attacks":[{"name":"claw","damage":"1d3","special":"paralysis"},{"name":"claw","damage":"1d3","special":"paralysis"},{"name":"bite","damage":"1d3","special":"paralysis"}],"xp":25,"undead":true,"special":"paralysis","avPowerBonuses":1,"avAsterisks":1,"source":"Averathia-adapted","humanoid":false,"avTreasureType":"B"},{"id":"giant_rat","n":"Giant Rat","saveAs":"NM","intelligence":2,"ac":7,"hdDice":0.5,"hdAdj":0,"hpDie":4,"damage":["1d3"],"xp":5,"special":"disease","avPowerBonuses":1,"avAsterisks":1,"source":"Averathia-adapted","humanoid":false,"avTreasureType":"L"},{"id":"wolf","n":"Wolf","saveAs":"F1","intelligence":2,"ac":7,"hdDice":2,"hdAdj":2,"damage":["1d6"],"xp":25,"source":"Averathia-adapted","humanoid":false,"avTreasureType":"Nil"},{"id":"dire_wolf","n":"Dire Wolf","saveAs":"F2","intelligence":4,"ac":6,"hdDice":4,"hdAdj":1,"damage":["2d4"],"xp":125,"source":"Averathia-adapted","humanoid":false,"avTreasureType":"Nil"},{"id":"bear","n":"Black Bear","saveAs":"F2","intelligence":2,"ac":6,"hdDice":4,"hdAdj":0,"damage":["1d3"],"attacks":[{"name":"claw","damage":"1d3","claw":true},{"name":"claw","damage":"1d3","claw":true},{"name":"bite","damage":"1d6"}],"bearHug":"2d8","xp":75,"source":"Averathia-adapted","humanoid":false,"avTreasureType":"U"},{"id":"crab_spider","n":"Crab Spider","saveAs":"F1","intelligence":0,"ac":7,"hdDice":2,"hdAdj":0,"damage":["1d8"],"xp":25,"special":"crabSpiderPoison","surpriseMax":4,"avTerrains":["cavern","ruins"],"avPowerBonuses":1,"avAsterisks":1,"source":"Averathia-adapted","humanoid":false,"avTreasureType":"U"},{"id":"black_widow","n":"Black Widow","saveAs":"F2","intelligence":0,"ac":6,"hdDice":3,"hdAdj":0,"damage":["2d6"],"xp":50,"special":"blackWidowPoison","webLair":true,"avTerrains":["ruins","woods"],"webMoveFeet":120,"webBreakAs":"Web","webBurnable":true,"avPowerBonuses":1,"avAsterisks":1,"source":"Averathia-adapted","humanoid":false,"avTreasureType":"U"},{"id":"tarantella","n":"Tarantella","saveAs":"F2","intelligence":0,"ac":5,"hdDice":4,"hdAdj":0,"damage":["1d8"],"xp":125,"special":"tarantellaPoison","avTerrains":["ruins","woods"],"avPowerBonuses":1,"avAsterisks":1,"source":"Averathia-adapted","humanoid":false,"avTreasureType":"U"},{"id":"giant_centipede","n":"Giant Centipede","saveAs":"NM","intelligence":0,"ac":9,"hdDice":0.5,"hdAdj":0,"hpDie":4,"damage":["0"],"xp":6,"special":"centipedePoison","avPowerBonuses":1,"avAsterisks":1,"source":"Averathia-adapted","humanoid":false,"avTreasureType":"Nil"},{"id":"giant_scorpion","n":"Giant Scorpion","saveAs":"F2","intelligence":0,"ac":2,"hdDice":4,"hdAdj":0,"damage":["1d10"],"attacks":[{"name":"claw","damage":"1d10","claw":true},{"name":"claw","damage":"1d10","claw":true},{"name":"sting","damage":"1d4","special":"poison","sting":true}],"xp":125,"special":"poison","avPowerBonuses":1,"avAsterisks":1,"source":"Averathia-adapted","humanoid":false,"avTreasureType":"V"},{"id":"giant_racer","n":"Giant Racer","saveAs":"F1","intelligence":2,"ac":5,"hdDice":2,"hdAdj":0,"damage":["1d6"],"xp":20,"source":"Averathia-adapted","humanoid":false,"avTreasureType":"Nil"},{"id":"pit_viper","n":"Pit Viper","saveAs":"F1","intelligence":2,"ac":6,"hdDice":2,"hdAdj":0,"damage":["1d4"],"xp":25,"special":"poison","alwaysWinInitiative":true,"avPowerBonuses":1,"avAsterisks":1,"source":"Averathia-adapted","humanoid":false,"avTreasureType":"Nil"},{"id":"lizard_man","n":"Lizard Man","saveAs":"F2","intelligence":6,"ac":5,"hdDice":2,"hdAdj":1,"damage":["1d6+1"],"meleeDamage":"1d6+1","rangedDamage":"1d6+1","meleeWeapon":"Spear","rangedWeapon":"Spear","swimSpeedFeet":120,"xp":25,"source":"Averathia-adapted","humanoid":true,"avTreasureType":"D"},{"id":"bandit","n":"Bandit","saveAs":"T1","intelligence":11,"ac":6,"hdDice":1,"hdAdj":0,"damage":["1d6"],"meleeDamage":"1d6","rangedDamage":"1d6","meleeWeapon":"Short Sword","rangedWeapon":"Short Bow","xp":10,"source":"Averathia-adapted","humanoid":true,"avTreasureType":"(U) A"},{"id":"brigand","n":"Brigand","saveAs":"F1","intelligence":11,"ac":6,"hdDice":1,"hdAdj":0,"damage":["1d6"],"meleeDamage":"1d6","rangedDamage":"1d6","meleeWeapon":"Sword","rangedWeapon":"Light Crossbow","xp":10,"source":"Averathia-adapted","humanoid":true,"avTreasureType":"A"},{"id":"berserker","n":"Berserker","saveAs":"F1","intelligence":9,"ac":7,"hdDice":1,"hdAdj":1,"damage":["1d8"],"meleeDamage":"1d8","meleeWeapon":"Battle Axe","xp":19,"ferocityAttackBonus":2,"avPowerBonuses":1,"avAsterisks":1,"source":"Averathia-adapted","humanoid":true,"avTreasureType":"(P) B"},{"id":"ogre","n":"Ogre","saveAs":"F4","intelligence":6,"ac":5,"hdDice":4,"hdAdj":1,"damage":["1d4+2"],"meleeDamage":"1d4+2","meleeWeapon":"Club","xp":125,"source":"Averathia-adapted","humanoid":true,"avTreasureType":"(S x 10) S x 100 + C"},{"id":"troll","n":"Troll","saveAs":"F6","intelligence":6,"ac":4,"hdDice":6,"hdAdj":3,"damage":["1d6"],"attacks":[{"name":"claw","damage":"1d6"},{"name":"claw","damage":"1d6"},{"name":"bite","damage":"1d10"}],"xp":650,"special":"regeneration","avPowerBonuses":1,"avAsterisks":1,"source":"Averathia-adapted","humanoid":false,"avTreasureType":"D"},{"id":"minotaur","n":"Minotaur","saveAs":"F6","intelligence":5,"ac":6,"hdDice":6,"hdAdj":0,"damage":["1d6"],"attacks":[{"name":"gore","damage":"1d6"},{"name":"bite","damage":"1d6"}],"xp":275,"source":"Averathia-adapted","humanoid":false,"avTreasureType":"C"},{"id":"mummy","n":"Mummy","saveAs":"F5","intelligence":6,"ac":3,"hdDice":5,"hdAdj":1,"damage":["1d12"],"xp":575,"undead":true,"enchanted":true,"mummy":true,"special":"disease","avTerrains":["ruins"],"avPowerBonuses":2,"avAsterisks":2,"source":"Averathia-adapted","humanoid":false,"avTreasureType":"D"}];
 function rollExpr(x){let m=/(\d+)d(\d+)([+-]\d+)?/i.exec(x);if(!m)return 0;let v=0,n=+m[1];while(n--)v+=d(+m[2]);return Math.max(0,v+(+(m[3]||0)))}
 function fighterNeed(ac){let rows=CLASS_ATTACK_BASE?.Fighter||[[1,19]],base=19;for(const [lv,b] of rows)if(h.level>=lv)base=b;return base-ac}
 const SAVE_BASE={
@@ -1755,7 +1755,7 @@ function savingThrow(category,bonus=0,damageType=null){
   if(damageType)bonus+=h.spells.buffs.reduce((n,b)=>n+(b.saveBonusVs===damageType?2:0),0)
  }
  let i=typeof category==="number"?category:SAVE_NAMES.indexOf(category);if(i<0)i=4;
- let target=rcSaveTarget(h.className,h.level,SAVE_NAMES[i]),roll=d(20)+bonus;
+ let target=avSaveTarget(h.className,h.level,SAVE_NAMES[i]),roll=d(20)+bonus;
  return{roll,target,success:roll>=target,category:SAVE_NAMES[i]};
 }
 function protectionFromEvilBuff(){let b=h?.spells?.buffs?.find(b=>b.rc==="Protection from Evil")||null;if(b&&b.barrierBroken==null)b.barrierBroken=!!h?.combat?.protEvilBarrierBroken;return b}
@@ -1841,24 +1841,24 @@ function tickMonsterRegeneration(){
   let wasDown=e.hp<=0,heal=Math.min(3,regenCap-e.hp);if(heal>0){e.hp+=heal;e.downedNotice=false;clog(wasDown?`${e.n} rises again as regeneration restores ${heal} HP.`:`${e.n} regenerates ${heal} HP.`)}
  }
 }
-// RC Rules Cyclopedia, Balancing Encounters (pp.100-101): TPL -> IAHD -> challenge %.
-function rcTPL(){
+// Averathia Averathia, Balancing Encounters (pp.100-101): TPL -> IAHD -> challenge %.
+function avTPL(){
  let level=Math.max(1,h.level||1),maxhp=Math.max(1,h.maxhp||combatStats().maxhp||1),hp=Math.max(0,h.hp??maxhp);
  let damage=Math.max(0,maxhp-hp);
  let lost=Math.floor(damage/level);
  let floor=Math.max(1,Math.floor(level/2));
  return Math.max(floor,level-lost);
 }
-function rcAdjustedHD(m){
+function avAdjustedHD(m){
  let base=Math.max(.5,m.hdDice||1),adjusted=base,adj=m.hdAdj||0;
  if(adj>0)adjusted+=Math.ceil(adj/5);
  else if(adj<0)adjusted-=Math.ceil(Math.abs(adj)/2)*.5;
  adjusted=Math.max(.5,adjusted);
- let powers=Math.max(0,m.rcPowerBonuses||0);
+ let powers=Math.max(0,m.avPowerBonuses||0);
  return +(adjusted+(base*.5*powers)).toFixed(2);
 }
-function rcChallengePct(totalIAHD,tpl=rcTPL()){return +(totalIAHD/Math.max(.5,tpl)*100).toFixed(1)}
-function rcChallengeName(pct){
+function avChallengePct(totalIAHD,tpl=avTPL()){return +(totalIAHD/Math.max(.5,tpl)*100).toFixed(1)}
+function avChallengeName(pct){
  if(pct>=110)return"Extremely dangerous";
  if(pct>=90)return"Risky";
  if(pct>=70)return"Major";
@@ -1868,35 +1868,35 @@ function rcChallengeName(pct){
  if(pct>=10)return"Minor";
  return"Too easy";
 }
-// Averathia adventure stance selects among RC challenge bands; the bands/math themselves are RC.
-function rcTargetBand(isBoss=false){
+// Averathia adventure stance selects among Averathia challenge bands; the bands/math themselves are Averathia.
+function avTargetBand(isBoss=false){
  if(isBoss)return[70,110]; // Major through Risky; never intentionally Extremely Dangerous.
  let risk=h.trip?.risk||"Normal";
  if(risk==="Cautious")return[10,50];   // Minor through Good fight.
  if(risk==="Bold")return[50,90];       // Challenging through Major.
  return[30,70];                        // Good fight through Challenging.
 }
-function monsterTerrainEligible(m,context=null){let req=m?.rcTerrains;if(!Array.isArray(req)||!req.length||!context?.terrain)return true;return req.includes(context.terrain)}
+function monsterTerrainEligible(m,context=null){let req=m?.avTerrains;if(!Array.isArray(req)||!req.length||!context?.terrain)return true;return req.includes(context.terrain)}
 function buildEncounter(isBoss=false,context=null){
- let tpl=rcTPL(),[lo,hi]=rcTargetBand(isBoss),min=tpl*lo/100,max=tpl*hi/100;
- let eligible=MONSTERS.filter(m=>monsterTerrainEligible(m,context)&&rcAdjustedHD(m)<=max+.0001);
+ let tpl=avTPL(),[lo,hi]=avTargetBand(isBoss),min=tpl*lo/100,max=tpl*hi/100;
+ let eligible=MONSTERS.filter(m=>monsterTerrainEligible(m,context)&&avAdjustedHD(m)<=max+.0001);
  if(!eligible.length){
    // At very low TPL the lightest legal creature may exceed the requested band.
    // Choose the lightest available creature, but never silently call it balanced.
-   let terrainPool=MONSTERS.filter(m=>monsterTerrainEligible(m,context)),low=Math.min(...terrainPool.map(rcAdjustedHD));
-   eligible=terrainPool.filter(m=>rcAdjustedHD(m)===low);
+   let terrainPool=MONSTERS.filter(m=>monsterTerrainEligible(m,context)),low=Math.min(...terrainPool.map(avAdjustedHD));
+   eligible=terrainPool.filter(m=>avAdjustedHD(m)===low);
  }
  if(isBoss){
-   let inBand=eligible.filter(m=>rcAdjustedHD(m)>=min-.0001),q=inBand.length?inBand:eligible;
+   let inBand=eligible.filter(m=>avAdjustedHD(m)>=min-.0001),q=inBand.length?inBand:eligible;
    return[q[d(q.length)-1]];
  }
  let best=null;
  for(let attempt=0;attempt<80;attempt++){
    let out=[],total=0,tries=0;
    while(out.length<6&&tries++<30){
-     let choices=eligible.filter(m=>total+rcAdjustedHD(m)<=max+.0001);
+     let choices=eligible.filter(m=>total+avAdjustedHD(m)<=max+.0001);
      if(!choices.length)break;
-     let m=choices[d(choices.length)-1];out.push(m);total+=rcAdjustedHD(m);
+     let m=choices[d(choices.length)-1];out.push(m);total+=avAdjustedHD(m);
      if(total>=min&&Math.random()<.55)break;
    }
    if(out.length&&total>=min&&total<=max)return out;
@@ -1932,9 +1932,9 @@ function monsterContextAttackModifier(e){
 function startStreetMuggingCombat(){
  let b=MONSTERS.find(x=>x.id==="bandit");if(!b)return false;
  let hp=0;if(Number.isFinite(Number(b.hpDie)))hp=d(Number(b.hpDie));else for(let k=0;k<b.hdDice;k++)hp+=d(8);hp=Math.max(1,hp+(b.hdAdj||0));
- let e={...b,monsterId:b.id,id:0,lane:0,hp,maxhp:hp,damage:b.damage[0],ammo:b.rangedDamage?d(6):0,boss:false,iahd:rcAdjustedHD(b)};
- let tpl=rcTPL(),pct=rcChallengePct(e.iahd,tpl);
- h.combat={round:1,enemies:[e],target:0,log:[],skipNext:false,isBoss:false,context:{streetSleep:true,eventId:"STREET-MUGGING",eventTitle:"Street Mugging",environment:"town",terrain:"street",daylight:false},range:"Close",distanceFeet:RANGE_BANDS[1].feet,rcTPL:tpl,rcIAHD:e.iahd,rcChallengePct:pct,rcChallenge:rcChallengeName(pct)};
+ let e={...b,monsterId:b.id,id:0,lane:0,hp,maxhp:hp,damage:b.damage[0],ammo:b.rangedDamage?d(6):0,boss:false,iahd:avAdjustedHD(b)};
+ let tpl=avTPL(),pct=avChallengePct(e.iahd,tpl);
+ h.combat={round:1,enemies:[e],target:0,log:[],skipNext:false,isBoss:false,context:{streetSleep:true,eventId:"STREET-MUGGING",eventTitle:"Street Mugging",environment:"town",terrain:"street",daylight:false},range:"Close",distanceFeet:RANGE_BANDS[1].feet,avTPL:tpl,avIAHD:e.iahd,avChallengePct:pct,avChallenge:avChallengeName(pct)};
  clog("Street Mugging — Bandit. Combat begins.");
  save();renderCombat();return true
 }
@@ -1945,13 +1945,13 @@ function makeCombat(isBoss=false,context=null){
  if(trollLesson)picks=[picks.find(x=>x.id==="troll")];
  for(let i=0;i<picks.length;i++){
    let b=picks[i],hp=0;if(Number.isFinite(Number(b.hpDie)))hp=d(Number(b.hpDie));else for(let k=0;k<b.hdDice;k++)hp+=d(8);hp=Math.max(1,hp+(b.hdAdj||0));
-   en.push({...b,monsterId:b.id,id:i,lane:i%3,hp,maxhp:hp,damage:b.damage[0],ammo:b.rangedDamage?d(6):0,boss:isBoss,iahd:rcAdjustedHD(b)})
+   en.push({...b,monsterId:b.id,id:i,lane:i%3,hp,maxhp:hp,damage:b.damage[0],ammo:b.rangedDamage?d(6):0,boss:isBoss,iahd:avAdjustedHD(b)})
  }
- let total=+en.reduce((a,e)=>a+e.iahd,0).toFixed(2),tpl=rcTPL(),pct=rcChallengePct(total,tpl);
- let startBand=d(3);h.combat={round:1,enemies:en,target:0,log:[],skipNext:false,isBoss,context:combatContext,range:RANGE_BANDS[startBand].name,distanceFeet:RANGE_BANDS[startBand].feet,rcTPL:tpl,rcIAHD:total,rcChallengePct:pct,rcChallenge:rcChallengeName(pct),trollLesson,trollLessonDowned:false};
+ let total=+en.reduce((a,e)=>a+e.iahd,0).toFixed(2),tpl=avTPL(),pct=avChallengePct(total,tpl);
+ let startBand=d(3);h.combat={round:1,enemies:en,target:0,log:[],skipNext:false,isBoss,context:combatContext,range:RANGE_BANDS[startBand].name,distanceFeet:RANGE_BANDS[startBand].feet,avTPL:tpl,avIAHD:total,avChallengePct:pct,avChallenge:avChallengeName(pct),trollLesson,trollLessonDowned:false};
  let crabs=en.filter(e=>monsterKey(e)==="crab_spider");if(crabs.length&&d(6)<=4)h.combat.surpriseEnemyIds=crabs.map(e=>e.id);
  let names=en.map(x=>x.n).join(", ");
- clog((isBoss?`BOSS BATTLE — ${names}. `:`Encounter — ${names}. `)+`RC challenge: ${rcChallengeName(pct)} (${pct}%).`);
+ clog((isBoss?`BOSS BATTLE — ${names}. `:`Encounter — ${names}. `)+`Averathia challenge: ${avChallengeName(pct)} (${pct}%).`);
  applyMummyFear();save();renderCombat()
 }
 const UNDEAD={
@@ -2058,13 +2058,13 @@ function autonomousCombat(isBoss=false,context=null){makeCombat(isBoss,context);
 function applyMummyFear(){if(!h?.combat||h.combat.mummyFearChecked)return;let m=living().find(e=>e.mummy);if(!m)return;h.combat.mummyFearChecked=true;let s=savingThrow("Paralysis/Stone");clog(`Mummy fear save ${s.roll} vs ${s.target}: ${s.success?"success":"FAIL"}.`);if(!s.success){h.combat.paralyzed=true;h.combat.fearParalyzed=true;h.combat.paralyzedRounds=null;clog(`${h.name} is paralyzed with fear while the Mummy remains in sight.`)}}
 function playerStrike(){
  if(h.combat?.paralyzed){clog(`${h.name} is paralyzed and cannot act.`);return}
- let attacks=rcWeaponAttacksPerAction();
- for(let i=0;i<attacks&&h.combat&&living().length;i++){if(i>0)clog(`${rcSpeedLevel()===2?"Double-speed":"Speed"} grants weapon attack ${i+1} of ${attacks}.`);playerStrikeSingle()}
+ let attacks=avWeaponAttacksPerAction();
+ for(let i=0;i<attacks&&h.combat&&living().length;i++){if(i>0)clog(`${avSpeedLevel()===2?"Double-speed":"Speed"} grants weapon attack ${i+1} of ${attacks}.`);playerStrikeSingle()}
 }
-function rcMagicWeaponOpponentBonus(item,target){
- if(!item?.rcVsBonus||!item.rcVs||!target)return 0;let key=String(item.rcVs).toLowerCase();
- if(key==="undead"&&target.undead)return item.rcVsBonus;
- if(key==="regenerating monsters"&&target.special==="regeneration")return item.rcVsBonus;
+function avMagicWeaponOpponentBonus(item,target){
+ if(!item?.avVsBonus||!item.avVs||!target)return 0;let key=String(item.avVs).toLowerCase();
+ if(key==="undead"&&target.undead)return item.avVsBonus;
+ if(key==="regenerating monsters"&&target.special==="regeneration")return item.avVsBonus;
  return 0
 }
 function learnMummyWeakness(t){
@@ -2085,7 +2085,7 @@ function autoSafeFireSpellFor(target){
 }
 function autoSafeFireMagicIndex(){
  if(combatDistance()<=20)return-1;
- return supportedRcMagicItems().find(x=>rcMagicUseKind(x.item)==="wandFireball"&&rcMagicCombatUsable(x.item))?.index??-1
+ return supportedRcMagicItems().find(x=>avMagicUseKind(x.item)==="wandFireball"&&avMagicCombatUsable(x.item))?.index??-1
 }
 function playerStrikeSingle(){
  let c=h.combat,t=c.enemies[c.target];if(!monsterCombatActive(t)){t=living()[0];if(!t)return;c.target=t.id}
@@ -2099,7 +2099,7 @@ function playerStrikeSingle(){
  let at=ammoTypeFor(item||w);if(at&&!spendAmmoFor(item||w)){clog(`No ${at.toLowerCase()} left for ${w}.`);return}
  if(mode==="thrown")throwWeaponItem(item);
  if(weaponBaseName(item||w)==="Heavy Crossbow"&&h.stats.STR<18)c.heavyCrossbowNextRound=c.round+2;
- let r=d(20),isMissile=mode==="missile",isThrown=mode==="thrown",magicAtk=(Number(item?.magicBonus)||0)+rcMagicWeaponOpponentBonus(item,t),atkMod=((isMissile||isThrown)?mod(h.stats.DEX):mod(h.stats.STR))+magicAtk+playerTimedAttackModifier(),dmgMod=(isMissile?0:mod(h.stats.STR))+magicAtk;
+ let r=d(20),isMissile=mode==="missile",isThrown=mode==="thrown",magicAtk=(Number(item?.magicBonus)||0)+avMagicWeaponOpponentBonus(item,t),atkMod=((isMissile||isThrown)?mod(h.stats.DEX):mod(h.stats.STR))+magicAtk+playerTimedAttackModifier(),dmgMod=(isMissile?0:mod(h.stats.STR))+magicAtk;
  if(r===1){clog("Natural 1 — critical fumble. Next initiative is lost.");c.skipNext=true}
  else if(r===20||r+atkMod+spellAttackBonus()+((isMissile||isThrown)?rangeAttackMod(w):0)>=characterNeed(t.ac+(t.blindRounds>0?4:0))){
   let extra=h.spells?.buffs?.filter(b=>b.damageBonus&&(!b.boundWeapon||b.boundWeapon===w)).reduce((n,b)=>n+rollExpr(b.damageBonus),0)||0,flat=h.spells?.buffs?.reduce((n,b)=>n+(b.flatDamageBonus||0),0)||0;
@@ -2146,13 +2146,13 @@ function spiderPoisonSave(e,bonus=0){
  let sv=savingThrow("Death/Poison",poisonProtection().bonus+bonus);clog(`${e.n} poison save ${sv.roll} vs ${sv.target}${bonus?` (+${bonus} species modifier)`:""}: ${sv.success?"success":"FAIL"}.`);return sv
 }
 function contractCrabSpiderPoison(e){
- let sv=spiderPoisonSave(e,2);if(sv.success)return false;let turns=d(4);addTimedCondition({type:"lethalSpiderPoison",name:"Crab Spider Venom",source:e.n,rounds:turns*RC_ROUNDS_PER_TURN,lethalOnExpire:true});clog(`Crab Spider Venom will become lethal in ${turns} turn${turns===1?"":"s"} unless removed.`);return true
+ let sv=spiderPoisonSave(e,2);if(sv.success)return false;let turns=d(4);addTimedCondition({type:"lethalSpiderPoison",name:"Crab Spider Venom",source:e.n,rounds:turns*AV_ROUNDS_PER_TURN,lethalOnExpire:true});clog(`Crab Spider Venom will become lethal in ${turns} turn${turns===1?"":"s"} unless removed.`);return true
 }
 function contractBlackWidowPoison(e){
- let sv=spiderPoisonSave(e,0);if(sv.success)return false;addTimedCondition({type:"lethalSpiderPoison",name:"Black Widow Venom",source:e.n,rounds:RC_ROUNDS_PER_TURN,lethalOnExpire:true});clog("Black Widow Venom will become lethal in 1 turn unless removed.");return true
+ let sv=spiderPoisonSave(e,0);if(sv.success)return false;addTimedCondition({type:"lethalSpiderPoison",name:"Black Widow Venom",source:e.n,rounds:AV_ROUNDS_PER_TURN,lethalOnExpire:true});clog("Black Widow Venom will become lethal in 1 turn unless removed.");return true
 }
 function contractTarantellaPoison(e){
- let sv=spiderPoisonSave(e,0);if(sv.success)return false;let existing=ensureTimedConditions().find(x=>x.type==="tarantellaDance"&&x.rounds>0),turns=d(6)+d(6),rounds=turns*RC_ROUNDS_PER_TURN;
+ let sv=spiderPoisonSave(e,0);if(sv.success)return false;let existing=ensureTimedConditions().find(x=>x.type==="tarantellaDance"&&x.rounds>0),turns=d(6)+d(6),rounds=turns*AV_ROUNDS_PER_TURN;
  if(existing){existing.rounds=Math.max(existing.rounds,rounds);existing.elapsedRounds=0;existing.helpless=false}else addTimedCondition({type:"tarantellaDance",name:"Tarantella Dance",source:e.n,rounds,elapsedRounds:0,blocksJourney:true});
  clog(`Tarantella venom forces a frantic dance for ${turns} turns: -4 to your attack rolls and +4 to attacks against you.`);return true
 }
@@ -2203,7 +2203,7 @@ function enemyStrike(filter=null,tickRegen=true){
    if(special==="paralysis"){
     if(paralysisImmune())clog(`Potion of Freedom prevents ${e.n} paralysis.`);
     else if(monsterKey(e)==="ghoul"&&h.className==="Elf")clog(`${h.name} elven nature resists the ghoul paralyzing touch.`);
-    else{let sv=savingThrow("Paralysis/Stone");clog(`Paralysis save ${sv.roll} vs ${sv.target}: ${sv.success?"success":"FAIL"}.`);if(!sv.success){h.combat.paralyzed=true;h.combat.paralyzedRounds=(d(4)+d(4))*RC_ROUNDS_PER_TURN;clog(`${h.name} is paralyzed for ${Math.ceil(h.combat.paralyzedRounds/RC_ROUNDS_PER_TURN)} turn(s) and cannot act.`)}}
+    else{let sv=savingThrow("Paralysis/Stone");clog(`Paralysis save ${sv.roll} vs ${sv.target}: ${sv.success?"success":"FAIL"}.`);if(!sv.success){h.combat.paralyzed=true;h.combat.paralyzedRounds=(d(4)+d(4))*AV_ROUNDS_PER_TURN;clog(`${h.name} is paralyzed for ${Math.ceil(h.combat.paralyzedRounds/AV_ROUNDS_PER_TURN)} turn(s) and cannot act.`)}}
    }
    if(special==="disease"){if(e.mummy)contractTombRot(e);else if(monsterKey(e)==="giant_rat")contractPlague(e);else contractWastingFever(e.n)}
    if(h.hp<=0)return combatDeath()
@@ -2214,7 +2214,7 @@ function enemyStrike(filter=null,tickRegen=true){
  return true
 }
 
-// v1.0.7: usable Averathia spell registry. Mechanics are adapted from the audited RC low-level spell set.
+// v1.0.7: usable Averathia spell registry. Mechanics are adapted from the audited Averathia low-level spell set.
 function spellProgressFromColumns(columns,maxLevel){
  let out={};
  for(let level=1;level<=maxLevel;level++){
@@ -2224,7 +2224,7 @@ function spellProgressFromColumns(columns,maxLevel){
  }
  return out
 }
-// RC spell-slot progression for the currently implemented spell levels 1-3 only.
+// Averathia spell-slot progression for the currently implemented spell levels 1-3 only.
 // Higher-level spell slots remain hidden until those spell levels are actually implemented.
 const ARCANE_ACTIVE_SLOT_COLUMNS=[
  [1,2,2,2,2,2,3,3,3,3,4,4,4,4,5,5,6,6,6,6,6,6,6,7,7,7,7,8,8,8,8,9,9,9,9,9],
@@ -2310,11 +2310,11 @@ function consumeSpell(s){
  h.spells.used[s.sl]=(h.spells.used[s.sl]||0)+1;return true;
 }
 function rollSpellDamage(s){if(s.perLevel){let n=Math.max(1,Math.min(h.level,20)),v=0;while(n--)v+=d(6);return v}return Math.max(1,rollExpr(s.damage))}
-const RC_ROUNDS_PER_TURN=60;
+const AV_ROUNDS_PER_TURN=60;
 function spellDuration(s){
- if(s.durationTurnsDice)return Math.max(1,rollExpr(s.durationTurnsDice)*RC_ROUNDS_PER_TURN);
- if(s.durationTurnsBase||s.durationTurnsPerLevel)return Math.max(1,((s.durationTurnsBase||0)+h.level*(s.durationTurnsPerLevel||0))*RC_ROUNDS_PER_TURN);
- if(s.durationTurns)return Math.max(1,s.durationTurns*RC_ROUNDS_PER_TURN);
+ if(s.durationTurnsDice)return Math.max(1,rollExpr(s.durationTurnsDice)*AV_ROUNDS_PER_TURN);
+ if(s.durationTurnsBase||s.durationTurnsPerLevel)return Math.max(1,((s.durationTurnsBase||0)+h.level*(s.durationTurnsPerLevel||0))*AV_ROUNDS_PER_TURN);
+ if(s.durationTurns)return Math.max(1,s.durationTurns*AV_ROUNDS_PER_TURN);
  if(s.durationPerLevel)return Math.max(1,h.level*s.durationPerLevel);
  return s.duration||3
 }
@@ -2330,7 +2330,7 @@ function autonomousMissileTargetIds(n){
  while(left>0&&pool.length){out.push(pool[pool.length-1].id);left--}
  return out
 }
-const RC_SAVE_ROWS={
+const AV_SAVE_ROWS={
  Fighter:[{min:0,max:0,v:[14,15,16,17,17]},{min:1,max:3,v:[12,13,14,15,16]},{min:4,max:6,v:[10,11,12,13,14]},{min:7,max:9,v:[8,9,10,11,12]},{min:10,max:12,v:[6,7,8,9,10]},{min:13,max:15,v:[6,6,7,8,9]},{min:16,max:18,v:[5,6,6,7,8]},{min:19,max:21,v:[5,5,6,6,7]},{min:22,max:24,v:[4,5,5,5,6]},{min:25,max:27,v:[4,5,5,4,5]},{min:28,max:30,v:[3,4,5,3,4]},{min:31,max:33,v:[3,4,4,2,3]},{min:34,max:36,v:[2,3,3,2,2]}],
  Cleric:[{min:1,max:4,v:[11,12,14,16,15]},{min:5,max:8,v:[9,10,12,14,13]},{min:9,max:12,v:[7,8,10,12,11]},{min:13,max:16,v:[6,7,8,10,9]},{min:17,max:20,v:[5,6,6,8,7]},{min:21,max:24,v:[4,5,5,6,5]},{min:25,max:28,v:[3,4,4,4,4]},{min:29,max:32,v:[2,3,3,3,3]},{min:33,max:36,v:[2,2,2,2,2]}],
  Arcanist:[{min:1,max:5,v:[13,14,13,16,15]},{min:6,max:10,v:[11,12,11,14,12]},{min:11,max:15,v:[9,10,9,12,9]},{min:16,max:20,v:[7,8,7,10,6]},{min:21,max:24,v:[5,6,5,8,4]},{min:25,max:28,v:[4,4,4,6,3]},{min:29,max:32,v:[3,3,3,4,2]},{min:33,max:36,v:[2,2,2,2,2]}],
@@ -2339,9 +2339,9 @@ const RC_SAVE_ROWS={
  Elf:[{min:1,max:3,v:[12,13,13,15,15]},{min:4,max:6,v:[8,10,10,11,11]},{min:7,max:9,v:[4,7,7,7,7]},{min:10,max:10,v:[2,4,4,3,3]}],
  Halfling:[{min:1,max:3,v:[8,9,10,13,12]},{min:4,max:6,v:[5,6,7,9,8]},{min:7,max:8,v:[2,3,4,5,4]}]
 };
-function rcSaveTarget(cls,level,category="Spells"){
+function avSaveTarget(cls,level,category="Spells"){
  let key=cls==="Magic-User"?"Arcanist":cls,i=SAVE_NAMES.indexOf(category);if(i<0)i=4;
- let rows=RC_SAVE_ROWS[key]||RC_SAVE_ROWS.Fighter,row=rows.find(r=>level>=r.min&&level<=r.max)||rows[rows.length-1];
+ let rows=AV_SAVE_ROWS[key]||AV_SAVE_ROWS.Fighter,row=rows.find(r=>level>=r.min&&level<=r.max)||rows[rows.length-1];
  return row.v[i]
 }
 function parseSaveAs(m){
@@ -2354,7 +2354,7 @@ function parseSaveAs(m){
  return{cls:"Fighter",level,label:`F${level} fallback`}
 }
 function monsterSpellSave(m,category="Spells"){
- let p=parseSaveAs(m),roll=d(20)+(m?.blindRounds>0?-4:0),target=rcSaveTarget(p.cls,p.level,category);
+ let p=parseSaveAs(m),roll=d(20)+(m?.blindRounds>0?-4:0),target=avSaveTarget(p.cls,p.level,category);
  return{roll,target,success:roll>=target,level:p.level,saveAs:p.label}
 }
 function gridlessLane(x){return Number.isFinite(x?.lane)?x.lane:(x?.id||0)%3}
@@ -2402,8 +2402,8 @@ function resolveSpellEffect(s,t=null,autonomous=false,holdMode=null,missileTarge
  }
  else if(s.kind==="cleanse"){if(s.rc==="Cure Disease"){let cured=cureOneDisease();clog(cured?`${s.name} cures ${cured.name}.`:`${s.name} finds no disease to cure.`)}else{h.conditions=h.conditions||[];let before=h.conditions.length;h.conditions=h.conditions.filter(x=>x!==s.condition);clog(before!==h.conditions.length?`${s.name} removes ${s.condition}.`:`${s.name} finds nothing to remove.`)}}
  else if(s.kind==="images"){let n=rollExpr(s.images);h.spells.buffs.push({...s,images:n,rounds:spellDuration(s)});clog(`${s.name} creates ${n} illusory images.`)}
- else if(s.kind==="sleep"){let eligible=gridlessAreaTargets(t,s.areaFeet||40).filter(sleepEligible).sort((a,b)=>(Number(a.hdDice)||1)-(Number(b.hdDice)||1)||(Number(a.hdAdj)||0)-(Number(b.hdAdj)||0)),hdBudget=d(8)+d(8),rounds=spellDuration(s),affected=0;for(const q of eligible){let hd=Math.max(1,Number(q.hdDice)||1);if(hd>hdBudget)continue;hdBudget-=hd;q.disabledRounds=Math.max(q.disabledRounds||0,rounds);q.sleeping=true;affected++;clog(`${q.n} falls asleep for ${Math.ceil(rounds/RC_ROUNDS_PER_TURN)} turn(s).`)}if(!affected)clog(`${s.name} finds no eligible living creature of 4+1 HD or less.`)}
- else if(s.kind==="web"){for(const q of gridlessAreaTargets(t,s.areaFeet||10)){let strong=q.webStrength==="great",rounds=strong?2:(d(4)+d(4))*RC_ROUNDS_PER_TURN;q.disabledRounds=Math.min(rounds,spellDuration(s));q.webbed=true;clog(`${q.n} is caught in the web${strong?" and can tear free in 2 rounds":` for ${Math.ceil(rounds/RC_ROUNDS_PER_TURN)} turn(s)`}.`)}}
+ else if(s.kind==="sleep"){let eligible=gridlessAreaTargets(t,s.areaFeet||40).filter(sleepEligible).sort((a,b)=>(Number(a.hdDice)||1)-(Number(b.hdDice)||1)||(Number(a.hdAdj)||0)-(Number(b.hdAdj)||0)),hdBudget=d(8)+d(8),rounds=spellDuration(s),affected=0;for(const q of eligible){let hd=Math.max(1,Number(q.hdDice)||1);if(hd>hdBudget)continue;hdBudget-=hd;q.disabledRounds=Math.max(q.disabledRounds||0,rounds);q.sleeping=true;affected++;clog(`${q.n} falls asleep for ${Math.ceil(rounds/AV_ROUNDS_PER_TURN)} turn(s).`)}if(!affected)clog(`${s.name} finds no eligible living creature of 4+1 HD or less.`)}
+ else if(s.kind==="web"){for(const q of gridlessAreaTargets(t,s.areaFeet||10)){let strong=q.webStrength==="great",rounds=strong?2:(d(4)+d(4))*AV_ROUNDS_PER_TURN;q.disabledRounds=Math.min(rounds,spellDuration(s));q.webbed=true;clog(`${q.n} is caught in the web${strong?" and can tear free in 2 rounds":` for ${Math.ceil(rounds/AV_ROUNDS_PER_TURN)} turn(s)`}.`)}}
  else if(s.kind==="hold"){let valid=validHoldTargets(s),single=holdMode==="single",count=single?1:(s.maxTargets||4),chosenIds=Array.isArray(holdTargetIds)?[...new Set(holdTargetIds)].slice(0,count):null,qs=single?(t&&valid.includes(t)?[t]:[]):chosenIds?chosenIds.map(id=>valid.find(q=>q.id===id)).filter(Boolean):valid.slice(0,count),penalty=single?2:0;for(const q of qs){let sv=monsterSpellSave(q,s.save||"Spells");if(penalty)sv.roll-=penalty;sv.success=sv.roll>=sv.target;clog(`${q.n} save ${sv.roll} vs ${sv.target}${sv.saveAs?` [${sv.saveAs}]`:""}${penalty?" (-2 single-target penalty)":""}: ${sv.success?"success":"FAIL"}.`);if(!sv.success){q.disabledRounds=Math.max(q.disabledRounds||0,spellDuration(s));q.held=true;clog(`${q.n} is held.`)}else clog(`${q.n} resists ${s.name}.`)}if(!qs.length)clog(`${s.name} has no valid humanoid target.`)}
  else if(s.kind==="debuff"){let qs=s.rc==="Slow"?gridlessAreaTargets(t,s.areaFeet||60).slice(0,s.maxTargets||24):[t||living()[0]];for(const q of qs.filter(Boolean)){let sv=monsterSpellSave(q,s.save||"Spells");clog(`${q.n} save ${sv.roll} vs ${sv.target}${sv.saveAs?` [${sv.saveAs}]`:""}: ${sv.success?"success":"FAIL"}.`);if(!sv.success){q.slowRounds=spellDuration(s);clog(`${q.n} is slowed.`)}else clog(`${q.n} resists ${s.name}.`)}}
  else if(s.kind==="blind"){let q=t||living()[0];if(q){let sv=monsterSpellSave(q,s.save||"Spells");clog(`${q.n} save ${sv.roll} vs ${sv.target}${sv.saveAs?` [${sv.saveAs}]`:""}: ${sv.success?"success":"FAIL"}.`);if(!sv.success){q.blindRounds=spellDuration(s);clog(`${q.n} is blinded by ${s.name}.`)}else clog(`${s.name} fails to blind ${q.n}.`)}}
@@ -2411,7 +2411,7 @@ function resolveSpellEffect(s,t=null,autonomous=false,holdMode=null,missileTarge
 }
 function castCombatSpell(id,holdMode=null,missileTargetIds=null,holdTargetIds=null){
  let s=(SPELLS[h.className]||[]).find(x=>x.id===id),c=h.combat;if(!s||!c||!availableCombatSpells().some(x=>x.id===id))return;if(s.kind==="hold"&&!holdMode)holdMode=validHoldTargets(s).length===1?"single":"group";if(c.paralyzed){clog(`${h.name} is paralyzed and cannot cast.`);return renderCombat()}if(s.enemyTarget&&Number.isFinite(s.rangeFeet)&&combatDistance()>s.rangeFeet){clog(`${s.name} is out of range: target is ${combatDistance()} ft away; spell range is ${s.rangeFeet} ft.`);return renderCombat()}
- // RC: the spell is committed for the round before initiative resolves. Pit Vipers act first automatically; Zombies act after the caster.
+ // Averathia: the spell is committed for the round before initiative resolves. Pit Vipers act first automatically; Zombies act after the caster.
  let pr=d(6),er=d(6);while(pr===er){pr=d(6);er=d(6)}
  let delayedZombies=living().some(e=>e.alwaysLoseInitiative),normalEnemies=living().some(e=>!e.alwaysLoseInitiative&&!e.alwaysWinInitiative);
  if(!consumeSpell(s))return;
@@ -2456,14 +2456,14 @@ function tickPlayerConditions(){
 function advanceCombatRound(c=h?.combat,render=true){
  if(!h?.combat)return false;tickSpellBuffs();tickEnemySpellEffects();if(tickPlayerConditions()===false||!h.combat)return false;c=c||h.combat;c.round++;save();if(render&&h.combat)renderCombat();return true
 }
-function rcSpeedLevel(){
+function avSpeedLevel(){
  ensureSpellState();let sources=new Set();
  for(const b of h.spells.buffs){if(b.speedSource)sources.add(b.speedSource);else if(b.extraAttack)sources.add("haste")}
  return Math.min(2,sources.size)
 }
-function rcWeaponAttacksPerAction(){return 2**rcSpeedLevel()}
-function rcSpeedHitBonus(){return rcSpeedLevel()*2}
-function spellAttackBonus(){ensureSpellState();return h.spells.buffs.reduce((a,b)=>a+(b.attack||0),0)+rcSpeedHitBonus()}
+function avWeaponAttacksPerAction(){return 2**avSpeedLevel()}
+function avSpeedHitBonus(){return avSpeedLevel()*2}
+function spellAttackBonus(){ensureSpellState();return h.spells.buffs.reduce((a,b)=>a+(b.attack||0),0)+avSpeedHitBonus()}
 function spellACBonus(){ensureSpellState();return h.spells.buffs.reduce((a,b)=>a+(b.ac||0),0)}
 function effectiveAC(isMissile=false){let ac=combatStats().ac;for(const b of h.spells.buffs){let fixed=isMissile?b.fixedMissileAC:b.fixedAC;if(fixed!=null)ac=Math.min(ac,fixed)}return ac+spellACBonus()}
 function tickSpellBuffs(){ensureSpellState();h.spells.buffs.forEach(b=>b.rounds--);h.spells.buffs=h.spells.buffs.filter(b=>b.rounds>0);h.buffAgeAt=Date.now()}
@@ -2532,13 +2532,13 @@ function rangeAttackMod(weapon=combatStats().weaponKey){
 }
 function renderRangeButton(){
  let b=$("#rangeBtn"),menu=$("#rangeMenu");if(!b||!menu||!h?.combat)return;
- syncCombatRange();let i=combatBandIndex(),speed=rcSpeedLevel();
+ syncCombatRange();let i=combatBandIndex(),speed=avSpeedLevel();
  b.textContent=speed?`📏 Change Range ⚡×${2**speed}`:"📏 Change Range";
  b.onclick=()=>{i=combatBandIndex();$("#spellMenu")?.classList.add("hide");$("#magicItemMenu")?.classList.add("hide");let choices=[];if(i>0)choices.push('<button data-range-dir="closer">⬅ Closer</button>');if(i<RANGE_BANDS.length-1)choices.push('<button data-range-dir="farther">Farther ➡</button>');if(speed)choices.push(`<span class="small">Speed: up to ${Math.min(3,2**speed)} range bands</span>`);menu.innerHTML=choices.join("");menu.classList.toggle("hide");$$("[data-range-dir]").forEach(x=>x.onclick=()=>changeRange(x.dataset.rangeDir))}
 }
 function changeRange(direction){
  if(!h?.combat)return;if(h.combat.paralyzed){clog("You cannot change range while incapacitated.");return renderCombat()}
- let i=combatBandIndex(),speed=rcSpeedLevel(),steps=Math.min(3,2**speed),ni=direction==="farther"?Math.min(RANGE_BANDS.length-1,i+steps):Math.max(0,i-steps);
+ let i=combatBandIndex(),speed=avSpeedLevel(),steps=Math.min(3,2**speed),ni=direction==="farther"?Math.min(RANGE_BANDS.length-1,i+steps):Math.max(0,i-steps);
  if(ni===i){clog(`You are already at ${RANGE_BANDS[i].name} range.`);return renderCombat()}
  if(!preemptiveEnemiesAct())return;
  setCombatBand(ni);$("#rangeMenu")?.classList.add("hide");clog(`You move ${direction==="farther"?"farther away":"closer"}${speed?` at ×${2**speed} speed`:""}: ${h.combat.range} (${combatDistance()}').`);enemyStrike(e=>!e.alwaysWinInitiative);
@@ -2597,10 +2597,10 @@ function useMummyBurnCombat(){
  enemyStrike(e=>!e.alwaysWinInitiative);if(h.combat)advanceCombatRound(h.combat,true)
 }
 function finishCombat(){
- let streetSleep=!!h.combat?.context?.streetSleep,boss=!!h.combat?.isBoss,enemies=[...(h.combat?.enemies||[])],treasure=rcRollCombatTreasure(enemies,boss,h.level,false);
+ let streetSleep=!!h.combat?.context?.streetSleep,boss=!!h.combat?.isBoss,enemies=[...(h.combat?.enemies||[])],treasure=avRollCombatTreasure(enemies,boss,h.level,false);
  let defeated=enemies.filter(e=>e.destroyed||e.hp<=0).length,total=enemies.length;
  if(!streetSleep)addlog((boss?"Boss defeated":"Combat won")+" — "+defeated+" of "+total+" enem"+(total===1?"y":"ies")+" defeated.","Combat");
- rcAwardTreasure(treasure,streetSleep?"Mugger's carried treasure":"RC carried treasure");
+ avAwardTreasure(treasure,streetSleep?"Mugger's carried treasure":"Averathia carried treasure");
  if(streetSleep){
   ensureInnState();h.inn.lastStreetEvent={day:innCurrentDay(),type:"Mugging",combat:true,text:"You defeated the mugger who attacked while you slept on the street."};
   recoverThrownWeapons();h.combat=null;save();page("home");return
@@ -2739,14 +2739,14 @@ function resolveSecretDoorSearch(ev,ch){
  if(roll>target)return{searched:true,found:false,roll,target};
  let outcome=d(6),detail="A concealed seam gives way, revealing a forgotten passage.",treasure=null,applied=null;
  if(outcome>=4&&outcome<=5){
-  treasure=rcBlankTreasure("secret-door","small hidden cache");treasure.coins.sp=d(6)*10;applied=rcApplyTreasure(treasure);
-  detail=`Behind the secret door is a small hidden cache: ${rcTreasureSummary(treasure)}.`;
+  treasure=avBlankTreasure("secret-door","small hidden cache");treasure.coins.sp=d(6)*10;applied=avApplyTreasure(treasure);
+  detail=`Behind the secret door is a small hidden cache: ${avTreasureSummary(treasure)}.`;
  }else if(outcome===6){
-  treasure=rcRollUnguardedTreasure(h.level);applied=rcApplyTreasure(treasure);
-  detail=`The secret door opens into a forgotten chamber containing ${rcTreasureSummary(treasure)}.`;
+  treasure=avRollUnguardedTreasure(h.level);applied=avApplyTreasure(treasure);
+  detail=`The secret door opens into a forgotten chamber containing ${avTreasureSummary(treasure)}.`;
  }
  addlog(`Secret door discovered — ${detail}`,"Discovery");
- journal({id:ev.id+"-SECRET",type:"Secret Door",title:"Secret Door",text:detail,choice:ch.label,result:"secretDoor",xp:0,coins:[0,0,0],secretDoorRoll:roll,secretDoorTarget:target,rcTreasure:treasure||null});
+ journal({id:ev.id+"-SECRET",type:"Secret Door",title:"Secret Door",text:detail,choice:ch.label,result:"secretDoor",xp:0,coins:[0,0,0],secretDoorRoll:roll,secretDoorTarget:target,avTreasure:treasure||null});
  return{searched:true,found:true,roll,target,outcome,treasure,applied}
 }
 function eventChoiceAvailable(ch){
@@ -2873,14 +2873,14 @@ function applyEventChoice(ev,ch){
    h.pendingEvent=null;endTripPause();save();renderPendingEvent();if(resumeAfter)tick();return
  }
  let baseXP=ch?.xp??ev.xp??0,xp=baseXP?awardXP(baseXP):0,coin=ch?.coins??ev.coins??[0,0,0],coinCredit=null;
- let result=ch?.result||"observed",rcDiscoveryTreasure=null;
+ let result=ch?.result||"observed",avDiscoveryTreasure=null;
  if(ev?.type==="Discovery"&&result==="search"){
-   rcDiscoveryTreasure=rcRollUnguardedTreasure(h.level);rcApplyTreasure(rcDiscoveryTreasure);coin=[0,0,0]
+   avDiscoveryTreasure=avRollUnguardedTreasure(h.level);avApplyTreasure(avDiscoveryTreasure);coin=[0,0,0]
  }else if(coin)coinCredit=addCoins(coin[0]||0,coin[1]||0,coin[2]||0);
  let keptCoins=coinCredit?coinArrayFromCP(coinCredit.cpValue):coin;
- journal({id:ev.id,type:ev.type,title:ev.title,text:ev.text,choice:ch?.label||null,result,xp,coins:keptCoins,leftCoinCP:coinCredit?.leftCP||0,rcTreasure:rcDiscoveryTreasure?rcTreasureSummary(rcDiscoveryTreasure):null});
+ journal({id:ev.id,type:ev.type,title:ev.title,text:ev.text,choice:ch?.label||null,result,xp,coins:keptCoins,leftCoinCP:coinCredit?.leftCP||0,avTreasure:avDiscoveryTreasure?avTreasureSummary(avDiscoveryTreasure):null});
  let coinReward=coinCredit?(coinCredit.cpValue?`${coinTextCP(coinCredit.cpValue)} kept.`:"")+(coinCredit.leftCP?` ${coinTextCP(coinCredit.leftCP)} left behind at the carry limit.`:""):"";
- let rewardText=`${xp?`+${xp} XP. `:""}${rcDiscoveryTreasure?`Treasure: ${rcTreasureSummary(rcDiscoveryTreasure)}.`:coinReward}`.trim(),summary=ch?.label?`${ch.label}.${rewardText?` ${rewardText}`:""}`:(rewardText||ev.text||"Observed."),logType=rcDiscoveryTreasure||coinCredit?.cpValue||coinCredit?.leftCP?"Loot":(result==="combat"?"Encounter":(ev.type||"Event"));addlog(`${ev.title}: ${summary}`,logType);
+ let rewardText=`${xp?`+${xp} XP. `:""}${avDiscoveryTreasure?`Treasure: ${avTreasureSummary(avDiscoveryTreasure)}.`:coinReward}`.trim(),summary=ch?.label?`${ch.label}.${rewardText?` ${rewardText}`:""}`:(rewardText||ev.text||"Observed."),logType=avDiscoveryTreasure||coinCredit?.cpValue||coinCredit?.leftCP?"Loot":(result==="combat"?"Encounter":(ev.type||"Event"));addlog(`${ev.title}: ${summary}`,logType);
  if(result==="combat"){let combatContext=encounterContextFromEvent(ev);h.pendingEvent=null;renderPendingEvent();save();if(h.trip?.mode==="auto")autonomousCombat(false,combatContext);else makeCombat(false,combatContext);return}
  h.pendingEvent=null;endTripPause();save();renderPendingEvent();if(resumeAfter)tick()
 }
@@ -2936,7 +2936,7 @@ const MISSION_STORY_DESTINATION={
 function taleLowerFirst(s){s=String(s||"").trim();return s?s[0].toLowerCase()+s.slice(1):""}
 function taleSentence(s){s=String(s||"").trim();if(!s)return"";return /[.!?]$/.test(s)?s:s+"."}
 function taleTreasureText(e){
- if(e&&e.rcTreasure)return e.rcTreasure;
+ if(e&&e.avTreasure)return e.avTreasure;
  let coin=e&&e.coins||[0,0,0],parts=[];
  if(coin[0])parts.push(coin[0]+" GP");if(coin[1])parts.push(coin[1]+" SP");if(coin[2])parts.push(coin[2]+" CP");
  return parts.join(", ")
@@ -2968,7 +2968,7 @@ function taleCombatScene(trip,name){
  let logs=trip&&trip.adventureLog||[],starts=[];
  for(const x of logs){
   if(x.type!=="Combat")continue;
-  let m=/^(?:Encounter|BOSS BATTLE) — (.+?)\. RC challenge:/.exec(x.text||"");
+  let m=/^(?:Encounter|BOSS BATTLE) — (.+?)\. Averathia challenge:/.exec(x.text||"");
   if(m&&!starts.includes(m[1]))starts.push(m[1])
  }
  if(!starts.length)return"";
