@@ -2920,7 +2920,7 @@ function autonomousChoice(ev){
    if(!choice&&h.className==="Thief")choice=choices.find(x=>x.result==="thiefSkill");
    choice=choice||choices[choices.length-1]
  }else choice=choices[0];
- addlog(`Autonomous judgment: WIS ${roll}/${target} — ${success?"SUCCESS":"FAILURE"}; chooses ${choice.label}.`,"Check");
+ if(!success)addlog(`Autonomous judgment failed; chooses ${choice.label}.`,"Check");
  return choice
 }
 function event(){
