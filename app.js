@@ -3008,8 +3008,16 @@ function maybeJourneyWeatherFlavor(){
  let t=choices[d(choices.length)-1]||pool[0];recent.push(t);h.trip.recentWeatherFlavor=recent.slice(-Math.min(6,Math.max(1,pool.length-1)));addlog(t,"Quiet");return true
 }
 
+function journeyFlavorCadenceAllows(){
+ if(!h?.trip)return false;
+ let now=Date.now(),last=Number(h.trip.lastQuietFlavorAt)||0;
+ // Keep incidental observations apart even when normal Journey events bunch together.
+ let duration=Math.max(1,Number(h.trip.durationMinutes)||1),gapMinutes=duration>=240?20:duration>=60?8:duration>=10?2:0.5;
+ return !last||now-last>=gapMinutes*60000
+}
 function maybeJourneyFlavor(){
- if(!h?.trip||h.combat||h.pendingEvent||journeyInSleepWindow())return;
+ if(!h?.trip||h.combat||h.pendingEvent||journeyInSleepWindow()||!journeyFlavorCadenceAllows())return;
+ h.trip.lastQuietFlavorAt=Date.now();
  // Weather is deliberately sparse flavour, never a modifier or event source.
  if(d(100)<=25&&maybeJourneyWeatherFlavor())return;
  let env=journeyFlavorEnvironment(),pool=JOURNEY_FLAVOR[env]||JOURNEY_FLAVOR.generic,recent=Array.isArray(h.trip.recentFlavorText)?h.trip.recentFlavorText:[],choices=pool.filter(x=>!recent.includes(x));
