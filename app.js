@@ -701,7 +701,7 @@ function normalizedCoinCountFromCP(cp){cp=Math.max(0,Math.round(cp));return Math
 function coinArrayFromCP(cp){cp=Math.max(0,Math.round(cp));return[Math.floor(cp/100),Math.floor((cp%100)/10),cp%10]}
 function maxWalletCPWithinCoinCount(maxCp,coinLimit){
  maxCp=Math.max(0,Math.floor(maxCp));coinLimit=Math.max(0,Math.floor(coinLimit));let best=0;
- for(let r=0;r<100;r++){let rc=Math.floor(r/10)+(r%10),g=Math.min(coinLimit-rc,Math.floor((maxCp-r)/100));if(g>=0)best=Math.max(best,g*100+r)}
+ for(let r=0;r<100;r++){let remainderCP=Math.floor(r/10)+(r%10),g=Math.min(coinLimit-remainderCP,Math.floor((maxCp-r)/100));if(g>=0)best=Math.max(best,g*100+r)}
  return best
 }
 function creditWalletValueCP(value,respectCarry=!!h?.trip){
@@ -853,11 +853,11 @@ function resolveRcTimedPotion(item,index){
   return true
  }
  let turns=k==="defensePotion"?1:d(6)+6,rounds=turns*AV_ROUNDS_PER_TURN;
- if(k==="fireResistPotion"){h.spells.buffs.push({rc:"Potion of Fire Resistance",potionEffect:true,resist:"fire",saveBonusVs:"fire",damagePerDieReduction:1,normalFireImmune:true,rounds});clog(`Potion of Fire Resistance takes effect for ${turns} turns.`)}
- else if(k==="speedPotion"){h.spells.buffs.push({rc:"Potion of Speed",potionEffect:true,speedSource:"potion",rounds});clog(`Potion of Speed takes effect for ${turns} turns.`)}
- else if(k==="defensePotion"){let roll=d(10),bonus=roll<=3?1:roll<=5?2:roll<=7?3:roll<=9?4:5;h.spells.buffs.push({rc:"Potion of Defense",potionEffect:true,ac:-bonus,defenseBonus:bonus,rounds});clog(`Potion of Defense grants AC +${bonus} for 1 turn (roll ${roll}).`)}
- else if(k==="freedomPotion"){h.spells.buffs.push({rc:"Potion of Freedom",potionEffect:true,immuneParalysis:true,rounds});clog(`Potion of Freedom prevents paralysis for ${turns} turns.`)}
- else{let roll=d(10),limit=roll<=4?3:roll<=7?7:roll<=9?15:Infinity;h.spells.buffs.push({rc:"Potion of Antidote",potionEffect:true,poisonSaveBonus:2,poisonHdImmunity:limit,rounds});clog(`Potion of Antidote protects for ${turns} turns: +2 poison saves and immunity to ${Number.isFinite(limit)?`${limit}-HD or weaker poison`:"all poison"}.`)}
+ if(k==="fireResistPotion"){h.spells.buffs.push({av:"Potion of Fire Resistance",potionEffect:true,resist:"fire",saveBonusVs:"fire",damagePerDieReduction:1,normalFireImmune:true,rounds});clog(`Potion of Fire Resistance takes effect for ${turns} turns.`)}
+ else if(k==="speedPotion"){h.spells.buffs.push({av:"Potion of Speed",potionEffect:true,speedSource:"potion",rounds});clog(`Potion of Speed takes effect for ${turns} turns.`)}
+ else if(k==="defensePotion"){let roll=d(10),bonus=roll<=3?1:roll<=5?2:roll<=7?3:roll<=9?4:5;h.spells.buffs.push({av:"Potion of Defense",potionEffect:true,ac:-bonus,defenseBonus:bonus,rounds});clog(`Potion of Defense grants AC +${bonus} for 1 turn (roll ${roll}).`)}
+ else if(k==="freedomPotion"){h.spells.buffs.push({av:"Potion of Freedom",potionEffect:true,immuneParalysis:true,rounds});clog(`Potion of Freedom prevents paralysis for ${turns} turns.`)}
+ else{let roll=d(10),limit=roll<=4?3:roll<=7?7:roll<=9?15:Infinity;h.spells.buffs.push({av:"Potion of Antidote",potionEffect:true,poisonSaveBonus:2,poisonHdImmunity:limit,rounds});clog(`Potion of Antidote protects for ${turns} turns: +2 poison saves and immunity to ${Number.isFinite(limit)?`${limit}-HD or weaker poison`:"all poison"}.`)}
  return true
 }
 function useRcMagicItemCombat(index){
@@ -894,8 +894,8 @@ function sheetInventory(){
    (equip.length?equip.map(({x,i},order)=>{let buttons;if(x.kind==="weapon"){let opts=weaponSlotOptions(x);buttons=opts.map(slot=>`<button data-eq="${i}" data-eq-slot="${slot}">${x.eq&&x.eqSlot===slot?"Unequip":slot==="melee"?"Melee":"Ranged"}</button>`).join(" ")}else buttons=`<button data-eq="${i}">${x.eq?"Unequip":"Equip"}</button>`;let mark=x.kind==="weapon"&&x.eq?`✓ ${x.eqSlot==="ranged"?"Ranged":"Melee"} · `:(x.eq?"✓ ":"");return `<div class="sheetEquipRow invDrag" data-equip-index="${order}" data-inv="${i}"><span>☰ ${mark}${x.n}</span><span>${buttons}</span></div>`}).join(""):"<div class=small>None.</div>")+
    `<div class="inventoryGroupLabel">Resources</div>`+resourceSummaryRows()+
    `<div class="inventoryGroupLabel">Gear & Items</div>`+
-   (other.length?other.map(({x,i})=>`<div class="sheetEquipRow"><span>${x.n}${avMagicItemStatus(x)}</span>${avMagicTownUsable(x)?`<button data-rc-town-use="${i}">Use</button>`:"<span></span>"}</div>`).join(""):"<div class=small>No other items.</div>");
-  enableInventoryDrag(box);$$("[data-rc-town-use]").forEach(b=>b.onclick=()=>useRcMagicItemTown(+b.dataset.avTownUse))
+   (other.length?other.map(({x,i})=>`<div class="sheetEquipRow"><span>${x.n}${avMagicItemStatus(x)}</span>${avMagicTownUsable(x)?`<button data-av-town-use="${i}">Use</button>`:"<span></span>"}</div>`).join(""):"<div class=small>No other items.</div>");
+  enableInventoryDrag(box);$$("[data-av-town-use]").forEach(b=>b.onclick=()=>useRcMagicItemTown(+b.dataset.avTownUse))
  }
  $$("[data-invtab]").forEach(b=>b.onclick=()=>{inventoryTab=b.dataset.invtab;sheetInventory()})
 }
@@ -1370,8 +1370,8 @@ function avScrollSpellLevel(type){
 }
 function avImplementedSpellLink(type,name,level){
  let list=type==="Magical"?(typeof ARCANE_NOW!=="undefined"?ARCANE_NOW:[]):type==="Clerical"?(typeof CLERIC_NOW!=="undefined"?CLERIC_NOW:[]):[];
- let hit=list.find(x=>x.sl===level&&(x.rc===name||x.name===name));
- return hit?{id:hit.id,name:hit.name,rc:hit.rc,sl:hit.sl}:null
+ let hit=list.find(x=>x.sl===level&&(x.av===name||x.name===name));
+ return hit?{id:hit.id,name:hit.name,av:hit.av,sl:hit.sl}:null
 }
 function avRollSpellScrollDetail(){
  let type=avScrollSpellType(),count=avTablePick(AV_SCROLL_SPELL_COUNT),spells=[];
@@ -1758,7 +1758,7 @@ function savingThrow(category,bonus=0,damageType=null){
  let target=avSaveTarget(h.className,h.level,SAVE_NAMES[i]),roll=d(20)+bonus;
  return{roll,target,success:roll>=target,category:SAVE_NAMES[i]};
 }
-function protectionFromEvilBuff(){let b=h?.spells?.buffs?.find(b=>b.rc==="Protection from Evil")||null;if(b&&b.barrierBroken==null)b.barrierBroken=!!h?.combat?.protEvilBarrierBroken;return b}
+function protectionFromEvilBuff(){let b=h?.spells?.buffs?.find(b=>b.av==="Protection from Evil")||null;if(b&&b.barrierBroken==null)b.barrierBroken=!!h?.combat?.protEvilBarrierBroken;return b}
 function protectionFromEvilActive(){return !!protectionFromEvilBuff()}
 function protectionFromEvilBarrierActive(){let b=protectionFromEvilBuff();return !!b&&!b.barrierBroken}
 function elementalResistance(type){return h?.spells?.buffs?.find(b=>b.resist===type)||null}
@@ -2003,10 +2003,10 @@ function startClericUndeadFight(ev){
 }
 function autoPotionThreshold(){return{Cautious:.65,Normal:.45,Bold:.25}[h.trip?.risk||"Normal"]}
 function autoSpellScore(s){
- if(s.kind==="cleanse"){let active=(h.conditions||[]).includes(s.condition)||(s.rc==="Cure Disease"&&hasCurableDisease());return active?110:0}
+ if(s.kind==="cleanse"){let active=(h.conditions||[]).includes(s.condition)||(s.av==="Cure Disease"&&hasCurableDisease());return active?110:0}
  if(s.kind==="heal")return magicalHealingBlockedByDisease()?0:(h.hp/h.maxhp<.55?100:0);
- if(s.rc==="Striking"&&h.mummyWeaknessKnown&&living().some(e=>e.mummy)){let w=combatStats().weapon,dup=h.spells?.buffs?.some(b=>b.rc==="Striking"&&b.boundWeapon===w);return dup?0:95}
- if(s.kind==="buff"){let dup=h.spells?.buffs?.some(b=>b.rc===s.rc);return dup?0:(living().length>1?55:30)}
+ if(s.av==="Striking"&&h.mummyWeaknessKnown&&living().some(e=>e.mummy)){let w=combatStats().weapon,dup=h.spells?.buffs?.some(b=>b.av==="Striking"&&b.boundWeapon===w);return dup?0:95}
+ if(s.kind==="buff"){let dup=h.spells?.buffs?.some(b=>b.av===s.av);return dup?0:(living().length>1?55:30)}
  return 40+s.sl*8;
 }
 function autonomousCanHarm(target=living()[0]){
@@ -2014,7 +2014,7 @@ function autonomousCanHarm(target=living()[0]){
  let cs=combatStats(),item=cs.weaponItem,at=ammoTypeFor(item||cs.weapon),weaponUsable=attackModeFor(item||cs.weapon)!=="out-of-range"&&(!at||ammoCount(at)>0);
  if(!target.mummy)return weaponUsable||availableCombatSpells().some(s=>["damage","area","line"].includes(s.kind));
  if(!h.mummyWeaknessKnown)return weaponUsable||availableCombatSpells().some(s=>["damage","area","line"].includes(s.kind));
- let spellQualifies=availableCombatSpells().some(s=>["damage","area","line"].includes(s.kind)||(s.rc==="Striking"));
+ let spellQualifies=availableCombatSpells().some(s=>["damage","area","line"].includes(s.kind)||(s.av==="Striking"));
  return mummyWeaponCanHarm(target)||spellQualifies
 }
 function runAutonomousCombat(){
@@ -2242,29 +2242,29 @@ const SPELL_PROGRESS={
  Cleric:spellProgressFromColumns(CLERIC_ACTIVE_SLOT_COLUMNS,36)
 };
 const ARCANE_NOW=[
- {id:"magic_missile",name:"Arcane Dart",rc:"Magic Missile",sl:1,kind:"damage",damage:"1d6+1",autoHit:true,missilesByLevel:true,enemyTarget:true,rangeFeet:150},
- {id:"shield",name:"Shield",rc:"Shield",sl:1,kind:"buff",fixedAC:4,fixedMissileAC:2,magicMissileSave:true,durationTurns:2},
- {id:"sleep",name:"Sleep",rc:"Sleep",sl:1,kind:"sleep",save:null,durationTurnsDice:"4d4",enemyTarget:true,rangeFeet:240,areaFeet:40},
- {id:"light",name:"Light",rc:"Light",sl:1,kind:"blind",save:"Spells",enemyTarget:true,rangeFeet:120,durationTurnsBase:6,durationTurnsPerLevel:1},
- {id:"mirror_image",name:"Mirror Image",rc:"Mirror Image",sl:2,kind:"images",images:"1d4",durationTurns:6},
- {id:"web",name:"Web",rc:"Web",sl:2,kind:"web",durationTurns:48,enemyTarget:true,rangeFeet:10,areaFeet:10},
- {id:"fireball",name:"Fireball",rc:"Fireball",sl:3,kind:"area",perLevel:true,save:"Spells",half:true,damageType:"fire",enemyTarget:true,rangeFeet:240,areaFeet:40},
- {id:"lightning_bolt",name:"Lightning Bolt",rc:"Lightning Bolt",sl:3,kind:"line",perLevel:true,save:"Spells",half:true,enemyTarget:true,rangeFeet:180,lineLengthFeet:60,lineWidthFeet:5},
- {id:"haste",name:"Haste",rc:"Haste",sl:3,kind:"buff",extraAttack:true,speedSource:"haste",durationTurns:3},
- {id:"slow",name:"Slow",rc:"Slow",sl:3,kind:"debuff",save:"Spells",durationTurns:3,enemyTarget:true,rangeFeet:240,areaFeet:60,maxTargets:24},
- {id:"hold_person",name:"Hold Person",rc:"Hold Person",sl:3,kind:"hold",save:"Spells",durationTurnsPerLevel:1,maxTargets:4,humanoidOnly:true,enemyTarget:true,rangeFeet:120},
- {id:"prot_missiles",name:"Protection from Normal Missiles",rc:"Protection from Normal Missiles",sl:3,kind:"buff",missileWard:true,durationTurns:12}
+ {id:"magic_missile",name:"Arcane Dart",av:"Magic Missile",sl:1,kind:"damage",damage:"1d6+1",autoHit:true,missilesByLevel:true,enemyTarget:true,rangeFeet:150},
+ {id:"shield",name:"Shield",av:"Shield",sl:1,kind:"buff",fixedAC:4,fixedMissileAC:2,magicMissileSave:true,durationTurns:2},
+ {id:"sleep",name:"Sleep",av:"Sleep",sl:1,kind:"sleep",save:null,durationTurnsDice:"4d4",enemyTarget:true,rangeFeet:240,areaFeet:40},
+ {id:"light",name:"Light",av:"Light",sl:1,kind:"blind",save:"Spells",enemyTarget:true,rangeFeet:120,durationTurnsBase:6,durationTurnsPerLevel:1},
+ {id:"mirror_image",name:"Mirror Image",av:"Mirror Image",sl:2,kind:"images",images:"1d4",durationTurns:6},
+ {id:"web",name:"Web",av:"Web",sl:2,kind:"web",durationTurns:48,enemyTarget:true,rangeFeet:10,areaFeet:10},
+ {id:"fireball",name:"Fireball",av:"Fireball",sl:3,kind:"area",perLevel:true,save:"Spells",half:true,damageType:"fire",enemyTarget:true,rangeFeet:240,areaFeet:40},
+ {id:"lightning_bolt",name:"Lightning Bolt",av:"Lightning Bolt",sl:3,kind:"line",perLevel:true,save:"Spells",half:true,enemyTarget:true,rangeFeet:180,lineLengthFeet:60,lineWidthFeet:5},
+ {id:"haste",name:"Haste",av:"Haste",sl:3,kind:"buff",extraAttack:true,speedSource:"haste",durationTurns:3},
+ {id:"slow",name:"Slow",av:"Slow",sl:3,kind:"debuff",save:"Spells",durationTurns:3,enemyTarget:true,rangeFeet:240,areaFeet:60,maxTargets:24},
+ {id:"hold_person",name:"Hold Person",av:"Hold Person",sl:3,kind:"hold",save:"Spells",durationTurnsPerLevel:1,maxTargets:4,humanoidOnly:true,enemyTarget:true,rangeFeet:120},
+ {id:"prot_missiles",name:"Protection from Normal Missiles",av:"Protection from Normal Missiles",sl:3,kind:"buff",missileWard:true,durationTurns:12}
 ];
 const CLERIC_NOW=[
- {id:"cure_light",name:"Cure Light Wounds",rc:"Cure Light Wounds",sl:1,kind:"heal",heal:"1d6+1"},
- {id:"prot_evil",name:"Protection from Evil",rc:"Protection from Evil",sl:1,kind:"buff",ac:-1,saveBonus:1,durationTurns:12},
- {id:"remove_fear",name:"Remove Fear",rc:"Remove Fear",sl:1,kind:"cleanse",condition:"Afraid"},
- {id:"resist_cold",name:"Resist Cold",rc:"Resist Cold",sl:1,kind:"buff",resist:"cold",saveBonusVs:"cold",damagePerDieReduction:1,durationTurns:6},
- {id:"bless",name:"Bless",rc:"Bless",sl:2,kind:"buff",attack:1,flatDamageBonus:1,morale:1,durationTurns:6},
- {id:"hold_person_c",name:"Hold Person",rc:"Hold Person",sl:2,kind:"hold",save:"Spells",durationTurns:9,maxTargets:4,humanoidOnly:true,enemyTarget:true,rangeFeet:180},
- {id:"resist_fire",name:"Resist Fire",rc:"Resist Fire",sl:2,kind:"buff",resist:"fire",saveBonusVs:"fire",damagePerDieReduction:1,durationTurns:2},
- {id:"cure_disease",name:"Cure Disease",rc:"Cure Disease",sl:3,kind:"cleanse",condition:"Diseased"},
- {id:"striking",name:"Striking",rc:"Striking",sl:3,kind:"buff",damageBonus:"1d6",durationTurns:1}
+ {id:"cure_light",name:"Cure Light Wounds",av:"Cure Light Wounds",sl:1,kind:"heal",heal:"1d6+1"},
+ {id:"prot_evil",name:"Protection from Evil",av:"Protection from Evil",sl:1,kind:"buff",ac:-1,saveBonus:1,durationTurns:12},
+ {id:"remove_fear",name:"Remove Fear",av:"Remove Fear",sl:1,kind:"cleanse",condition:"Afraid"},
+ {id:"resist_cold",name:"Resist Cold",av:"Resist Cold",sl:1,kind:"buff",resist:"cold",saveBonusVs:"cold",damagePerDieReduction:1,durationTurns:6},
+ {id:"bless",name:"Bless",av:"Bless",sl:2,kind:"buff",attack:1,flatDamageBonus:1,morale:1,durationTurns:6},
+ {id:"hold_person_c",name:"Hold Person",av:"Hold Person",sl:2,kind:"hold",save:"Spells",durationTurns:9,maxTargets:4,humanoidOnly:true,enemyTarget:true,rangeFeet:180},
+ {id:"resist_fire",name:"Resist Fire",av:"Resist Fire",sl:2,kind:"buff",resist:"fire",saveBonusVs:"fire",damagePerDieReduction:1,durationTurns:2},
+ {id:"cure_disease",name:"Cure Disease",av:"Cure Disease",sl:3,kind:"cleanse",condition:"Diseased"},
+ {id:"striking",name:"Striking",av:"Striking",sl:3,kind:"buff",damageBonus:"1d6",durationTurns:1}
 ];
 const SPELLS={Arcanist:ARCANE_NOW,Elf:ARCANE_NOW.map(x=>({...x,id:"elf_"+x.id})),Cleric:CLERIC_NOW};
 const PREPARED_CASTERS=new Set(["Arcanist","Elf","Cleric"]);
@@ -2392,20 +2392,20 @@ function resolveSpellEffect(s,t=null,autonomous=false,holdMode=null,missileTarge
   let sharedDamage=(s.kind==="area"||s.kind==="line")?rollSpellDamage(s):null;for(const q of targets.filter(Boolean)){let dmg=sharedDamage??rollSpellDamage(s);if(s.save){let sv=monsterSpellSave(q,s.save||"Spells");clog(`${q.n} save ${sv.roll} vs ${sv.target}${sv.saveAs?` [${sv.saveAs}]`:""}: ${sv.success?"success":"FAIL"}.`);if(sv.success&&s.half)dmg=Math.floor(dmg/2)}if(q.mummy)dmg=Math.floor(dmg/2);applyMonsterDamage(q,dmg,s.damageType||"magic");clog(`${autonomous?"Autonomous: ":""}${s.name} strikes ${q.n} for ${dmg} damage.`);if(s.damageType==="fire"&&q.webbed&&q.hp>0){let burn=d(6);if(q.mummy)burn=Math.floor(burn/2);applyMonsterDamage(q,burn,"fire");q.disabledRounds=Math.min(Math.max(1,q.disabledRounds||2),2);q.webbed=true;clog(`The web catches fire around ${q.n}; ${q.n} takes ${burn} fire damage and the web will burn away in 2 rounds.`)}if(q.hp<=0)resolveMonsterDefeat(q)}if(s.kind==="area"&&s.damageType==="fire"&&combatDistance()<=((s.areaFeet||40)/2)&&h.combat){let mirror=h.spells?.buffs?.find(b=>b.kind==="images"&&b.images>0);if(mirror){mirror.images=0;clog("The area attack destroys all Mirror Images.")}let base=sharedDamage??rollSpellDamage(s),sv=savingThrow("Spells",0,"fire"),dmg=sv.success?Math.floor(base/2):base;dmg=applyElementalResistance(dmg,Math.max(1,Math.min(h.level,20))+"d6","fire",true);h.hp=Math.max(0,h.hp-dmg);clog(`You are caught in the blast: save ${sv.roll} vs ${sv.target} — ${sv.success?"success":"FAIL"}; ${dmg} fire damage.`);if(h.hp<=0)return combatDeath("Your own fireball engulfs you.")}
  }else if(s.kind==="heal"){if(magicalHealingBlockedByDisease()){clog(`${s.name} cannot heal through Tomb Rot.`)}else{let heal=rollExpr(s.heal),before=h.hp;h.hp=Math.min(h.maxhp,h.hp+heal);clog(`${autonomous?"Autonomous: ":""}${s.name} restores ${h.hp-before} HP.`)}}
  else if(s.kind==="buff"){
-  if(s.rc==="Bless"&&h.combat?.range==="Hand-to-Hand"){clog(`${s.name} cannot affect you once you are already in melee.`)}
+  if(s.av==="Bless"&&h.combat?.range==="Hand-to-Hand"){clog(`${s.name} cannot affect you once you are already in melee.`)}
   else{
-   let boundWeapon=s.rc==="Striking"?combatStats().weapon:null;
-   let duplicate=h.spells.buffs.some(b=>b.rc===s.rc&&(s.rc!=="Striking"||b.boundWeapon===boundWeapon));
+   let boundWeapon=s.av==="Striking"?combatStats().weapon:null;
+   let duplicate=h.spells.buffs.some(b=>b.av===s.av&&(s.av!=="Striking"||b.boundWeapon===boundWeapon));
    if(duplicate)clog(`${s.name} is already active; a second casting does not combine with the first.`);
-   else{let buff={...s,rounds:spellDuration(s)};if(s.rc==="Striking")buff.boundWeapon=boundWeapon;if(s.rc==="Protection from Evil")buff.barrierBroken=false;h.spells.buffs.push(buff);clog(s.rc==="Striking"?`${s.name} empowers ${buff.boundWeapon}.`:`${s.name} takes effect.`)}
+   else{let buff={...s,rounds:spellDuration(s)};if(s.av==="Striking")buff.boundWeapon=boundWeapon;if(s.av==="Protection from Evil")buff.barrierBroken=false;h.spells.buffs.push(buff);clog(s.av==="Striking"?`${s.name} empowers ${buff.boundWeapon}.`:`${s.name} takes effect.`)}
   }
  }
- else if(s.kind==="cleanse"){if(s.rc==="Cure Disease"){let cured=cureOneDisease();clog(cured?`${s.name} cures ${cured.name}.`:`${s.name} finds no disease to cure.`)}else{h.conditions=h.conditions||[];let before=h.conditions.length;h.conditions=h.conditions.filter(x=>x!==s.condition);clog(before!==h.conditions.length?`${s.name} removes ${s.condition}.`:`${s.name} finds nothing to remove.`)}}
+ else if(s.kind==="cleanse"){if(s.av==="Cure Disease"){let cured=cureOneDisease();clog(cured?`${s.name} cures ${cured.name}.`:`${s.name} finds no disease to cure.`)}else{h.conditions=h.conditions||[];let before=h.conditions.length;h.conditions=h.conditions.filter(x=>x!==s.condition);clog(before!==h.conditions.length?`${s.name} removes ${s.condition}.`:`${s.name} finds nothing to remove.`)}}
  else if(s.kind==="images"){let n=rollExpr(s.images);h.spells.buffs.push({...s,images:n,rounds:spellDuration(s)});clog(`${s.name} creates ${n} illusory images.`)}
  else if(s.kind==="sleep"){let eligible=gridlessAreaTargets(t,s.areaFeet||40).filter(sleepEligible).sort((a,b)=>(Number(a.hdDice)||1)-(Number(b.hdDice)||1)||(Number(a.hdAdj)||0)-(Number(b.hdAdj)||0)),hdBudget=d(8)+d(8),rounds=spellDuration(s),affected=0;for(const q of eligible){let hd=Math.max(1,Number(q.hdDice)||1);if(hd>hdBudget)continue;hdBudget-=hd;q.disabledRounds=Math.max(q.disabledRounds||0,rounds);q.sleeping=true;affected++;clog(`${q.n} falls asleep for ${Math.ceil(rounds/AV_ROUNDS_PER_TURN)} turn(s).`)}if(!affected)clog(`${s.name} finds no eligible living creature of 4+1 HD or less.`)}
  else if(s.kind==="web"){for(const q of gridlessAreaTargets(t,s.areaFeet||10)){let strong=q.webStrength==="great",rounds=strong?2:(d(4)+d(4))*AV_ROUNDS_PER_TURN;q.disabledRounds=Math.min(rounds,spellDuration(s));q.webbed=true;clog(`${q.n} is caught in the web${strong?" and can tear free in 2 rounds":` for ${Math.ceil(rounds/AV_ROUNDS_PER_TURN)} turn(s)`}.`)}}
  else if(s.kind==="hold"){let valid=validHoldTargets(s),single=holdMode==="single",count=single?1:(s.maxTargets||4),chosenIds=Array.isArray(holdTargetIds)?[...new Set(holdTargetIds)].slice(0,count):null,qs=single?(t&&valid.includes(t)?[t]:[]):chosenIds?chosenIds.map(id=>valid.find(q=>q.id===id)).filter(Boolean):valid.slice(0,count),penalty=single?2:0;for(const q of qs){let sv=monsterSpellSave(q,s.save||"Spells");if(penalty)sv.roll-=penalty;sv.success=sv.roll>=sv.target;clog(`${q.n} save ${sv.roll} vs ${sv.target}${sv.saveAs?` [${sv.saveAs}]`:""}${penalty?" (-2 single-target penalty)":""}: ${sv.success?"success":"FAIL"}.`);if(!sv.success){q.disabledRounds=Math.max(q.disabledRounds||0,spellDuration(s));q.held=true;clog(`${q.n} is held.`)}else clog(`${q.n} resists ${s.name}.`)}if(!qs.length)clog(`${s.name} has no valid humanoid target.`)}
- else if(s.kind==="debuff"){let qs=s.rc==="Slow"?gridlessAreaTargets(t,s.areaFeet||60).slice(0,s.maxTargets||24):[t||living()[0]];for(const q of qs.filter(Boolean)){let sv=monsterSpellSave(q,s.save||"Spells");clog(`${q.n} save ${sv.roll} vs ${sv.target}${sv.saveAs?` [${sv.saveAs}]`:""}: ${sv.success?"success":"FAIL"}.`);if(!sv.success){q.slowRounds=spellDuration(s);clog(`${q.n} is slowed.`)}else clog(`${q.n} resists ${s.name}.`)}}
+ else if(s.kind==="debuff"){let qs=s.av==="Slow"?gridlessAreaTargets(t,s.areaFeet||60).slice(0,s.maxTargets||24):[t||living()[0]];for(const q of qs.filter(Boolean)){let sv=monsterSpellSave(q,s.save||"Spells");clog(`${q.n} save ${sv.roll} vs ${sv.target}${sv.saveAs?` [${sv.saveAs}]`:""}: ${sv.success?"success":"FAIL"}.`);if(!sv.success){q.slowRounds=spellDuration(s);clog(`${q.n} is slowed.`)}else clog(`${q.n} resists ${s.name}.`)}}
  else if(s.kind==="blind"){let q=t||living()[0];if(q){let sv=monsterSpellSave(q,s.save||"Spells");clog(`${q.n} save ${sv.roll} vs ${sv.target}${sv.saveAs?` [${sv.saveAs}]`:""}: ${sv.success?"success":"FAIL"}.`);if(!sv.success){q.blindRounds=spellDuration(s);clog(`${q.n} is blinded by ${s.name}.`)}else clog(`${s.name} fails to blind ${q.n}.`)}}
  else if(s.kind==="utility"){clog(`${s.name} is active; no current combat target effect.`)}
 }
@@ -2512,8 +2512,8 @@ function renderSpellButton(){
    }
    let activeBuff=false;
    if(s.kind==="buff"){
-    let boundWeapon=s.rc==="Striking"?combatStats().weapon:null;
-    activeBuff=h.spells?.buffs?.some(b=>b.rc===s.rc&&(s.rc!=="Striking"||b.boundWeapon===boundWeapon))||false;
+    let boundWeapon=s.av==="Striking"?combatStats().weapon:null;
+    activeBuff=h.spells?.buffs?.some(b=>b.av===s.av&&(s.av!=="Striking"||b.boundWeapon===boundWeapon))||false;
    }
    return [`<button class="spellChoice" data-cast-spell="${s.id}" ${oor||activeBuff?"disabled":""}><b>${s.name}</b> <span class="small">L${s.sl}${rt}${activeBuff?" · ACTIVE":""}${oor?" · OUT OF RANGE":""}</span></button>`]
   }).join("");
