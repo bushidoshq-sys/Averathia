@@ -551,7 +551,21 @@ function page(id){
  if(h?.deadUntil&&Date.now()<h.deadUntil&&id!=="death"&&id!=="settings"){renderDeathPage();return}
  $$(".page").forEach(x=>x.classList.add("hide"));$("#"+id).classList.remove("hide");$$("[data-page]").forEach(x=>x.classList.toggle("on",x.dataset.page===id));updateNavigationLock();if(id!=="settings")refresh()
 }
-$$("[data-page]").forEach(b=>b.onclick=()=>page(b.dataset.page));$$("[data-go]").forEach(b=>b.onclick=()=>page(b.dataset.go));
+$("[data-page]").forEach(b=>b.onclick=()=>page(b.dataset.page));$("[data-go]").forEach(b=>b.onclick=()=>page(b.dataset.go));
+let swipeStart=null;
+document.addEventListener("touchstart",e=>{
+ if(e.touches.length!==1)return;
+ let t=e.target;if(t.closest("button,input,select,textarea,[contenteditable],.eventButtons,#combatLog,#lastAdventure"))return;
+ swipeStart={x:e.touches[0].clientX,y:e.touches[0].clientY,time:Date.now()}
+},{passive:true});
+document.addEventListener("touchend",e=>{
+ if(!swipeStart||!e.changedTouches.length){swipeStart=null;return}
+ let dx=e.changedTouches[0].clientX-swipeStart.x,dy=e.changedTouches[0].clientY-swipeStart.y,dt=Date.now()-swipeStart.time;swipeStart=null;
+ if(dt>800||Math.abs(dx)<65||Math.abs(dx)<Math.abs(dy)*1.35)return;
+ let current=document.querySelector(".page:not(.hide)")?.id;if(!current||current==="combat"||current==="death")return;
+ let tabs=[...document.querySelectorAll("[data-page]")].filter(b=>!b.classList.contains("hide")&&!b.disabled).map(b=>b.dataset.page).filter((x,i,a)=>a.indexOf(x)===i);
+ let i=tabs.indexOf(current);if(i<0)return;let next=dx<0?i+1:i-1;if(next>=0&&next<tabs.length)page(tabs[next])
+},{passive:true});
 function journeyReturnVibrationEnabled(){return localStorage.getItem("averathia-vibrate-journey-return")!=="0"}
 function setJourneyReturnVibrationEnabled(on){localStorage.setItem("averathia-vibrate-journey-return",on?"1":"0")}
 function vibrateJourneyReturn(){if(!journeyReturnVibrationEnabled()||typeof navigator==="undefined"||typeof navigator.vibrate!=="function")return;try{navigator.vibrate([300,150,300])}catch(e){}}
