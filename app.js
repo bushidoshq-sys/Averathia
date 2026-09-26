@@ -2954,13 +2954,28 @@ const JOURNEY_MISSION_ENVIRONMENT={
 };
 function journeyFlavorEnvironment(){return JOURNEY_MISSION_ENVIRONMENT[h?.trip?.mission?.title]||"generic"}
 const JOURNEY_WEATHER_FLAVOR={
- rain:["Rain patters steadily around you.","Rainwater runs in thin streams across exposed surfaces.","The smell of wet earth and stone hangs in the air.","A sudden heavier shower drums against everything around you.","Water gathers in every shallow depression."],
- snow:["Snow settles quietly around you.","Fresh snow softens the edges of everything exposed.","A few flakes cling to your clothing before melting.","The air carries the muted stillness of falling snow.","Your passage leaves a fresh trail through the snow."],
- fog:["Mist curls through the surroundings and shortens the view ahead.","Shapes at the edge of the fog appear and vanish as you move.","Moisture gathers in tiny beads while the fog hangs close.","The world beyond a short distance has disappeared into grey.","Sound seems strangely close in the thick mist."],
- storm:["A low rumble of thunder rolls across the distance.","A sudden gust drives the weather hard against everything exposed.","Lightning briefly throws the surroundings into sharp relief.","The wind rises sharply before dropping again.","Thunder follows a distant flash after several heartbeats."],
- cloudy:["A heavy blanket of cloud keeps the light flat and subdued.","The sky remains uniformly grey wherever it is visible.","Cloud cover dulls the contrast of the landscape around you."],
- clear:["The weather remains clear and dry.","The air is clear enough to pick out distant details.","No precipitation disturbs the journey."],
- windy:["Wind tugs repeatedly at loose clothing and straps.","A stronger gust briefly drowns out the quieter sounds around you.","Dust and loose debris stir whenever the wind rises."]
+ outdoor:{
+  rain:["Rain tapped softly against my hood.","The smell of wet earth lingered in the air.","Drops gathered along the edge of my sleeves.","Rainwater collected in shallow hollows along the way.","The ground had taken on the darker colour of soaked soil.","Water ran in thin threads over exposed stone.","A brief heavier shower passed over me.","Everything nearby carried the soft hiss of rainfall.","Drops clung to grass and low leaves.","My boots picked up a little mud as I walked.","Rain beaded across buckles and leather straps.","A cool drop found its way down the back of my collar."],
+  snow:["Snow settled quietly around me.","A few flakes caught on my clothing before melting.","The world had taken on the muffled quiet of falling snow.","Fresh snow softened the hard edges of the ground.","Loose flakes swirled briefly around my boots.","Snow gathered in the folds of my cloak.","A light dusting had begun to cover exposed stones.","The air smelled clean and cold beneath the snowfall.","Tiny flakes melted against the back of my hand.","My footprints remained behind me in the fresh snow."],
+  fog:["Mist hung low around me.","The distance faded gradually into grey.","Moisture gathered in tiny beads on my clothing.","Nearby shapes softened at their edges in the fog.","The mist shifted slowly with the air.","Everything beyond the immediate surroundings looked pale and indistinct.","The damp air left a faint chill on my face.","Droplets clung to grass and stone beneath the mist."],
+  storm:["Thunder rolled somewhere in the distance.","A gust drove cold drops sharply against my face.","For an instant, lightning lit the land around me.","The wind rose suddenly and tugged hard at my cloak.","A distant flash was followed by a low growl of thunder.","Rain rattled hard against exposed stone.","Another gust swept past before dying almost as quickly.","The air carried the sharp smell that comes with a storm."],
+  cloudy:["Grey cloud kept the light soft and flat.","The sky remained a broad sheet of grey overhead.","The day had a muted look beneath the cloud cover.","No clear shadow followed me beneath the overcast sky.","The clouds hung low and colourless above the land.","The light remained dull despite the hour."],
+  clear:["The air was clear and dry.","Sunlight picked out the texture of the ground ahead.","The open sky stretched clear above me.","A patch of sunlight warmed one side of my face.","The dry air carried distant smells surprisingly well.","Light moved slowly across the land as the day passed."],
+  windy:["Wind tugged at my cloak and loose straps.","A gust stirred dust and loose leaves around my boots.","The wind rose and fell in long uneven breaths.","Loose grass bent together as a gust passed over it.","For a moment the wind drowned out the quieter sounds around me.","A stronger gust made me turn my face away.","Something light and dry skittered across the ground in the wind.","The air kept worrying at the edge of my hood."]
+ },
+ indoor:{
+  rain:["Rain tapped somewhere against the roof above me.","Water dripped from a leak nearby.","The smell of damp timber and stone had grown stronger.","A thin line of rainwater crept beneath an outer door.","Drops fell steadily from somewhere overhead.","The sound of rain outside came and went against the walls."],
+  snow:["Cold air slipped in through gaps near the outside.","A few melting flakes had blown in near an opening.","The stone nearest the entrance felt noticeably colder.","A faint draught carried the dry chill of snow from outside."],
+  fog:["Damp air lingered near the openings to the outside.","Moisture had gathered on the colder stone near an entrance."],
+  storm:["Thunder sounded dull and distant through the walls.","Rain hammered briefly against the roof above me.","A draught pushed through the room as the wind rose outside.","A flash from outside briefly brightened an opening."],
+  windy:["Wind worried at loose shutters and gaps in the walls.","A draught moved through the room and faded again.","Something outside knocked irregularly in the wind."]
+ },
+ underground:{
+  rain:["Water dripped a little faster from the stone above.","A thin trickle ran down one wall and disappeared into a crack.","The smell of damp stone seemed stronger than before.","Somewhere deeper in the dark, water fell in a steady rhythm."],
+  storm:["A faint distant rumble reached me through the stone.","Water trembled in a shallow puddle after a distant rumble.","The dripping from above had become noticeably heavier."],
+  snow:["The air near the way back outside carried a sharper chill.","Cold air lingered around the passage leading toward the surface."],
+  windy:["A low draught moved through the passage from somewhere ahead.","Air sighed faintly through a narrow crack in the stone."]
+ }
 };
 function classifyRealWeather(w){
  let code=Number(w?.weather_code),wind=Number(w?.wind_speed_10m)||0;
@@ -2984,10 +2999,12 @@ async function refreshJourneyWeather(force=false){
  }catch(e){return old||null}
 }
 function maybeJourneyWeatherFlavor(){
- let env=journeyFlavorEnvironment(),w=currentJourneyWeather();if(!w||env==="underground")return false;
- let pool=JOURNEY_WEATHER_FLAVOR[w.kind]||JOURNEY_WEATHER_FLAVOR.clear;
- if(env==="indoor"&&["clear","cloudy","fog"].includes(w.kind))return false;
- let last=h.trip.lastWeatherFlavor||"",choices=pool.filter(x=>x!==last),t=choices[d(choices.length)-1]||pool[0];h.trip.lastWeatherFlavor=t;addlog(t,"Weather");return true
+ let env=journeyFlavorEnvironment(),w=currentJourneyWeather();if(!w)return false;
+ let group=JOURNEY_WEATHER_FLAVOR[env]||JOURNEY_WEATHER_FLAVOR.outdoor,pool=group[w.kind];
+ if(!pool||!pool.length)return false;
+ let recent=Array.isArray(h.trip.recentWeatherFlavor)?h.trip.recentWeatherFlavor:[],choices=pool.filter(x=>!recent.includes(x));
+ if(!choices.length){recent=[];choices=pool.slice()}
+ let t=choices[d(choices.length)-1]||pool[0];recent.push(t);h.trip.recentWeatherFlavor=recent.slice(-Math.min(6,Math.max(1,pool.length-1)));addlog(t,"Quiet");return true
 }
 
 function maybeJourneyFlavor(){
