@@ -583,6 +583,14 @@ function journeyNotification(title,body){
 }
 function notifyJourneyReturn(){journeyNotification("Journey complete",`${h?.name||"Your adventurer"} has returned home.`)}
 function notifyJourneyDeath(){journeyNotification("Your adventurer has fallen",`${h?.name||"Your adventurer"} has died during the Journey.`)}
+function syncJourneyNotificationSetting(){
+ let box=$("#journeyNotifications"),status=$("#journeyNotificationStatus");if(!box)return;
+ box.checked=journeyNotificationsEnabled()&&("Notification" in window)&&Notification.permission==="granted";
+ if(status)status.textContent=! ("Notification" in window)?"Notifications are not supported here.":Notification.permission==="denied"?"Notifications are blocked by the browser/device.":"Allow notifications when your adventurer returns or dies during a Journey.";
+ box.onchange=async()=>{let enabled=await setJourneyNotificationsEnabled(box.checked);box.checked=enabled;if(status&&!enabled&&("Notification" in window)&&Notification.permission!=="granted")status.textContent="Notification permission was not granted."}
+}
+document.addEventListener("click",e=>{if(e.target?.dataset?.page==="settings")setTimeout(syncJourneyNotificationSetting,0)});
+window.addEventListener("load",syncJourneyNotificationSetting);
 function home(){if(!h)return;processTownAutomation();save()}
 const RANGED_WEAPONS=new Set(["Short Bow","Long Bow","Light Crossbow","Heavy Crossbow","Sling"]);
 const THROWN_WEAPONS=new Set(["Hand Axe","Throwing Hammer","Dagger","Silver Dagger","Javelin","Spear","Trident"]);
