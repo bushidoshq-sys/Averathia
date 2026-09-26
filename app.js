@@ -612,7 +612,7 @@ function equippedWeapons(){
 }
 function activeWeapon(){
  let w=equippedWeapons(),distance=combatDistance();
- if(distance<=5)return w.melee||w.ranged||null;
+ if(distance<=5)return w.melee||null;
  if(w.ranged){
   let ammo=ammoTypeFor(w.ranged);
   if(!ammo||ammoCount(ammo)>0)return w.ranged
