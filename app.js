@@ -309,10 +309,10 @@ function fillWaterskinsManual(){
  if(!h)return;ensureHomeState();let msg=$("#wellMsg");
  if(h.waterCapacity<1){if(msg)msg.textContent="You do not own a Waterskin.";return}
  if(h.water>=h.waterCapacity-1e-9){if(msg)msg.textContent="All Waterskins are already full.";return}
- let cost=hasHouse()?0:2;if(walletCP()<cost){if(msg)msg.textContent="The well costs 2 CP.";return}
+ let freeWater=hasHouse()||(!hasRoom()&&h.inn?.checkedIn),cost=freeWater?0:2;if(walletCP()<cost){if(msg)msg.textContent="The well costs 2 CP.";return}
  if(cost)setWalletCP(walletCP()-cost);h.water=h.waterCapacity;let found=d(WISHING_WELL_CHANCE)===1;
  if(found){setWalletCP(walletCP()+100);if(msg)msg.textContent="🪙 Something glitters in the wishing well... +1 GP!"}
- else if(msg)msg.textContent=hasHouse()?"Waterskins filled — free.":"Waterskins filled — 2 CP.";
+ else if(msg)msg.textContent=freeWater?"Waterskins filled — free.":"Waterskins filled — 2 CP.";
  save()
 }
 function setRetainerFlag(key,value){if(!hasEstate())return;ensureHomeState();h.retainer[key]=!!value;processTownAutomation();save()}
