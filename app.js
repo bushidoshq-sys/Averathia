@@ -2666,7 +2666,7 @@ const CLASS_SPECIALS={
  Elf:[
   ["Ghoul Touch Immunity","Ghoul paralysis cannot lock an Elf's body, though paralysis from other causes can still affect them."],
   ["Infravision","In darkness, an Elf can read nearby heat differences when the surroundings allow infravision to work."],
-  ["Secret Doors",h.className==="Elf"?"Elf has a 1-in-3 chance to find a secret or concealed door.":`${h.className} has a 1-in-6 chance to find a secret or concealed door.`]
+  ["Secret Doors","Elf has a 1-in-3 chance to find a secret or concealed door."]
  ],
  Dwarf:[
   ["Infravision","In darkness, a Dwarf can read nearby heat differences when the surroundings allow infravision to work."],
@@ -2693,7 +2693,7 @@ function renderSkills(){
  let box=$("#skillsContent");if(!box||!h)return;
  let out=[];
  if(h.className==="Thief"){let a=thiefAbilities();for(const k of Object.keys(SKILL_LABELS))out.push(`<div class=skillCard><span class=skillPct>${a[k]}%</span><b>${SKILL_LABELS[k]}</b><span class=small>Improves automatically with level; no points to allocate.</span></div>`);out.push(`<div class=skillCard><b>Backstab</b><span class=small>+4 attack; ×2 damage when the backstab conditions are met.</span></div>`);if(h.level>=4)out.push(`<div class=skillCard><b>Read Languages</b><span class=small>80% chance.</span></div>`);if(h.level>=10)out.push(`<div class=skillCard><b>Magic-user Scrolls</b><span class=small>Can attempt scroll use; 10% backfire chance.</span></div>`)}
- for(const [name,desc] of (CLASS_SPECIALS[h.className]||[]))out.push(`<div class=skillCard><b>${name}</b><span class=small>${desc}</span></div>`);
+ for(const [name,desc] of (CLASS_SPECIALS[h.className]||[]))out.push(`<div class=skillCard><b>${name}</b><span class=small>${desc}</span></div>`);if(h.className!=="Elf")out.push(`<div class=skillCard><b>Secret Doors</b><span class=small>${h.className} has a 1-in-6 chance to find a secret or concealed door.</span></div>`);
  if(PREPARED_CASTERS.has(h.className)){
   ensureSpellState();let slots=spellSlotsFor(),list=SPELLS[h.className]||[],prepLocked=!!h.trip||!!h.combat||!!h.restUntil||(h.spells.spentMem||[]).length>0;
   out.push(`<div class=skillCard><b>Memorized Spells</b><span class=small>Choose the spells prepared for the current daily slots. Rest restores expended memorized spells.${prepLocked?" Loadout is locked until you are back in town with no expended prepared slots.":""}</span></div>`);
