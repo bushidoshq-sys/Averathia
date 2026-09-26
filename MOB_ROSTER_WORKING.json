@@ -1,0 +1,36 @@
+{
+  "status": "WIP",
+  "targetRoster": [
+    "Kobold",
+    "Goblin",
+    "Orc",
+    "Hobgoblin",
+    "Gnoll",
+    "Ogre",
+    "Troll",
+    "Skeleton",
+    "Zombie",
+    "Ghoul",
+    "Giant Rat",
+    "Giant Bat",
+    "Wolf",
+    "Dire Wolf",
+    "Bear",
+    "Giant Spider",
+    "Giant Centipede",
+    "Giant Scorpion",
+    "Giant Snake",
+    "Lizard Man",
+    "Bandit",
+    "Brigand",
+    "Berserker",
+    "Minotaur",
+    "Mummy"
+  ],
+  "implementedVerified": [
+    "Goblin",
+    "Orc",
+    "Hobgoblin"
+  ],
+  "rule": "Only verified Averathia profiles enter runtime; no improvised placeholder stats."
+}
