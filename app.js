@@ -2666,7 +2666,7 @@ const CLASS_SPECIALS={
  Elf:[
   ["Ghoul Touch Immunity","Ghoul paralysis cannot lock an Elf's body, though paralysis from other causes can still affect them."],
   ["Infravision","In darkness, an Elf can read nearby heat differences when the surroundings allow infravision to work."],
-  ["Secret Doors","Careful searching gives an Elf a 1-in-3 chance to spot a concealed doorway; everyone else normally has a 1-in-6 chance."]
+  ["Secret Doors",h.className==="Elf"?"Elf has a 1-in-3 chance to find a secret or concealed door.":`${h.className} has a 1-in-6 chance to find a secret or concealed door.`]
  ],
  Dwarf:[
   ["Infravision","In darkness, a Dwarf can read nearby heat differences when the surroundings allow infravision to work."],
