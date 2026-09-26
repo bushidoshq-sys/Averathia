@@ -2152,11 +2152,11 @@ function monsterRangeStep(e){
 }
 function combatDeath(reason=""){
  if(reason)clog(reason);
- clog(`You are DEAD. Resurrection in ${h.level*5} minutes.`);
- if(h.trip){adventureLog("The Journey ends in death.","Summary");adventureLog(`Recall will occur in ${h.level*5} minutes.`,"Home")}
+ clog("You are DEAD. Testing mode: recall is immediate.");
+ if(h.trip){adventureLog("The Journey ends in death.","Summary");adventureLog("Testing mode: immediate recall home.","Home")}
  recordLastAdventureFromTrip(h.trip,{ending:"death"});
- recoverThrownWeapons();h.trip=null;h.pendingEvent=null;h.combat=null;h.deadUntil=Date.now()+h.level*5*60000;h.hp=0;
- localStorage.setItem("averathia-v041",JSON.stringify(h));renderDeathPage();return false
+ recoverThrownWeapons();h.trip=null;h.pendingEvent=null;h.combat=null;h.deadUntil=null;h.hp=Math.max(1,h.maxhp);
+ vibrateJourneyReturn();save();page("town");return false
 }
 function paralysisImmune(){return !!h?.spells?.buffs?.some(b=>b.immuneParalysis)}
 function poisonProtection(){
