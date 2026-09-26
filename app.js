@@ -3000,7 +3000,8 @@ async function refreshJourneyWeather(force=false){
 }
 function maybeJourneyWeatherFlavor(){
  let env=journeyFlavorEnvironment(),w=currentJourneyWeather();if(!w)return false;
- let group=JOURNEY_WEATHER_FLAVOR[env]||JOURNEY_WEATHER_FLAVOR.outdoor,pool=group[w.kind];
+ // Generic/town travel is exposed to the weather unless a mission explicitly places the scene indoors or underground.
+ let weatherEnv=(env==="indoor"||env==="underground")?env:"outdoor",group=JOURNEY_WEATHER_FLAVOR[weatherEnv]||JOURNEY_WEATHER_FLAVOR.outdoor,pool=group[w.kind];
  if(!pool||!pool.length)return false;
  let recent=Array.isArray(h.trip.recentWeatherFlavor)?h.trip.recentWeatherFlavor:[],choices=pool.filter(x=>!recent.includes(x));
  if(!choices.length){recent=[];choices=pool.slice()}
@@ -3009,7 +3010,8 @@ function maybeJourneyWeatherFlavor(){
 
 function maybeJourneyFlavor(){
  if(!h?.trip||h.combat||h.pendingEvent||journeyInSleepWindow())return;
- if(d(100)<=35&&maybeJourneyWeatherFlavor())return;
+ // Weather is deliberately sparse flavour, never a modifier or event source.
+ if(d(100)<=25&&maybeJourneyWeatherFlavor())return;
  let env=journeyFlavorEnvironment(),pool=JOURNEY_FLAVOR[env]||JOURNEY_FLAVOR.generic,recent=Array.isArray(h.trip.recentFlavorText)?h.trip.recentFlavorText:[],choices=pool.filter(x=>!recent.includes(x));
  if(!choices.length){recent=[];choices=pool.slice()}
  let t=choices[d(choices.length)-1]||pool[0];recent.push(t);h.trip.recentFlavorText=recent.slice(-Math.min(24,Math.max(1,pool.length-1)));addlog(t,"Quiet")
@@ -3091,7 +3093,7 @@ function taleCombatScene(trip,name){
  if(!starts.length)return"";
  let shown=starts.slice(0,3),more=starts.length-shown.length;
  let sentence=name+" faces "+shown.join(", ")+(more>0?" and "+more+" further hostile encounter"+(more===1?"":"s")+".":".");
- let wins=logs.filter(x=>x.text==="Combat won.").length,boss=!!(trip&&trip.mission&&trip.mission.bossWon),escaped=logs.some(x=>/escape the encounter/i.test(x.text||""));
+ let wins=logs.filter(x=>/^Combat won(?:\s|—|\.)/i.test(x.text||"")).length,boss=!!(trip&&trip.mission&&trip.mission.bossWon),escaped=logs.some(x=>/escape the encounter/i.test(x.text||""));
  if(wins)sentence+=" "+(wins===1?"One battle is won.":wins+" battles are won.");
  if(escaped)sentence+=" At least one fight is escaped rather than finished.";
  if(boss)sentence+=" At the journey's decisive encounter, the opposition is overcome and the objective is secured.";
