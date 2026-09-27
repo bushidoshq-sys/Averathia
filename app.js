@@ -1288,7 +1288,8 @@ function journeyInSleepWindow(now=Date.now(),trip=h?.trip){
 }
 function processJourneySleep(now=Date.now()){
  if(!h?.trip)return 0;
- let completed=journeyCompletedSleeps(now,h.trip),done=Math.max(0,Math.trunc(Number(h.trip.completedSleeps)||0));
+ let completed=journeyCompletedSleeps(now,h.trip),journalDone=(h.trip.journal||[]).filter(x=>x?.result==="longRest"||/^JOURNEY-SLEEP-/.test(x?.id||"")).length,logDone=(h.trip.adventureLog||[]).filter(x=>x?.type==="Rest"&&/Night's Rest/.test(x?.text||"")).length,done=Math.max(0,Math.trunc(Number(h.trip.completedSleeps)||0),journalDone,logDone);
+ h.trip.completedSleeps=done;
  if(completed<=done)return 0;
  let count=completed-done;
  for(let i=0;i<count;i++){
@@ -1300,7 +1301,7 @@ function processJourneySleep(now=Date.now()){
   let bits=["Night's Rest — 8 AT hours asleep."];
   if(h.hp-before)bits.push("+"+(h.hp-before)+" HP restored.");
   if(PREPARED_CASTERS.has(h.className))bits.push("Daily magic restored.");
-  addlog(bits.join(" "),"Rest");
+  addlog(bits.join(" "),"Rest");save();
  }
  return count
 }
@@ -2644,9 +2645,16 @@ function useMummyBurnCombat(){
 }
 function finishCombat(){
  let streetSleep=!!h.combat?.context?.streetSleep,boss=!!h.combat?.isBoss,enemies=[...(h.combat?.enemies||[])],treasure=avRollCombatTreasure(enemies,boss,h.level,false);
- let defeated=enemies.filter(e=>e.destroyed||e.hp<=0).length,total=enemies.length;
- if(!streetSleep){let counts={};for(const e of enemies){let n=e.n||"Enemy";counts[n]=(counts[n]||0)+1}let foes=Object.entries(counts).map(([n,q])=>q>1?`${q} ${n}${/s$/i.test(n)?"":"s"}`:n).join(", ");addlog((boss?"Boss defeated":"Combat won")+` — ${foes}.`,"Combat")}
- avAwardTreasure(treasure,streetSleep?"Mugger's carried treasure":"Averathia carried treasure");
+ let defeated=enemies.filter(e=>e.destroyed||e.hp<=0).length,total=enemies.length,counts={};
+ for(const e of enemies){let n=e.n||"Enemy";counts[n]=(counts[n]||0)+1}
+ let foeParts=Object.entries(counts).map(([n,q])=>q>1?`${q} ${n}${/s$/i.test(n)?"":"s"}`:n),foes=foeParts.join(", ");
+ if(!streetSleep)addlog(boss?`${foes} boss defeated.`:`${foes} defeated.`,"Combat");
+ let applied=avApplyTreasure(treasure),summary=avTreasureSummary(treasure);
+ if(streetSleep)addlog(`After searching the mugger, you found: ${summary}.`,"Loot");
+ else{
+  let searched=Object.entries(counts).map(([n,q])=>q>1?`${q} ${n}${/s$/i.test(n)?"":"s"}`:`the ${n}`).join(", ");
+  addlog(`After searching ${searched}, you found: ${summary}.`,"Loot");
+ }
  if(streetSleep){
   ensureInnState();h.inn.lastStreetEvent={day:innCurrentDay(),type:"Mugging",combat:true,text:"You defeated the mugger who attacked while you slept on the street."};
   recoverThrownWeapons();h.combat=null;save();page("home");return
