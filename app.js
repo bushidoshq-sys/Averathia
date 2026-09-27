@@ -543,11 +543,11 @@ function refresh(){updateNavigationLock();if(h){processInnLodging();ageTimedBuff
 function renderDeathPage(){if(!h?.deadUntil)return;clearTimeout(timer);$$(".page").forEach(x=>x.classList.add("hide"));let p=$("#death");if(!p)return;p.classList.remove("hide");let left=Math.max(0,h.deadUntil-Date.now()),m=Math.floor(left/60000),s=Math.floor(left/1000)%60;$("#graveName").textContent=`Here lies ${h.name}, a gallant and steadfast adventurer.`;$("#deathCountdown").textContent=`${m}:${String(s).padStart(2,"0")}`;$("#top").innerHTML=`<b>${h.name}</b> — DEAD`;timer=setTimeout(()=>{if(Date.now()>=h.deadUntil){h.deadUntil=null;h.hp=Math.max(1,h.maxhp);h.trip=null;h.combat=null;vibrateJourneyReturn();save();page("town")}else renderDeathPage()},500)}
 function updateNavigationLock(){
  let lockedTarget=h?.combat?"combat":h?.trip?"depart":null;
- $$("[data-page]").forEach(b=>{let allowed=!lockedTarget||b.dataset.page===lockedTarget;b.disabled=!allowed;b.classList.toggle("journeyLocked",!allowed)});
+ $("[data-page]").forEach(b=>{let allowed=!lockedTarget||b.dataset.page===lockedTarget||b.dataset.page==="settings";b.disabled=!allowed;b.classList.toggle("journeyLocked",!allowed)});
 }
 function page(id){
- if(h?.combat)id="combat";
- else if(h?.trip&&id!=="depart")id="depart";
+ if(h?.combat&&id!=="settings")id="combat";
+ else if(h?.trip&&id!=="depart"&&id!=="settings")id="depart";
  if(h?.deadUntil&&Date.now()<h.deadUntil&&id!=="death"&&id!=="settings"){renderDeathPage();return}
  $$(".page").forEach(x=>x.classList.add("hide"));$("#"+id).classList.remove("hide");$$("[data-page]").forEach(x=>x.classList.toggle("on",x.dataset.page===id));updateNavigationLock();if(id!=="settings")refresh()
 }
