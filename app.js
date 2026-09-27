@@ -1184,15 +1184,19 @@ function createMission(){
  let trophyPool=TROPHY_COLLECTIONS[h.className]||[],locked=trophyPool.filter(x=>!h.trophies?.includes(x[0]));
  /* Trophy chance is deliberately uncommon: 20% on a successful boss mission, never guaranteed. */
  let trophyCandidate=locked.length&&d(100)<=20?locked[d(locked.length)-1][0]:null;
- return {title:m[0],brief:m[1],trophyCandidate,bossWon:false,resolved:false}
+ return {title:m[0],brief:m[1],trophyCandidate,trophyFound:false,bossWon:false,resolved:false}
 }
 function resolveMissionBoss(){
  if(!h.trip?.mission||h.trip.mission.resolved)return;
  let m=h.trip.mission;m.bossWon=true;m.resolved=true;
  awardMissionObjectiveTreasure();
  if(m.trophyCandidate&&unlockTrophy(m.trophyCandidate)){
+   m.trophyFound=true;
    addlog(`TROPHY DISCOVERED: ${m.trophyCandidate}. It has been added to your ${TROPHY_TITLES[h.className]}.`,"Objective");
- }else addlog(`Objective secured: ${m.title}. No rare trophy was found this time.`,"Objective");
+ }else{
+   m.trophyFound=false;
+   addlog(`Objective completed: ${m.title}. No rare trophy was found this time.`,"Objective");
+ }
 }
 
 function ageTimedBuffsClock(now=Date.now()){
@@ -3113,7 +3117,7 @@ function taleCombatScene(trip,name){
  let wins=logs.filter(x=>/^Combat won(?:\s|—|\.)/i.test(x.text||"")).length,boss=!!(trip&&trip.mission&&trip.mission.bossWon),escaped=logs.some(x=>/escape the encounter/i.test(x.text||""));
  if(wins)sentence+=" "+(wins===1?"One battle is won.":wins+" battles are won.");
  if(escaped)sentence+=" At least one fight is escaped rather than finished.";
- if(boss)sentence+=" At the journey's decisive encounter, the opposition is overcome and the objective is secured.";
+ if(boss)sentence+=" At the journey's decisive encounter, the opposition is overcome."+(trip?.mission?.trophyFound?" The rare trophy is secured.":" No rare trophy is found.");
  return sentence
 }
 function taleJourneyFacts(trip,name){
@@ -3148,7 +3152,7 @@ function buildAdventureTale(trip=h&&h.trip,opts={}){
  let combat=taleCombatScene(trip,name),facts=taleJourneyFacts(trip,name),rewards=taleJourneyRewards(trip,name),ending="";
  if(opts.ending==="death")ending="The journey ends in disaster. "+name+" falls before reaching town, and the journey is brought to an abrupt end. After the death recall, "+name+" is returned home.";
  else if(trip.trollLessonReturn)ending="With no reason to press the danger further, "+name+" turns back and makes for town.";
- else if(mission.bossWon)ending="With the objective secured, "+name+" begins the road home and eventually passes back through the town gates.";
+ else if(mission.bossWon)ending=(mission.trophyFound?"With the rare trophy secured, ":"With the objective completed, ")+name+" begins the road home and eventually passes back through the town gates.";
  else if(trip.returnedEarly)ending="The journey is cut short. "+name+" turns back before the objective is completed and returns safely to town.";
  else ending="When there is nothing more to be gained by remaining on the road, "+name+" turns homeward and returns to town.";
  return [opening,middle,combat,facts,rewards,ending].filter(Boolean).join("\n\n")
