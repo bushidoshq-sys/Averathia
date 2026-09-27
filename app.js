@@ -2791,16 +2791,17 @@ function resolveSecretDoorSearch(ev,ch){
  if(!secretDoorSearchChoice(ev,ch))return null;
  let roll=d(6),target=h.className==="Elf"?2:1;
  if(roll>target)return{searched:true,found:false,roll,target};
- let outcome=d(6),detail="A concealed seam gives way, revealing a forgotten passage.",treasure=null,applied=null;
+ let woodland=journeyFlavorEnvironment()==="outdoor"&&/^ELF-/.test(ev.id||""),outcome=d(6),detail=woodland?"A nearly invisible trail branches away through the undergrowth.":"A concealed seam gives way, revealing a forgotten passage.",treasure=null,applied=null;
  if(outcome>=4&&outcome<=5){
   treasure=avBlankTreasure("secret-door","small hidden cache");treasure.coins.sp=d(6)*10;applied=avApplyTreasure(treasure);
-  detail=`Behind the secret door is a small hidden cache: ${avTreasureSummary(treasure)}.`;
+  detail=woodland?`Along the hidden path is a small concealed cache: ${avTreasureSummary(treasure)}.`:`Behind the secret door is a small hidden cache: ${avTreasureSummary(treasure)}.`;
  }else if(outcome===6){
   treasure=avRollUnguardedTreasure(h.level);applied=avApplyTreasure(treasure);
-  detail=`The secret door opens into a forgotten chamber containing ${avTreasureSummary(treasure)}.`;
+  detail=woodland?`The hidden path leads to a forgotten clearing containing ${avTreasureSummary(treasure)}.`:`The secret door opens into a forgotten chamber containing ${avTreasureSummary(treasure)}.`;
  }
- addlog(`Secret door discovered — ${detail}`,"Discovery");
- journal({id:ev.id+"-SECRET",type:"Secret Door",title:"Secret Door",text:detail,choice:ch.label,result:"secretDoor",xp:0,coins:[0,0,0],secretDoorRoll:roll,secretDoorTarget:target,avTreasure:treasure||null});
+ let discovery=woodland?"Hidden path":"Secret door";
+ addlog(`${discovery} discovered — ${detail}`,"Discovery");
+ journal({id:ev.id+"-SECRET",type:discovery,title:discovery,text:detail,choice:ch.label,result:"secretDoor",discoveryKind:woodland?"hiddenPath":"secretDoor",xp:0,coins:[0,0,0],secretDoorRoll:roll,secretDoorTarget:target,avTreasure:treasure||null});
  return{searched:true,found:true,roll,target,outcome,treasure,applied}
 }
 function eventChoiceAvailable(ch){
