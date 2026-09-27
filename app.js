@@ -2918,7 +2918,7 @@ function applyEventChoice(ev,ch){
  }
  if(ch?.result==="classAbility"){
    let adj=ch.difficulty==="Easy"?4:ch.difficulty==="Hard"?-4:0,ability=ch.ability||"WIS";
-   let target=Math.max(1,Math.min(19,(h.stats[ability]||9)+adj)),roll=d(20),success=roll<=target,baseXP=success?(ch.xp||0):0,xp=baseXP?awardXP(baseXP):0;
+   let target=Math.max(1,Math.min(19,(h.stats[ability]||9)+adj)),roll=d(20),success=roll<=target,baseXP=success?(d(4)+d(4)+d(4))*Math.max(1,h.level||1):0,xp=baseXP?awardXP(baseXP):0;
    let outcome=success?"SUCCESS":"FAILURE";
    journal({id:ev.id,type:ev.type,title:ev.title,text:ev.text,choice:ch.label,result:outcome,xp,coins:[0,0,0],ability,roll,target});
    addlog(`${ev.title}: ${ch.label} — ${outcome} (${ability} ${roll} / ${target}).${xp?` +${xp} XP.`:""}`,"Check");
