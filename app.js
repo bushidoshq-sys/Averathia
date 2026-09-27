@@ -1178,7 +1178,7 @@ function renderAdventureLog(){
  box.innerHTML=rows.length?rows.map(e=>`<div class="adventureLogRow ${adventureOutcomeClass(e.text)}"><span class="adventureLogTime">[${clock(e.time)}]</span> <b>${adventureLogIcon(e.type)} ${e.type}</b> — ${e.text}</div>`).join(""):`<div class="small">No events recorded yet.</div>`;
  box.scrollTop=box.scrollHeight;
 }
-function addlog(t,type=null){let cls=adventureOutcomeClass(t),legacy=$("#log");if(legacy)legacy.insertAdjacentHTML("beforeend",`<p class="${cls}">${t}<span style="float:right;color:#aaa">${clock(Date.now())}</span></p>`);adventureLog(t,type||inferAdventureLogType(t))}
+function addlog(t,type=null,eventTime=Date.now()){let cls=adventureOutcomeClass(t),legacy=$("#log");if(legacy)legacy.insertAdjacentHTML("beforeend",`<p class="${cls}">${t}<span style="float:right;color:#aaa">${clock(eventTime)}</span></p>`);adventureLog(t,type||inferAdventureLogType(t),{time:eventTime})}
 const CLASS_MISSIONS={"Arcanist":[["Recover a lost arcane volume","A sealed archive is said to contain a forgotten work."],["Seek a vanished scholar's manuscript","Fragments point toward a manuscript lost beyond town."],["Investigate an abandoned magical library","Old records describe books left behind when the place was sealed."]],"Thief":[["Steal a guarded cache","Rumor places a valuable cache behind watchful eyes."],["Find a legendary jewel","A fence has heard whispers of a remarkable gem."],["Raid a forgotten strongroom","An old strongroom may still hold valuables no one reclaimed."]],"Fighter":[["Answer a challenge of arms","A dangerous foe has become a test worthy of renown."],["Break a threat on the road","Travelers speak of a menace no one has yet driven off."],["Win a deed worth remembering","A hard task offers no easy riches, only the chance for glory."]],"Cleric":[["Recover a saint's relic","A forgotten holy site may still shelter an old relic."],["Cleanse a desecrated resting place","Something has disturbed a place once held sacred."],["Seek a lost reliquary","Accounts tell of a reliquary abandoned far from town."]],"Dwarf":[["Recover an ancestral rune","A carved rune may preserve a missing piece of clan history."],["Trace a lost family inscription","Old mine records hint at words left by distant kin."],["Search a forgotten deep hall","A ruined underground hall may carry marks of the ancestors."]],"Elf":[["Protect the woodland","Signs of danger have appeared beyond the familiar paths."],["Seek a rare seed","A rare tree is said to grow in a threatened part of the wild."],["Preserve a vanishing grove","A fragile grove may hold seeds that should not be lost."]]};
 function createMission(){
  let pool=CLASS_MISSIONS[h.className]||CLASS_MISSIONS.Fighter,m=pool[d(pool.length)-1];
@@ -1302,11 +1302,11 @@ function processJourneySleep(now=Date.now()){
   h.hp=Math.min(h.maxhp,h.hp+Math.ceil(h.maxhp*rate));
   if(PREPARED_CASTERS.has(h.className))resetDailySpells();
   h.trip.completedSleeps++;
-  journal({id:"JOURNEY-SLEEP-"+h.trip.completedSleeps,type:"Rest",title:"Night's Rest",text:"Eight Averathia hours of sleep during the Journey.",result:"longRest",xp:0,coins:[0,0,0],hpHealed:h.hp-before,spellsRefreshed:PREPARED_CASTERS.has(h.className)});
-  let bits=["Night's Rest — 8 AT hours asleep."];
+  let sleepTime=h.trip.start+h.trip.completedSleeps*(JOURNEY_DAY_AT_HOURS*60*60*1000/AT_RATE);
+  journal({time:sleepTime,id:"JOURNEY-SLEEP-"+h.trip.completedSleeps,type:"Rest",title:"Night's Rest",text:"Slept through the night.",result:"longRest",xp:0,coins:[0,0,0],hpHealed:h.hp-before,spellsRefreshed:PREPARED_CASTERS.has(h.className)});
+  let bits=["Night's Rest — Slept through the night."];
   if(h.hp-before)bits.push("+"+(h.hp-before)+" HP restored.");
-  if(PREPARED_CASTERS.has(h.className))bits.push("Daily magic restored.");
-  addlog(bits.join(" "),"Rest");save();
+  addlog(bits.join(" "),"Rest",sleepTime);save();
  }
  return count
 }
