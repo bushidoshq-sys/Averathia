@@ -1244,7 +1244,7 @@ function awardMissionObjectiveTreasure(){
  h.trip.mission.objectiveTreasureRolledGP=gp;
  h.trip.mission.objectiveTreasureKeptCP=credit.cpValue;
  if(credit.cpValue>0)h.trip.avTreasureXpCP=Math.max(0,Number(h.trip.avTreasureXpCP)||0)+credit.cpValue;
- journal({id:"MISSION-OBJECTIVE-TREASURE",type:"Treasure",title:"Mission Objective Treasure",text:`Mission objective secured: ${gp} GP found.`,result:"objectiveTreasure",xp:0,coins:coinArrayFromCP(credit.cpValue),leftCoinCP:credit.leftCP||0});
+ journal({id:"MISSION-OBJECTIVE-TREASURE",type:"Treasure",title:"Mission Objective Treasure",text:`Mission site searched after the boss fight: ${gp} GP found.`,result:"objectiveTreasure",xp:0,coins:coinArrayFromCP(credit.cpValue),leftCoinCP:credit.leftCP||0});
  addlog(`Mission Objective Treasure: ${gp} GP found.${credit.cpValue?` ${coinTextCP(credit.cpValue)} kept.`:""}${credit.leftCP?` ${coinTextCP(credit.leftCP)} left behind at the carry limit.`:""}`,"Loot");
  return{rolledGP:gp,...credit}
 }
@@ -1332,7 +1332,7 @@ function begin(){let rb=$("#recall");if(rb){rb.disabled=false;rb.textContent="�
 function journeySummaryText(trip=h?.trip){
  if(!trip)return"";
  let xp=Math.max(0,(h.xp||0)-Math.max(0,Number(trip.startXP)||0)),coinDelta=walletCP()-Math.max(0,Number(trip.startWalletCP)||0),hp0=Number.isFinite(Number(trip.startHP))?Number(trip.startHP):h.hp;
- let outcome=trip?.mission?.bossWon?"Objective completed":trip?.returnedEarly?"Returned early":"Journey completed",bits=[outcome,`${trip.durationMinutes} min`,`HP ${hp0}/${h.maxhp} → ${h.hp}/${h.maxhp}`,`+${xp} XP`];
+ let outcome=trip?.mission?.trophyFound?"Objective completed":trip?.mission?.bossWon?"Boss defeated — objective not found":trip?.returnedEarly?"Returned early":"Journey completed",bits=[outcome,`${trip.durationMinutes} min`,`HP ${hp0}/${h.maxhp} → ${h.hp}/${h.maxhp}`,`+${xp} XP`];
  bits.push(coinDelta===0?"Coins unchanged":`${coinDelta>0?"+":"−"}${coinTextCP(Math.abs(coinDelta))} net`);
  let sleepCount=Math.max(0,Number(trip.completedSleeps)||0);if(sleepCount)bits.push(`${sleepCount} full sleep${sleepCount===1?"":"s"}`);
  return bits.join(" · ")
@@ -3152,7 +3152,7 @@ function buildAdventureTale(trip=h&&h.trip,opts={}){
  let combat=taleCombatScene(trip,name),facts=taleJourneyFacts(trip,name),rewards=taleJourneyRewards(trip,name),ending="";
  if(opts.ending==="death")ending="The journey ends in disaster. "+name+" falls before reaching town, and the journey is brought to an abrupt end. After the death recall, "+name+" is returned home.";
  else if(trip.trollLessonReturn)ending="With no reason to press the danger further, "+name+" turns back and makes for town.";
- else if(mission.bossWon)ending=(mission.trophyFound?"With the rare trophy secured, ":"With the objective completed, ")+name+" begins the road home and eventually passes back through the town gates.";
+ else if(mission.bossWon)ending=(mission.trophyFound?"With the rare trophy secured, "+name+" begins the road home and eventually passes back through the town gates.":"The boss is defeated, but the sought-after trophy is nowhere to be found. "+name+" begins the road home and eventually passes back through the town gates.");
  else if(trip.returnedEarly)ending="The journey is cut short. "+name+" turns back before the objective is completed and returns safely to town.";
  else ending="When there is nothing more to be gained by remaining on the road, "+name+" turns homeward and returns to town.";
  return [opening,middle,combat,facts,rewards,ending].filter(Boolean).join("\n\n")
