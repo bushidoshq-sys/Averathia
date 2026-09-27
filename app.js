@@ -85,7 +85,8 @@ function primeRequisiteXPBonus(){
 }
 function awardXP(amount){
  let base=Math.max(0,Math.floor(amount||0));if(!base)return 0;
- let gained=Math.floor(base*(1+primeRequisiteXPBonus())+.5);
+ let activeJourneyBonus=h?.trip?.mode==="present"?.10:0;
+ let gained=Math.floor(base*(1+primeRequisiteXPBonus()+activeJourneyBonus)+.5);
  h.xp=(h.xp||0)+gained;checkLevelUps();return gained
 }
 const AT_RATE=24;
