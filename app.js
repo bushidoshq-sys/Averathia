@@ -1180,23 +1180,40 @@ function renderAdventureLog(){
 }
 function addlog(t,type=null,eventTime=Date.now()){let cls=adventureOutcomeClass(t),legacy=$("#log");if(legacy)legacy.insertAdjacentHTML("beforeend",`<p class="${cls}">${t}<span style="float:right;color:#aaa">${clock(eventTime)}</span></p>`);adventureLog(t,type||inferAdventureLogType(t),{time:eventTime})}
 const CLASS_MISSIONS={"Arcanist":[["Recover a lost arcane volume","A sealed archive is said to contain a forgotten work."],["Seek a vanished scholar's manuscript","Fragments point toward a manuscript lost beyond town."],["Investigate an abandoned magical library","Old records describe books left behind when the place was sealed."]],"Thief":[["Steal a guarded cache","Rumor places a valuable cache behind watchful eyes."],["Find a legendary jewel","A fence has heard whispers of a remarkable gem."],["Raid a forgotten strongroom","An old strongroom may still hold valuables no one reclaimed."]],"Fighter":[["Answer a challenge of arms","A dangerous foe has become a test worthy of renown."],["Break a threat on the road","Travelers speak of a menace no one has yet driven off."],["Win a deed worth remembering","A hard task offers no easy riches, only the chance for glory."]],"Cleric":[["Recover a saint's relic","A forgotten holy site may still shelter an old relic."],["Cleanse a desecrated resting place","Something has disturbed a place once held sacred."],["Seek a lost reliquary","Accounts tell of a reliquary abandoned far from town."]],"Dwarf":[["Recover an ancestral rune","A carved rune may preserve a missing piece of clan history."],["Trace a lost family inscription","Old mine records hint at words left by distant kin."],["Search a forgotten deep hall","A ruined underground hall may carry marks of the ancestors."]],"Elf":[["Protect the woodland","Signs of danger have appeared beyond the familiar paths."],["Seek a rare seed","A rare tree is said to grow in a threatened part of the wild."],["Preserve a vanishing grove","A fragile grove may hold seeds that should not be lost."]]};
+const MISSION_OBJECTIVE_KIND={
+ "Answer a challenge of arms":"defeat","Break a threat on the road":"defeat","Win a deed worth remembering":"defeat",
+ "Recover a saint's relic":"find","Cleanse a desecrated resting place":"defeat","Seek a lost reliquary":"find",
+ "Recover a lost arcane volume":"find","Seek a vanished scholar's manuscript":"find","Investigate an abandoned magical library":"find",
+ "Steal a guarded cache":"find","Find a legendary jewel":"find","Raid a forgotten strongroom":"find",
+ "Recover an ancestral rune":"find","Trace a lost family inscription":"find","Search a forgotten deep hall":"find",
+ "Protect the woodland":"defeat","Seek a rare seed":"find","Preserve a vanishing grove":"find"
+};
+function missionObjectiveKind(title){return MISSION_OBJECTIVE_KIND[title]||"defeat"}
 function createMission(){
  let pool=CLASS_MISSIONS[h.className]||CLASS_MISSIONS.Fighter,m=pool[d(pool.length)-1];
  let trophyPool=TROPHY_COLLECTIONS[h.className]||[],locked=trophyPool.filter(x=>!h.trophies?.includes(x[0]));
  /* Trophy chance is deliberately uncommon: 20% on a successful boss mission, never guaranteed. */
  let trophyCandidate=locked.length&&d(100)<=20?locked[d(locked.length)-1][0]:null;
- return {title:m[0],brief:m[1],trophyCandidate,trophyFound:false,bossWon:false,resolved:false}
+ return {title:m[0],brief:m[1],objectiveKind:missionObjectiveKind(m[0]),objectiveCompleted:false,trophyCandidate,trophyFound:false,bossWon:false,resolved:false}
 }
 function resolveMissionBoss(){
  if(!h.trip?.mission||h.trip.mission.resolved)return;
  let m=h.trip.mission;m.bossWon=true;m.resolved=true;
+ if(!m.objectiveKind)m.objectiveKind=missionObjectiveKind(m.title);
  awardMissionObjectiveTreasure();
+ if(m.objectiveKind==="defeat"){
+   m.objectiveCompleted=true;
+   addlog(`Objective completed: ${m.title}.`,"Objective");
+ }else{
+   m.objectiveCompleted=false;
+ }
  if(m.trophyCandidate&&unlockTrophy(m.trophyCandidate)){
    m.trophyFound=true;
+   if(m.objectiveKind==="find")m.objectiveCompleted=true;
    addlog(`TROPHY DISCOVERED: ${m.trophyCandidate}. It has been added to your ${TROPHY_TITLES[h.className]}.`,"Objective");
  }else{
    m.trophyFound=false;
-   addlog(`Objective completed: ${m.title}. No rare trophy was found this time.`,"Objective");
+   if(m.objectiveKind==="find")addlog(`Objective not found: ${m.title}.`,"Objective");
  }
 }
 
@@ -1333,7 +1350,7 @@ function begin(){let rb=$("#recall");if(rb){rb.disabled=false;rb.textContent="�
 function journeySummaryText(trip=h?.trip){
  if(!trip)return"";
  let xp=Math.max(0,(h.xp||0)-Math.max(0,Number(trip.startXP)||0)),coinDelta=walletCP()-Math.max(0,Number(trip.startWalletCP)||0),hp0=Number.isFinite(Number(trip.startHP))?Number(trip.startHP):h.hp;
- let outcome=trip?.mission?.trophyFound?"Objective completed":trip?.mission?.bossWon?"Boss defeated — objective not found":trip?.returnedEarly?"Returned early":"Journey completed",bits=[outcome,`${trip.durationMinutes} min`,`HP ${hp0}/${h.maxhp} → ${h.hp}/${h.maxhp}`,`+${xp} XP`];
+ let outcome=trip?.mission?.objectiveCompleted?"Objective completed":trip?.mission?.bossWon&&trip?.mission?.objectiveKind==="find"?"Boss defeated — objective not found":trip?.mission?.bossWon?"Boss defeated":trip?.returnedEarly?"Returned early":"Journey completed",bits=[outcome,`${trip.durationMinutes} min`,`HP ${hp0}/${h.maxhp} → ${h.hp}/${h.maxhp}`,`+${xp} XP`];
  bits.push(coinDelta===0?"Coins unchanged":`${coinDelta>0?"+":"−"}${coinTextCP(Math.abs(coinDelta))} net`);
  let sleepCount=Math.max(0,Number(trip.completedSleeps)||0);if(sleepCount)bits.push(`${sleepCount} full sleep${sleepCount===1?"":"s"}`);
  return bits.join(" · ")
@@ -3163,7 +3180,7 @@ function buildAdventureTale(trip=h&&h.trip,opts={}){
  let combat=taleCombatScene(trip,name),facts=taleJourneyFacts(trip,name),rewards=taleJourneyRewards(trip,name),ending="";
  if(opts.ending==="death")ending="The journey ends in disaster. "+name+" falls before reaching town, and the journey is brought to an abrupt end. After the death recall, "+name+" is returned home.";
  else if(trip.trollLessonReturn)ending="With no reason to press the danger further, "+name+" turns back and makes for town.";
- else if(mission.bossWon)ending=(mission.trophyFound?"With the rare trophy secured, "+name+" begins the road home and eventually passes back through the town gates.":"The boss is defeated, but the sought-after trophy is nowhere to be found. "+name+" begins the road home and eventually passes back through the town gates.");
+ else if(mission.bossWon)ending=mission.objectiveCompleted?("With the objective completed, "+name+" begins the road home and eventually passes back through the town gates."):(mission.objectiveKind==="find"?("The boss is defeated, but the sought objective is nowhere to be found. "+name+" begins the road home and eventually passes back through the town gates."):("The boss is defeated. "+name+" begins the road home and eventually passes back through the town gates."));
  else if(trip.returnedEarly)ending="The journey is cut short. "+name+" turns back before the objective is completed and returns safely to town.";
  else ending="When there is nothing more to be gained by remaining on the road, "+name+" turns homeward and returns to town.";
  return [opening,middle,combat,facts,rewards,ending].filter(Boolean).join("\n\n")
