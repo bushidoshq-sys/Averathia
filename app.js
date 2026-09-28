@@ -3173,7 +3173,8 @@ function taleJourneyRewards(trip,name){
 function buildAdventureTale(trip=h&&h.trip,opts={}){
  if(!trip)return opts&&opts.ending==="death"?(h&&h.name||"The adventurer")+" does not return from the journey.":"Nothing noteworthy happened on this journey.";
  let name=h&&h.name||"The adventurer",mission=trip.mission||{},title=mission.title||"Journey",destination=MISSION_STORY_DESTINATION[title]||"the destination",light=trip.lightSource==="lamp"?"lantern":"torch";
- let opening=name+" sets out to "+taleLowerFirst(title)+". "+(mission.brief||"The road beyond town offers no certainty.")+" The trail leads toward "+destination+". ";
+ let opening=name+" sets out toward "+destination+" to "+taleLowerFirst(title)+". ";
+ if(mission.brief)opening+=mission.brief+" ";
  if(trip.mountsUsed===1)opening+="Travelling on horseback, "+name+" secures the horse before continuing on foot, with a "+light+" ready for the darker stretches.";
  else if(trip.mountsUsed>1)opening+="Travelling with horses, "+name+" secures them before continuing on foot, with a "+light+" ready for the darker stretches.";
  else opening+="On foot, "+name+" carries a "+light+" for the darker stretches of the road.";
