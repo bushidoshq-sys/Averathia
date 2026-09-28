@@ -1292,6 +1292,7 @@ function ensureTripSchedule(trip=h?.trip){
  if(!Array.isArray(trip.journal))trip.journal=[];
  if(!Array.isArray(trip.adventureLog))trip.adventureLog=[];
  if(!Number.isFinite(Number(trip.avTreasureXpCP)))trip.avTreasureXpCP=0;
+ ensureJourneyFlavorSchedule(trip);
  if(!Number.isFinite(Number(trip.nextEvent))){
   let firstDelay=Math.min(15000,Math.max(5000,total/(trip.eventTarget+1))),done=trip.journal.length;
   trip.nextEvent=trip.start+firstDelay+done*trip.eventIntervalMs;
@@ -1350,7 +1351,7 @@ function consumeTripSurvivalResources(now=Date.now()){
  if(h.water<=0&&t<h.trip.half&&!h.trip.forcedReturnWater){h.trip.forcedReturnWater=true;returnEarly("You are out of water. You turn back toward town.");return false}
  return true
 }
-function begin(){let rb=$("#recall");if(rb){rb.disabled=false;rb.textContent="↩ Return Early"}if(!hasBackpack()){alert("You need a Backpack before beginning a Journey.");return}if(carriedBulkPoints()>maxCarryBP()+1e-9){alert(`You are carrying ${formatBP(carriedBulkPoints())}/${formatBP(maxCarryBP())} BP. Reduce your load before beginning a Journey.`);return}if(diseaseJourneyBlocked()){alert(`${journeyBlockingCondition()?.name||"Current condition"} prevents travel. You cannot begin a Journey.`);return}if(timedConditionJourneyBlocked()){alert(`${timedConditionBlockingName()} prevents travel. You cannot begin a Journey.`);return}let ret=retainerSelected(),mounts=plannedHorseCount(),horseAttempt=hasHouse()&&h.mounts.useOnJourney;if(horseAttempt&&!mounts){alert("Not enough Riding Horses for mounted travel with this party.");return}let needs=survivalNeedsForMinutes(mins),nw=needs.waterSkins,nf=needs.foodDays,nl=needs.activeATHours*60/AT_RATE;if(h.waterCapacity<nw){alert(`You need ${nw} Waterskins for this party.`);return}if(h.water+1e-9<nw){alert(`Fill ${nw} Waterskins before beginning the Journey.`);return}if(h.rations<nf){alert("Not enough rations.");return}if(mounts&&h.mounts.feedDays+1e-9<needs.mountFeedDays){alert("Not enough Mount Feed.");return}if(journeyUsableLightMinutes()<nl){alert("Not enough usable light. A Lantern is required to use lamp oil.");return}let journeyLight=consumeJourneyLight(nl);if(!journeyLight.ok){alert("Not enough usable light.");return}let now=Date.now(),total=mins*60000,eventTarget=adventureEventTarget(mins),eventIntervalMs=Math.max(5000,total/eventTarget);h.pendingEvent=null;ensureTrophies();let mission=createMission();h.trip={journal:[],adventureLog:[],mission,start:now,end:now+total,half:now+total/2,midBossDone:false,avTreasureXpCP:0,mode,risk,durationMinutes:mins,eventTarget,eventIntervalMs,resourceModel:"at-elapsed-v3-water-refill",resourceAt:now,waterRefillMode:"normal",waterStart:h.water,forcedReturnWater:false,retainer:ret,mountsUsed:mounts,mountedTravel:!!mounts,lightSource:journeyLight.source,plannedActiveATHours:needs.activeATHours,plannedSleepATHours:needs.sleepATHours,startHP:h.hp,startXP:h.xp,startWalletCP:walletCP(),completedSleeps:0,nextEvent:now+Math.min(15000,Math.max(5000,total/(eventTarget+1)))};$("#departSetup").classList.add("hide");$("#travel").classList.remove("hide");$("#departedAt").textContent=clock(h.trip.start);$("#returnAt").textContent=clock(h.trip.end);$("#runner").innerHTML=spriteHTML(h.sex,h.avatar,h.className);$("#log").innerHTML="";let mountText=mounts===1?" Mount secured.":mounts>1?" Mounts secured.":"";
+function begin(){let rb=$("#recall");if(rb){rb.disabled=false;rb.textContent="↩ Return Early"}if(!hasBackpack()){alert("You need a Backpack before beginning a Journey.");return}if(carriedBulkPoints()>maxCarryBP()+1e-9){alert(`You are carrying ${formatBP(carriedBulkPoints())}/${formatBP(maxCarryBP())} BP. Reduce your load before beginning a Journey.`);return}if(diseaseJourneyBlocked()){alert(`${journeyBlockingCondition()?.name||"Current condition"} prevents travel. You cannot begin a Journey.`);return}if(timedConditionJourneyBlocked()){alert(`${timedConditionBlockingName()} prevents travel. You cannot begin a Journey.`);return}let ret=retainerSelected(),mounts=plannedHorseCount(),horseAttempt=hasHouse()&&h.mounts.useOnJourney;if(horseAttempt&&!mounts){alert("Not enough Riding Horses for mounted travel with this party.");return}let needs=survivalNeedsForMinutes(mins),nw=needs.waterSkins,nf=needs.foodDays,nl=needs.activeATHours*60/AT_RATE;if(h.waterCapacity<nw){alert(`You need ${nw} Waterskins for this party.`);return}if(h.water+1e-9<nw){alert(`Fill ${nw} Waterskins before beginning the Journey.`);return}if(h.rations<nf){alert("Not enough rations.");return}if(mounts&&h.mounts.feedDays+1e-9<needs.mountFeedDays){alert("Not enough Mount Feed.");return}if(journeyUsableLightMinutes()<nl){alert("Not enough usable light. A Lantern is required to use lamp oil.");return}let journeyLight=consumeJourneyLight(nl);if(!journeyLight.ok){alert("Not enough usable light.");return}let now=Date.now(),total=mins*60000,eventTarget=adventureEventTarget(mins),eventIntervalMs=Math.max(5000,total/eventTarget);h.pendingEvent=null;ensureTrophies();let mission=createMission();h.trip={journal:[],adventureLog:[],mission,start:now,end:now+total,half:now+total/2,midBossDone:false,avTreasureXpCP:0,mode,risk,durationMinutes:mins,eventTarget,eventIntervalMs,resourceModel:"at-elapsed-v3-water-refill",resourceAt:now,waterRefillMode:"normal",waterStart:h.water,forcedReturnWater:false,retainer:ret,mountsUsed:mounts,mountedTravel:!!mounts,lightSource:journeyLight.source,plannedActiveATHours:needs.activeATHours,plannedSleepATHours:needs.sleepATHours,startHP:h.hp,startXP:h.xp,startWalletCP:walletCP(),completedSleeps:0,nextEvent:now+Math.min(15000,Math.max(5000,total/(eventTarget+1))),nextFlavorAt:now+Math.max(5000,journeyFlavorIntervalMs({eventIntervalMs})/2)};$("#departSetup").classList.add("hide");$("#travel").classList.remove("hide");$("#departedAt").textContent=clock(h.trip.start);$("#returnAt").textContent=clock(h.trip.end);$("#runner").innerHTML=spriteHTML(h.sex,h.avatar,h.className);$("#log").innerHTML="";let mountText=mounts===1?" Mount secured.":mounts>1?" Mounts secured.":"";
  addlog(`${mission.title} — ${mission.brief} ${mins} min Journey${mode==="present"?"":` · ${risk}`}${mountText}`,"Departure");
  renderAdventureLog();save();tick()}
 function journeySummaryText(trip=h?.trip){
@@ -1361,7 +1362,15 @@ function journeySummaryText(trip=h?.trip){
  let sleepCount=Math.max(0,Number(trip.completedSleeps)||0);if(sleepCount)bits.push(`${sleepCount} full sleep${sleepCount===1?"":"s"}`);
  return bits.join(" · ")
 }
-function tick(){clearTimeout(timer);if(ageTimedConditionsClock(Date.now())===false)return;if(!h.trip)return;refreshJourneyWeather();ensureTripSchedule();let now=h.trip.pauseStart||Date.now();processJourneySleep(now);if(!consumeTripSurvivalResources(now))return;let total=h.trip.end-h.trip.start,elapsed=Math.max(0,now-h.trip.start),pct=Math.min(1,elapsed/total),outbound=pct<=0.5,runnerPct=outbound?pct*200:(1-pct)*200;let recall=$("#recall");if(recall){recall.disabled=!outbound;recall.textContent=outbound?"↩ Return Early":"Returning…"}$("#fill").style.width="0%";$("#runner").style.left=runnerPct+"%";$("#runner").style.transform=outbound?"translate(-50%,-62%) scaleX(-1)":"translate(-50%,-62%) scaleX(1)";$("#phase").textContent=(journeyInSleepWindow(now)?"SLEEPING":(outbound?"OUTBOUND / ADVENTURING":"RETURNING"))+(h.trip.mission?` · ${h.trip.mission.title}`:"");let remaining=Math.max(0,h.trip.end-now);$("#remainingClock").textContent=`${Math.floor(remaining/60000)}:${String(Math.floor(remaining/1000)%60).padStart(2,"0")}`;$("#returnAt").textContent=clock(h.trip.end);$("#timeText").textContent=`Elapsed ${Math.floor(elapsed/60000)}:${String(Math.floor(elapsed/1000)%60).padStart(2,"0")} · Remaining ${Math.floor(remaining/60000)}:${String(Math.floor(remaining/1000)%60).padStart(2,"0")}`;if(now>=h.trip.half&&!h.trip.midBossDone&&!h.combat&&!h.pendingEvent&&!journeyInSleepWindow(now)){if(h.trip.mode==="auto")autonomousCombat(true);else makeCombat(true);if(!h.trip)return;h.trip.midBossDone=true;save()}if(now>=h.trip.nextEvent&&now<h.trip.end&&!h.combat&&!h.pendingEvent){
+function tick(){clearTimeout(timer);if(ageTimedConditionsClock(Date.now())===false)return;if(!h.trip)return;refreshJourneyWeather();ensureTripSchedule();let now=h.trip.pauseStart||Date.now();processJourneySleep(now);if(!consumeTripSurvivalResources(now))return;let total=h.trip.end-h.trip.start,elapsed=Math.max(0,now-h.trip.start),pct=Math.min(1,elapsed/total),outbound=pct<=0.5,runnerPct=outbound?pct*200:(1-pct)*200;let recall=$("#recall");if(recall){recall.disabled=!outbound;recall.textContent=outbound?"↩ Return Early":"Returning…"}$("#fill").style.width="0%";$("#runner").style.left=runnerPct+"%";$("#runner").style.transform=outbound?"translate(-50%,-62%) scaleX(-1)":"translate(-50%,-62%) scaleX(1)";$("#phase").textContent=(journeyInSleepWindow(now)?"SLEEPING":(outbound?"OUTBOUND / ADVENTURING":"RETURNING"))+(h.trip.mission?` · ${h.trip.mission.title}`:"");let remaining=Math.max(0,h.trip.end-now);$("#remainingClock").textContent=`${Math.floor(remaining/60000)}:${String(Math.floor(remaining/1000)%60).padStart(2,"0")}`;$("#returnAt").textContent=clock(h.trip.end);$("#timeText").textContent=`Elapsed ${Math.floor(elapsed/60000)}:${String(Math.floor(elapsed/1000)%60).padStart(2,"0")} · Remaining ${Math.floor(remaining/60000)}:${String(Math.floor(remaining/1000)%60).padStart(2,"0")}`;if(now>=h.trip.half&&!h.trip.midBossDone&&!h.combat&&!h.pendingEvent&&!journeyInSleepWindow(now)){if(h.trip.mode==="auto")autonomousCombat(true);else makeCombat(true);if(!h.trip)return;h.trip.midBossDone=true;save()}if(now<h.trip.end&&!h.combat&&!h.pendingEvent){
+ ensureJourneyFlavorSchedule(h.trip);
+ let flavorCatchups=0,flavorInterval=journeyFlavorIntervalMs(h.trip);
+ while(h.trip&&now>=h.trip.nextFlavorAt&&h.trip.nextFlavorAt<h.trip.end&&!h.combat&&!h.pendingEvent&&flavorCatchups<24){
+  let scheduled=h.trip.nextFlavorAt;h.trip.nextFlavorAt+=flavorInterval;
+  if(!journeyInSleepWindow(scheduled,h.trip)){maybeJourneyFlavor(scheduled);flavorCatchups++}
+ }
+}
+if(now>=h.trip.nextEvent&&now<h.trip.end&&!h.combat&&!h.pendingEvent){
  let catchups=0,maxCatchups=h.trip.mode==="auto"?12:1;
  while(h.trip&&now>=h.trip.nextEvent&&h.trip.nextEvent<h.trip.end&&!h.combat&&!h.pendingEvent&&catchups<maxCatchups){
   let scheduled=h.trip.nextEvent;
@@ -3046,20 +3055,35 @@ function journeyFlavorCadenceAllows(){
  let duration=Math.max(1,Number(h.trip.durationMinutes)||1),gapMinutes=duration>=240?20:duration>=60?8:duration>=10?2:0.5;
  return !last||now-last>=gapMinutes*60000
 }
-function maybeJourneyFlavor(){
- if(!h?.trip||h.combat||h.pendingEvent||journeyInSleepWindow()||!journeyFlavorCadenceAllows())return;
- h.trip.lastQuietFlavorAt=Date.now();
- // Weather is deliberately sparse flavour, never a modifier or event source.
- if(d(100)<=25&&maybeJourneyWeatherFlavor())return;
- let env=journeyFlavorEnvironment(),pool=JOURNEY_FLAVOR[env]||JOURNEY_FLAVOR.generic,recent=Array.isArray(h.trip.recentFlavorText)?h.trip.recentFlavorText:[],choices=pool.filter(x=>!recent.includes(x));
- if(!choices.length){recent=[];choices=pool.slice()}
- let t=choices[d(choices.length)-1]||pool[0];recent.push(t);h.trip.recentFlavorText=recent.slice(-Math.min(24,Math.max(1,pool.length-1)));addlog(t,"Quiet")
+function journeyFlavorIntervalMs(trip=h?.trip){
+ if(!trip)return 60000;
+ let actual=Math.max(5000,Number(trip.eventIntervalMs)||60000);
+ // Quiet observations get their own schedule and occur several times between gameplay events.
+ return Math.max(10000,Math.min(120000,actual/3));
+}
+function ensureJourneyFlavorSchedule(trip=h?.trip){
+ if(!trip)return;
+ if(!Number.isFinite(Number(trip.nextFlavorAt))){
+  let base=Number(trip.start)||Date.now(),first=Math.max(5000,journeyFlavorIntervalMs(trip)/2);
+  trip.nextFlavorAt=base+first;
+ }else trip.nextFlavorAt=Number(trip.nextFlavorAt)
+}
+function maybeJourneyFlavor(eventTime=Date.now()){
+ if(!h?.trip||h.combat||h.pendingEvent||journeyInSleepWindow(eventTime,h.trip))return false;
+ let previous=h.trip.currentEventTime;h.trip.currentEventTime=eventTime;
+ try{
+  h.trip.lastQuietFlavorAt=eventTime;
+  // Weather is deliberately sparse flavour, never a modifier or event source.
+  if(d(100)<=25&&maybeJourneyWeatherFlavor())return true;
+  let env=journeyFlavorEnvironment(),pool=JOURNEY_FLAVOR[env]||JOURNEY_FLAVOR.generic,recent=Array.isArray(h.trip.recentFlavorText)?h.trip.recentFlavorText:[],choices=pool.filter(x=>!recent.includes(x));
+  if(!choices.length){recent=[];choices=pool.slice()}
+  let t=choices[d(choices.length)-1]||pool[0];recent.push(t);h.trip.recentFlavorText=recent.slice(-Math.min(24,Math.max(1,pool.length-1)));addlog(t,"Quiet",eventTime);return true
+ }finally{if(h?.trip)h.trip.currentEventTime=previous}
 }
 function event(eventTime=Date.now()){
  if(!h||!h.trip||h.combat||h.pendingEvent)return;
  h.trip.currentEventTime=eventTime;
  try{
-  if(d(100)<=35)maybeJourneyFlavor();
   let ev=pickEvent();
   if(ev.choices.length&&h.trip.mode==="present"){beginTripPause();adventureLog(`${ev.title}: ${ev.text}`,ev.type||"Event");h.pendingEvent=ev;renderPendingEvent();save();return}
   if(ev.choices.length){applyEventChoice(ev,autonomousChoice(ev));return}
