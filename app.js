@@ -712,7 +712,7 @@ const AV_WEAPON_BP={
 const AV_GEAR_BP={
  "Backpack":20,"50-foot Rope":50,"Tinder Box":5,"Grappling Hook":80,"Garlic":1,"Hammer":10,"Holy Water":1,
  "Iron Spike":1,"12 Iron Spikes":5,"Steel Mirror":5,"10-foot Pole":100,"Belt Pouch":2,"Quiver":5,
- "Small Sack":1,"Large Sack":5,"3 Stakes + Mallet":10,"Wine — 1 quart":30,"Wolfsbane":1,"Healing Potion":10,
+ "Small Sack":1,"Large Sack":5,"3 Stakes + Mallet":10,"Wine — 1 quart":30,"Wolfsbane":1,"Healing Potion":10,"Antivenom":10,"Tincture":10,
  "Belt":5,"Plain Boots":10,"Riding Boots":15,"Short Cloak":10,"Long Cloak":15,"Plain Clothes":20,
  "Middle-Class Clothes":20,"Fine Clothes":20,"Extravagant Clothes":30,"Hat or Cap":3,"Shoes":8,
  "Basic Canvas Shoes":8,"Canvas Tunic":20,"Hemp Rope Belt":5,"Holy Symbol":1,"Thief's Tools":10,"Spellbook":200
@@ -1143,7 +1143,15 @@ function equip(i,slot=null){
 }
 document.addEventListener("click",e=>{if(e.target.dataset.eq!==undefined)equip(+e.target.dataset.eq,e.target.dataset.eqSlot||null)});
 
-if($("#buyHealingPotion"))$("#buyHealingPotion").onclick=()=>{let cost=gpToCP(10);if(walletCP()<cost){$("#healmsg").textContent="Healing Potion costs 10 gp.";return}if(!canCarryAdditionalBP(itemBulkPoints({n:"Healing Potion"}))){$("#healmsg").textContent="Not enough BP to carry another Healing Potion.";return}setWalletCP(walletCP()-cost);h.inv.push({n:"Healing Potion",kind:"gear",can:false,eq:false});$("#healmsg").textContent="Healing Potion purchased.";save();refresh()};
+function buyHealerSupply(name,costGP){
+ let cost=gpToCP(costGP),bp=itemBulkPoints({n:name});if(walletCP()<cost){$("#healmsg").textContent=name+" costs "+costGP+" gp.";return}
+ if(!canCarryAdditionalBP(bp)){$("#healmsg").textContent="Not enough BP to carry "+name+".";return}
+ setWalletCP(walletCP()-cost);h.inv.push({n:name,kind:"gear",can:false,eq:false});$("#healmsg").textContent=name+" purchased.";save();refresh()
+}
+if($("#buyHealingPotion"))$("#buyHealingPotion").onclick=()=>buyHealerSupply("Healing Potion",10);
+if($("#buyAntivenom"))$("#buyAntivenom").onclick=()=>buyHealerSupply("Antivenom",curePoisonCostGP());
+if($("#buyTincture"))$("#buyTincture").onclick=()=>buyHealerSupply("Tincture",cureDiseaseCostGP());
+
 $$("[data-heal]").forEach(b=>b.onclick=()=>{let pct=+b.dataset.heal,cost=gpToCP({10:2,50:10,100:20}[pct]);if(magicalHealingBlockedByDisease()){$("#healmsg").textContent="Tomb Rot blocks magical healing. Cure the disease first.";return}if(walletCP()<cost){$("#healmsg").textContent="Not enough gold.";return}if(h.hp>=h.maxhp){$("#healmsg").textContent="Already at full health.";return}setWalletCP(walletCP()-cost);h.hp=Math.min(h.maxhp,h.hp+Math.ceil(h.maxhp*pct/100));$("#healmsg").textContent="Healing complete.";save()});if($("#cureDiseaseHealer"))$("#cureDiseaseHealer").onclick=()=>{let target=nextDiseaseForCure(),price=cureDiseaseCostGP(),cost=gpToCP(price);if(!target){$("#healmsg").textContent="No disease to cure.";return}if(walletCP()<cost){$("#healmsg").textContent=`Cure Disease costs ${price} gp.`;return}setWalletCP(walletCP()-cost);let cured=cureOneDisease();$("#healmsg").textContent=`${cured.name} cured for ${price} gp.`;save()};if($("#curePoisonHealer"))$("#curePoisonHealer").onclick=()=>{let target=nextPoisonForCure(),price=curePoisonCostGP(),cost=gpToCP(price);if(!target){$("#healmsg").textContent="No poison to cure.";return}if(walletCP()<cost){$("#healmsg").textContent=`Cure Poison costs ${price} gp.`;return}setWalletCP(walletCP()-cost);let cured=cureOnePoison();$("#healmsg").textContent=`${cured.name} cured for ${price} gp.`;save()};
 if($("#fillWaterskinsBtn"))$("#fillWaterskinsBtn").onclick=fillWaterskinsManual;
 function updateJourneyModeRiskUI(){
