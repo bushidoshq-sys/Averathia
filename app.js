@@ -1382,13 +1382,360 @@ const AV_TREASURE_CARRIED={
  U:{coins:{cp:{chance:10,dice:"1d100"},sp:{chance:10,dice:"1d100"},gp:{chance:5,dice:"1d100"}},gems:{chance:5,dice:"1d2"},jewelry:{chance:5,dice:"1d4"},special:{chance:2,dice:"1"},magic:{chance:2,dice:"1"}},
  V:{coins:{sp:{chance:10,dice:"1d100"},ep:{chance:5,dice:"1d100"},gp:{chance:10,dice:"1d100"},pp:{chance:5,dice:"1d100"}},gems:{chance:10,dice:"1d2"},jewelry:{chance:10,dice:"1d4"},special:{chance:5,dice:"1"},magic:{chance:5,dice:"1"}}
 };
+const AV_TREASURE_LAIR={
+ A:{coins:{cp:[25,"1d6"],sp:[30,"1d6"],ep:[20,"1d4"],gp:[35,"2d6"],pp:[25,"1d2"]},gems:[50,"6d6"],jewelry:[50,"6d6"],special:[10,"1d2"],magic:[30,{any:3}]},
+ B:{coins:{cp:[50,"1d8"],sp:[25,"1d6"],ep:[25,"1d4"],gp:[35,"1d3"]},gems:[25,"1d6"],jewelry:[25,"1d6"],magic:[10,{oneOf:["sword","miscWeapon","armor"]}]},
+ C:{coins:{cp:[20,"1d12"],sp:[30,"1d4"],ep:[10,"1d4"]},gems:[25,"1d4"],jewelry:[25,"1d4"],special:[5,"1d2"],magic:[10,{any:2}]},
+ D:{coins:{cp:[10,"1d8"],sp:[15,"2d12"],gp:[60,"1d6"]},gems:[30,"1d8"],jewelry:[30,"1d8"],special:[10,"1d2"],magic:[15,{any:2,potion:1}]},
+ E:{coins:{cp:[5,"1d10"],sp:[30,"2d12"],ep:[25,"1d4"],gp:[25,"1d8"]},gems:[10,"1d10"],jewelry:[10,"1d10"],special:[15,"1d2"],magic:[25,{any:3,scroll:1}]},
+ F:{coins:{sp:[10,"2d10"],ep:[20,"1d8"],gp:[45,"1d12"],pp:[30,"1d3"]},gems:[20,"2d12"],jewelry:[10,"1d12"],special:[20,"1d3"],magic:[30,{potion:1,scroll:1,anyButWeapons:3}]},
+ G:{coins:{gp:[50,"1d4x10"],pp:[50,"1d6"]},gems:[25,"3d6"],jewelry:[25,"1d10"],special:[30,"1d3"],magic:[35,{any:4,scroll:1}]},
+ H:{coins:{cp:[25,"3d8"],sp:[50,"1d100"],ep:[50,"1d4x10"],gp:[50,"1d6x10"],pp:[25,"5d4"]},gems:[50,"1d100"],jewelry:[50,"1d4x10"],special:[10,"1d2"],magic:[15,{potion:1,scroll:1,any:4}]},
+ I:{coins:{pp:[30,"1d8"]},gems:[50,"2d6"],jewelry:[50,"2d6"],special:[5,"1d2"],magic:[15,{any:1}]},
+ J:{coins:{cp:[25,"1d4"],sp:[10,"1d3"]}},
+ K:{coins:{sp:[30,"1d6"],ep:[10,"1d2"]}},
+ L:{coins:{},gems:[50,"1d4"]},
+ M:{coins:{gp:[40,"2d4"],pp:[50,"3d10"]},gems:[55,"5d4"],jewelry:[45,"2d6"]},
+ N:{coins:{},special:[10,"1d2"],magic:[40,{potions:"2d4"}]},
+ O:{coins:{},special:[10,"1d3"],magic:[50,{scrolls:"1d4"}]}
+};
+const AV_GEM_VALUE=[
+ [3,10],[10,50],[25,100],[46,500],[71,1000],[90,5000],[97,10000],[100,"special"]
+];
+const AV_JEWELRY_VALUE=[
+ [1,100],[3,500],[6,1000],[10,1500],[16,2000],[24,2500],[34,3000],[45,4000],[58,5000],
+ [69,7500],[78,10000],[85,15000],[90,20000],[94,25000],[97,30000],[99,40000],[100,50000]
+];
+const AV_MAGIC_MAIN=[
+ [25,"potion"],[37,"scroll"],[46,"wandStaffRod"],[52,"ring"],[62,"miscMagic"],
+ [72,"armorShield"],[83,"missileWeaponOrMissile"],[92,"sword"],[100,"miscWeapon"]
+];
+const AV_COIN_TO_CP={cp:1,sp:10,ep:50,gp:100,pp:500};
+const AV_POTION_TABLE=[
+ [2,"Agility"],[3,"Animal Control"],[6,"Antidote"],[8,"Blending"],[10,"Bug Repellent"],
+ [12,"Clairaudience"],[14,"Clairvoyance"],[16,"Climbing"],[18,"Defense"],[22,"Delusion"],
+ [24,"Diminution"],[25,"Dragon Control"],[27,"Dreamspeech"],[28,"Elasticity"],[30,"Elemental Form"],
+ [32,"ESP"],[33,"Ethereality"],[36,"Fire Resistance"],[39,"Flying"],[41,"Fortitude"],
+ [42,"Freedom"],[45,"Gaseous Form"],[46,"Giant Control"],[49,"Giant Strength"],[51,"Growth"],
+ [57,"Healing"],[60,"Heroism"],[61,"Human Control"],[64,"Invisibility"],[66,"Invulnerability"],
+ [68,"Levitation"],[70,"Longevity"],[71,"Luck"],[72,"Merging"],[74,"Plant Control"],
+ [77,"Poison"],[80,"Polymorph Self"],[82,"Sight"],[84,"Speech"],[88,"Speed"],
+ [90,"Strength"],[93,"Super-Healing"],[96,"Swimming"],[97,"Treasure Finding"],[98,"Undead Control"],
+ [100,"Water Breathing"]
+];
+const AV_SCROLL_TABLE=[
+ [3,"Communication"],[5,"Creation"],[13,"Curse"],[14,"Delay"],[17,"Equipment"],[19,"Illumination"],
+ [21,"Mages"],[25,"Map to normal treasure"],[28,"Map to magical treasure"],[30,"Map to combined treasure"],
+ [31,"Map to special treasure"],[34,"Mapping"],[36,"Portals"],[42,"Protection from Elementals"],
+ [50,"Protection from Lycanthropes"],[54,"Protection from Magic"],[61,"Protection from Undead"],
+ [63,"Questioning"],[64,"Repetition"],[66,"Seeing"],[68,"Shelter"],[71,"Spell Catching"],
+ [96,"Spell"],[98,"Trapping"],[100,"Truth"]
+];
+const AV_SCROLL_SPELL_COUNT=[[50,1],[83,2],[100,3]];
+const AV_SCROLL_SPELL_LEVEL_CLERICAL=[[34,1],[58,2],[76,3],[88,4],[95,5],[99,6],[100,7]];
+const AV_SCROLL_SPELL_LEVEL_MAGICAL=[[28,1],[49,2],[64,3],[75,4],[84,5],[91,6],[96,7],[99,8],[100,9]];
+const AV_SCROLL_LOW_SPELLS={
+ Magical:{
+  1:["Analyze","Charm Person","Detect Magic","Floating Disc","Hold Portal","Light","Magic Missile","Protection from Evil","Read Languages","Read Magic","Shield","Sleep","Ventriloquism"],
+  2:["Continual Light","Detect Evil","Detect Invisible","Entangle","ESP","Invisibility","Knock","Levitate","Locate Object","Mirror Image","Phantasmal Force","Web","Wizard Lock"],
+  3:["Clairvoyance","Create Air","Dispel Magic","Fireball","Fly","Haste","Hold Person","Infravision","Invisibility 10' Radius","Lightning Bolt","Protection from Evil 10' Radius","Protection from Normal Missiles","Water Breathing"]
+ },
+ Clerical:{
+  1:["Cure Light Wounds","Detect Evil","Detect Magic","Light","Protection from Evil","Purify Food and Water","Remove Fear","Resist Cold"],
+  2:["Bless","Find Traps","Know Alignment","Hold Person","Resist Fire","Silence 15' Radius","Snake Charm","Speak with Animals"],
+  3:["Continual Light","Cure Disease","Growth of Animals","Locate Object","Remove Curse","Striking"]
+ }
+};
+function avScrollSpellType(){let r=d(100);return r<=70?"Magical":r<=95?"Clerical":"Druidic"}
+function avScrollSpellLevel(type){
+ let table=type==="Magical"?AV_SCROLL_SPELL_LEVEL_MAGICAL:AV_SCROLL_SPELL_LEVEL_CLERICAL;
+ return avTablePick(table)
+}
+function avImplementedSpellLink(type,name,level){
+ let list=type==="Magical"?(typeof ARCANE_NOW!=="undefined"?ARCANE_NOW:[]):type==="Clerical"?(typeof CLERIC_NOW!=="undefined"?CLERIC_NOW:[]):[];
+ let hit=list.find(x=>x.sl===level&&(x.av===name||x.name===name));
+ return hit?{id:hit.id,name:hit.name,av:hit.av,sl:hit.sl}:null
+}
+function avRollSpellScrollDetail(){
+ let type=avScrollSpellType(),count=avTablePick(AV_SCROLL_SPELL_COUNT),spells=[];
+ for(let i=0;i<count;i++){
+  let level=avScrollSpellLevel(type),names=AV_SCROLL_LOW_SPELLS[type]?.[level]||null,name=names?names[d(names.length)-1]:null;
+  let entry={type,level,name:name||null};
+  if(name)entry.implemented=avImplementedSpellLink(type,name,level);
+  spells.push(entry)
+ }
+ return{type,count,spells}
+}
+
+const AV_WAND_STAFF_ROD_TABLE=[
+ [5,"Wand of Cold"],[10,"Wand of Enemy Detection"],[14,"Wand of Fear"],[19,"Wand of Fireballs"],
+ [23,"Wand of Illusion"],[28,"Wand of Lightning Bolts"],[33,"Wand of Magic Detection"],
+ [38,"Wand of Metal Detection"],[42,"Wand of Negation"],[47,"Wand of Paralyzation"],
+ [52,"Wand of Polymorphing"],[56,"Wand of Secret Door Detection"],[60,"Wand of Trap Detection"],
+ [61,"Staff of Commanding"],[63,"Staff of Dispelling"],[66,"Staff of the Druids"],
+ [69,"Staff of an Element"],[71,"Staff of Harming"],[78,"Staff of Healing"],[79,"Staff of Power"],
+ [82,"Snake Staff"],[85,"Staff of Striking"],[87,"Staff of Withering"],[88,"Staff of Wizardry"],
+ [90,"Rod of Cancellation"],[91,"Rod of Dominion"],[92,"Rod of Health"],[94,"Rod of Inertia"],
+ [95,"Rod of Parrying"],[96,"Rod of Victory"],[99,"Rod of Weaponry"],[100,"Rod of the Wyrm"]
+];
+const AV_RING_TABLE=[
+ [2,"Animal Control"],[8,"Delusion"],[9,"Djinni Summoning"],[13,"Ear"],[17,"Elemental Adaptation"],
+ [23,"Fire Resistance"],[26,"Holiness"],[27,"Human Control"],[32,"Invisibility"],[35,"Life Protection"],
+ [38,"Memory"],[40,"Plant Control"],[45,"Protection +1"],[48,"Protection +2"],[50,"Protection +3"],
+ [51,"Protection +4"],[55,"Quickness"],[56,"Regeneration"],[59,"Remedies"],[61,"Safety"],
+ [64,"Seeing"],[67,"Spell Eating"],[69,"Spell Storing"],[71,"Spell Turning"],[75,"Survival"],
+ [77,"Telekinesis"],[81,"Truth"],[84,"Truthfulness"],[86,"Truthlessness"],[91,"Water Walking"],
+ [96,"Weakness"],[98,"Wishes"],[100,"X-ray Vision"]
+];
+const AV_MISC_MAGIC_TABLE=[
+ [2,"Amulet of Protection from Crystal Balls and ESP"],[4,"Bag of Devouring"],[9,"Bag of Holding"],
+ [12,"Boat, Undersea"],[14,"Boots of Levitation"],[17,"Boots of Speed"],[19,"Boots of Traveling/Leaping"],
+ [20,"Bowl of Commanding Water Elementals"],[21,"Brazier of Commanding Fire Elementals"],[23,"Broom of Flying"],
+ [24,"Censer of Controlling Air Elementals"],[27,"Chime of Time"],[29,"Crystal Ball"],[30,"Crystal Ball with Clairaudience"],
+ [31,"Crystal Ball with ESP"],[33,"Displacer Cloak"],[34,"Drums of Panic"],[35,"Efreeti Bottle"],
+ [38,"Egg of Wonder"],[40,"Elven Boots"],[42,"Elven Cloak"],[43,"Flying Carpet"],[45,"Gauntlets of Ogre Power"],
+ [47,"Girdle of Giant Strength"],[49,"Helm of Alignment Changing"],[51,"Helm of Reading"],[52,"Helm of Telepathy"],
+ [53,"Helm of Teleportation"],[54,"Horn of Blasting"],[56,"Lamp, Hurricane"],[59,"Lamp of Long Burning"],
+ [61,"Medallion of ESP, 30' range"],[62,"Medallion of ESP, 90' range"],[63,"Mirror of Life Trapping"],
+ [66,"Muzzle of Training"],[68,"Nail, Finger"],[71,"Nail of Pointing"],[76,"Ointment"],[79,"Pouch of Security"],
+ [82,"Quill of Copying"],[86,"Rope of Climbing"],[88,"Scarab of Protection"],[91,"Slate of Identification"],
+ [92,"Stone of Controlling Earth Elementals"],[94,"Talisman of Elemental Travel"],[97,"Wheel of Floating"],
+ [98,"Wheel of Fortune"],[100,"Wheel, Square"]
+];
+const AV_ARMOR_SIZE=[[68,"Human"],[81,"Dwarf"],[91,"Elf"],[98,"Halfling"],[100,"Giant"]];
+const AV_ARMOR_TYPE=[
+ [10,"Leather Armor"],[17,"Scale Mail"],[30,"Chain Mail"],[39,"Banded Mail"],[50,"Plate Mail"],
+ [55,"Suit Armor"],[75,"Shield"],[77,"Scale Mail & Shield"],[85,"Chain Mail & Shield"],
+ [90,"Banded Mail & Shield"],[100,"Plate Mail & Shield"]
+];
+const AV_ARMOR_SPECIAL=[[7,"Absorption"],[17,"Charm"],[32,"Cure Wounds"],[42,"Electricity"],[47,"Energy Drain"],[50,"Ethereality"],[60,"Fly"],[66,"Gaseous Form"],[75,"Haste"],[85,"Invisibility"],[93,"Reflection"],[100,"Remove Curse"]];
+const AV_SIMPLE_MAGIC_MISSILE=[
+ [6,"Arrows +1 (2d10)"],[11,"Arrows +2 (2d6)"],[15,"Arrows +3 (2d4)"],[18,"Arrow +1, silver"],[20,"Arrow +2, silver"],[21,"Arrow +3, silver"],
+ [25,"Blowgun +1"],[28,"Bola +1"],[33,"Short Bow +1"],[37,"Short Bow +2"],[40,"Short Bow +3"],
+ [45,"Long Bow +1"],[49,"Long Bow +2"],[52,"Long Bow +3"],[57,"Light Crossbow +1"],[61,"Light Crossbow +2"],[64,"Light Crossbow +3"],
+ [69,"Heavy Crossbow +1"],[73,"Heavy Crossbow +2"],[76,"Heavy Crossbow +3"],[82,"Quarrels +1 (2d10)"],[87,"Quarrels +2 (2d6)"],
+ [91,"Quarrels +3 (2d4)"],[94,"Quarrel +1, silver"],[96,"Quarrel +2, silver"],[97,"Quarrel +3, silver"],[100,"Sling +1"]
+];
+const AV_SIMPLE_MAGIC_SWORD=[
+ [10,"Short Sword +1"],[20,"Short Sword +2"],[30,"Short Sword +3"],[34,"Sword +1"],[35,"Sword +1, +3 vs dragonkind"],
+ [36,"Sword +1, +3 vs giantkind"],[37,"Sword +1, +3 vs lycanthropes"],[38,"Sword +1, +3 vs regenerating monsters"],
+ [39,"Sword +1, +3 vs spellcasters"],[40,"Sword +1, +3 vs undead"],[50,"Sword +2"],[60,"Sword +3"],[64,"Bastard Sword +1"],
+ [65,"Bastard Sword +1, +3 vs dragonkind"],[66,"Bastard Sword +1, +3 vs giantkind"],[67,"Bastard Sword +1, +3 vs lycanthropes"],
+ [68,"Bastard Sword +1, +3 vs regenerating monsters"],[69,"Bastard Sword +1, +3 vs spellcasters"],[70,"Bastard Sword +1, +3 vs undead"],
+ [75,"Bastard Sword +2"],[80,"Bastard Sword +3"],[84,"Two-Handed Sword +1"],[85,"Two-Handed Sword +1, +3 vs dragonkind"],
+ [86,"Two-Handed Sword +1, +3 vs giantkind"],[87,"Two-Handed Sword +1, +3 vs lycanthropes"],[88,"Two-Handed Sword +1, +3 vs regenerating monsters"],
+ [89,"Two-Handed Sword +1, +3 vs spellcasters"],[90,"Two-Handed Sword +1, +3 vs undead"],[95,"Two-Handed Sword +2"],[100,"Two-Handed Sword +3"]
+];
+const AV_SIMPLE_MAGIC_MISC_WEAPON=[
+ [5,"Battle Axe +1"],[8,"Battle Axe +2"],[10,"Battle Axe +3"],[15,"Hand Axe +1"],[18,"Hand Axe +2"],[20,"Hand Axe +3"],
+ [25,"Dagger +1"],[28,"Dagger +2"],[30,"Dagger +3"],[35,"Throwing Hammer +1"],[38,"Throwing Hammer +2"],[40,"Throwing Hammer +3"],
+ [45,"War Hammer +1"],[48,"War Hammer +2"],[50,"War Hammer +3"],[55,"Mace +1"],[58,"Mace +2"],[60,"Mace +3"],
+ [65,"Polearm +1"],[68,"Polearm +2"],[70,"Polearm +3"],[72,"Horned Shield +1"],[75,"Knife Shield +1"],[78,"Sword Shield +1"],
+ [80,"Tusked Shield +1"],[85,"Spear +1"],[88,"Spear +2"],[90,"Spear +3"],[95,"Staff +1"],[98,"Staff +2"],[100,"Staff +3"]
+];
+
+function avTablePick(table,roll=d(100)){for(const [max,value] of table)if(roll<=max)return value;return table.at(-1)?.[1]}
+function avRollScaled(expr){
+ let m=/^(\d+d\d+(?:[+-]\d+)?|\d+)(?:x(\d+))?$/i.exec(String(expr||"").replace(/\s+/g,""));
+ if(!m)return 0;
+ let base=/d/i.test(m[1])?rollExpr(m[1]):+m[1],mult=+(m[2]||1);
+ return Math.max(0,base*mult);
+}
+function avCoinValueCP(kind,count){return Math.max(0,Math.floor(Number(count)||0))*(AV_COIN_TO_CP[kind]||0)}
+function avCreditCoins(coins={}){
+ let total=0,converted={ep:0,pp:0};
+ for(const [kind,count] of Object.entries(coins)){total+=avCoinValueCP(kind,count);if(kind==="ep"||kind==="pp")converted[kind]+=count}
+ let credited=creditWalletValueCP(total,!!h?.trip);
+ return{cpValue:credited.cpValue,leftCP:credited.leftCP,converted};
+}
+function avMagicInventoryItem(category,name){
+ if(category==="potion"&&name==="Healing")return{n:"Healing Potion",kind:"gear",can:false,eq:false,avMagic:true,avCategory:"potion",avItem:"Healing"};
+ let supported=(category==="potion"&&["Super-Healing","Fire Resistance","Speed","Defense","Freedom","Antidote"].includes(name))||(category==="wandStaffRod"&&["Wand of Fireballs","Wand of Lightning Bolts","Staff of Healing","Rod of Health"].includes(name));
+ return{n:`Averathia ${category}: ${name}`,kind:"gear",can:false,eq:false,avMagic:true,avCategory:category,avItem:name,unsupportedMagic:!supported};
+}
+function rollRcPotion(){let name=avTablePick(AV_POTION_TABLE);return avMagicInventoryItem("potion",name)}
+function avChargesFor(name){
+ if(name.startsWith("Wand "))return rollExpr("3d10");
+ if(name.startsWith("Staff ")||name==="Snake Staff")return rollExpr("2d20");
+ return null
+}
+function avArmorBonusFor(type){
+ let r=d(100),group=/Shield/.test(type)&&!/Mail/.test(type)?"shield":/Plate|Suit/.test(type)?"plate":/Chain/.test(type)?"chain":"light";
+ let cuts=group==="shield"?[[40,1],[67,2],[84,3],[94,4],[100,5]]:group==="plate"?[[50,1],[74,2],[88,3],[96,4],[100,5]]:group==="chain"?[[60,1],[81,2],[92,3],[98,4],[100,5]]:[[70,1],[88,2],[96,3],[99,4],[100,5]];
+ return avTablePick(cuts,r)
+}
+const AV_SUPPORTED_MAGIC_WEAPON_BASES=new Set(["Short Sword","Sword","Two-Handed Sword","Battle Axe","Hand Axe","Dagger","Throwing Hammer","War Hammer","Mace","Polearm","Spear","Staff","Short Bow","Long Bow","Light Crossbow","Heavy Crossbow","Sling"]);
+const AVERATHIA_MAGIC_TIER_NAMES={1:"Gilded",2:"Etched",3:"Runed",4:"Touched",5:"Blessed"};
+const AVERATHIA_BANE_NAMES={
+ "dragonkind":"Dragon Bane","giantkind":"Giant Bane","lycanthropes":"Lycanthrope Bane",
+ "regenerating monsters":"Regeneration Bane","spellcasters":"Spellcaster Bane","undead":"Undead Bane"
+};
+function magicTierName(bonus){return AVERATHIA_MAGIC_TIER_NAMES[Math.max(1,Math.min(5,Math.trunc(Number(bonus)||1)))]||"Enchanted"}
+function magicPropertyName(raw){let key=String(raw||"").trim().toLowerCase();return AVERATHIA_BANE_NAMES[key]||String(raw||"").trim()}
+function magicCounterTarget(raw){let key=String(raw||"").trim().toLowerCase(),map={"dragonkind":"Dragonkind","giantkind":"Giantkind","lycanthropes":"Lycanthropes","regenerating monsters":"Regenerating Monsters","spellcasters":"Spellcasters","undead":"Undead"};return map[key]||String(raw||"").trim()}
+function formatMagicBonusCounter(bonus,vsBonus=0,vs=null){let base=`+${bonus}`;return vsBonus&&vs?`(${base} / +${vsBonus} vs ${magicCounterTarget(vs)})`:`(${base})`}
+function formatMagicWeaponName(base,bonus,vsBonus=0,vs=null){let prop=vs?`, ${magicPropertyName(vs)}`:"";return `${magicTierName(bonus)} ${base}${prop} ${formatMagicBonusCounter(bonus,vsBonus,vs)}`}
+function formatMagicArmorName(size,type,bonus,power=null,cursed=false){
+ let sizePart=size&&size!=="Human"?`${size} `:"",special=power?`${magicPropertyName(power)} `:"",curse=cursed?"Cursed ":"";
+ return `${magicTierName(bonus)} ${curse}${special}${sizePart}${type} (+${bonus})`
+}
+function refreshRcMagicDisplayName(item){
+ if(!item?.avMagic)return item;
+ if(item.kind==="weapon"&&item.baseWeapon&&item.magicBonus){item.n=formatMagicWeaponName(item.baseWeapon,item.magicBonus,item.avVsBonus,item.avVs);return item}
+ if(["armor","shield"].includes(item.kind)&&item.baseArmor&&item.magicBonus){item.n=formatMagicArmorName(item.avSize,item.baseArmor,item.magicBonus,item.avSpecialPower,item.cursed);return item}
+ return item
+}
+function avParseMagicWeaponName(name){
+ let m=/^(.*) \+(\d)(?:, \+(\d) vs (.+))?$/.exec(String(name||""));if(!m)return null;
+ let base=m[1],bonus=+m[2],vsBonus=m[3]?+m[3]:0,vs=m[4]||null;
+ if(!AV_SUPPORTED_MAGIC_WEAPON_BASES.has(base))return null;
+ return{base,bonus,vsBonus,vs}
+}
+function avMagicWeaponItem(category,name){
+ let p=avParseMagicWeaponName(name);if(!p)return{n:name,kind:"gear",can:false,eq:false,avMagic:true,avCategory:category,avItem:name,unsupportedMagic:true,avWeaponGeneration:"simple"};
+ let item={n:formatMagicWeaponName(p.base,p.bonus,p.vsBonus,p.vs),kind:"weapon",can:true,eq:false,avMagic:true,magical:true,avCategory:category,avItem:name,baseWeapon:p.base,magicBonus:p.bonus,avVsBonus:p.vsBonus,avVs:p.vs,unsupportedMagic:!!p.vs,partialMagic:!!p.vs,avWeaponGeneration:"simple"};
+ return item
+}
+function avArmorNormalSize(size){return ["Human","Dwarf","Elf"].includes(size)}
+function avMagicArmorItem(size,type,bonus,power,cursed,name){
+ let single=type==="Shield"||SHOP.Armor.some(x=>x[0]===type),normal=avArmorNormalSize(size),display=formatMagicArmorName(size,type,bonus,power,cursed);
+ if(!single||!normal||cursed)return{n:display,kind:"gear",can:false,eq:false,avMagic:true,avCategory:"armorShield",avItem:type,avOriginalName:name,avSize:size,magicBonus:bonus,avSpecialPower:power,cursed,unsupportedMagic:true};
+ let kind=type==="Shield"?"shield":"armor";return{n:display,kind,can:true,eq:false,avMagic:true,magical:true,avCategory:"armorShield",avItem:type,avOriginalName:name,baseArmor:type,avSize:size,magicBonus:bonus,avSpecialPower:power,cursed:false,unsupportedMagic:!!power,partialMagic:!!power}
+}
+function rollRcArmorShield(){
+ let size=avTablePick(AV_ARMOR_SIZE),type=avTablePick(AV_ARMOR_TYPE),bonus=avArmorBonusFor(type),chance={1:10,2:15,3:20,4:25,5:30}[bonus],power=avChance(chance)?avTablePick(AV_ARMOR_SPECIAL):null,cursed=d(8)===1;
+ let name=`${size} ${type} ${cursed?"cursed ":""}+${bonus}${power?" — "+power:""}`;
+ return avMagicArmorItem(size,type,bonus,power,cursed,name)
+}
+function rollRcSimpleMagicWeapon(category){
+ let table=category==="missileWeaponOrMissile"?AV_SIMPLE_MAGIC_MISSILE:category==="sword"?AV_SIMPLE_MAGIC_SWORD:AV_SIMPLE_MAGIC_MISC_WEAPON;
+ let name=avTablePick(table);return avMagicWeaponItem(category,name)
+}
+function rollRcNamedMagic(category){
+ if(category==="armorShield")return rollRcArmorShield();
+ if(["missileWeaponOrMissile","sword","miscWeapon"].includes(category))return rollRcSimpleMagicWeapon(category);
+ let table={scroll:AV_SCROLL_TABLE,wandStaffRod:AV_WAND_STAFF_ROD_TABLE,ring:AV_RING_TABLE,miscMagic:AV_MISC_MAGIC_TABLE}[category];
+ if(!table)return avMagicInventoryItem(category,"Unresolved Averathia subtable item");
+ let name=avTablePick(table),item=avMagicInventoryItem(category,name),charges=avChargesFor(name);
+ if(charges!=null)item.charges=charges;
+ if(category==="scroll"&&name==="Spell"){
+   let detail=avRollSpellScrollDetail();item.avSpellScroll=true;item.avScrollType=detail.type;item.spellCount=detail.count;item.avScrollSpells=detail.spells;
+   item.n=`Averathia Spell Scroll — ${detail.type} (${detail.count} spell${detail.count===1?"":"s"})`;
+ }
+ return item
+}
+function rollRcMagicAny(allowed=null){
+ let candidates=AV_MAGIC_MAIN.filter(([,c])=>!allowed||allowed.includes(c)),roll=d(100),cat;
+ if(!allowed)cat=avTablePick(AV_MAGIC_MAIN,roll);
+ else{let guard=0;do{cat=avTablePick(AV_MAGIC_MAIN)}while(!allowed.includes(cat)&&++guard<100);if(!allowed.includes(cat))cat=allowed[d(allowed.length)-1]}
+ if(cat==="potion")return rollRcPotion();
+ return rollRcNamedMagic(cat)
+}
+
+const AV_JEWELRY_TYPES={
+ common:["Anklet","Beads","Bracelet","Brooch","Buckle","Cameo","Chain","Clasp","Locket","Pin"],
+ uncommon:["Armband","Belt","Collar","Earring","Four-Leaf Clover","Heart","Leaf","Necklace","Pendant","Rabbit's Foot"],
+ rare:["Amulet","Crown","Diadem","Medallion","Orb","Ring (nonmagical)","Scarab","Scepter","Talisman","Tiara"]
+};
+const AV_SPECIAL_TREASURE_TABLE=[
+ {max:10,n:"Rare Book",enc:"2d100",value:"1d100x10"},
+ {max:12,n:"Common Fur Pelt",enc:"1d6x10",value:"1d4"},
+ {max:17,n:"Common Fur Cape",enc:"1d8+4x10",value:"1d6x100"},
+ {max:20,n:"Common Fur Coat",enc:"2d6+8x10",value:"3d4x100"},
+ {max:22,n:"Rare Fur Pelt",enc:"1d6x10",value:"2d6"},
+ {max:27,n:"Rare Fur Cape",enc:"1d8+4x10",value:"4d6x100"},
+ {max:30,n:"Rare Fur Coat",enc:"2d6+8x10",value:"1d6x1000"},
+ {max:35,n:"Rare Incense",enc:"1",value:"5d6",unit:"stick"},
+ {max:40,n:"Rare Perfume",enc:"1",value:"1d10+5x10",unit:"vial"},
+ {max:55,n:"Rug or Tapestry",enc:"1d6x100",value:"2d10",unit:"square yard",quantityUnspecified:true},
+ {max:65,n:"Silk",enc:"1d6x10",value:"1d8",unit:"square yard",quantityUnspecified:true},
+ {max:75,n:"Animal Skin",enc:"5d4x10",value:"1d10"},
+ {max:85,n:"Monster Skin",enc:"1d10x50",value:"1d10x100"},
+ {max:90,n:"Rare Spice",enc:"1d100",value:"4d4",valuePerEnc:true},
+ {max:95,n:"Statuette",enc:"1d100",value:"1d10x100"},
+ {max:100,n:"Rare Wine",encBottles:"1d6+3",value:"1d6",unit:"bottle"}
+];
+function avChance(p){return d(100)<=p}
+function avBlankTreasure(source,type){return{source,type,coins:{cp:0,sp:0,ep:0,gp:0,pp:0},gems:[],jewelry:[],special:[],magic:[]}}
+function avMergeTreasure(a,b,mult=1){
+ for(const k of ["cp","sp","ep","gp","pp"])a.coins[k]+=(b.coins[k]||0)*mult;
+ for(const k of ["gems","jewelry","special","magic"])for(const x of b[k]||[])for(let i=0;i<mult;i++)a[k].push({...x});
+ return a
+}
+const AV_STARSTONE_BASES=[
+ {name:"Star Carbuncle",value:1000},{name:"Star Opal",value:1000},{name:"Star Emerald",value:5000},
+ {name:"Star Ruby",value:5000},{name:"Star Sapphire",value:5000},{name:"Star Jacinth",value:10000}
+];
+function avSpecialGemItem(){
+ if(d(2)===1){let base=AV_STARSTONE_BASES[d(AV_STARSTONE_BASES.length)-1],value=base.value*2;return{n:`${base.name} — ${value.toLocaleString()} GP`,kind:"treasure",avTreasure:true,avGem:true,avSpecialGem:"starstone",gpValue:value,treasureValueCP:gpToCP(value),avCashFeePct:d(5),avEncumbrance:1}}
+ let value=50000;return{n:`Tristal — ${value.toLocaleString()} GP`,kind:"treasure",avTreasure:true,avGem:true,avSpecialGem:"tristal",gpValue:value,treasureValueCP:gpToCP(value),avCashFeePct:d(5),avEncumbrance:1}
+}
+function avGemItem(level=h?.level||1){
+ let roll=d(100);if(level<9)roll=Math.max(1,roll-10);
+ let v=avTablePick(AV_GEM_VALUE,roll);
+ if(v==="special")return avSpecialGemItem();
+ return{n:`Gem — ${v.toLocaleString()} GP`,kind:"treasure",avTreasure:true,avGem:true,treasureValueCP:gpToCP(v),gpValue:v,avCashFeePct:d(5),avEncumbrance:1}
+}
+function avJewelryItem(level=h?.level||1){
+ let roll=d(100);if(level<9)roll=Math.max(1,roll-10);
+ let value=avTablePick(AV_JEWELRY_VALUE,roll),band=value<4000?"common":value<15000?"uncommon":"rare";
+ let types=AV_JEWELRY_TYPES[band],name=types[d(types.length)-1];
+ return{n:`${name} — ${value.toLocaleString()} GP`,kind:"treasure",avTreasure:true,avJewelry:true,treasureValueCP:gpToCP(value),gpValue:value,avCashFeePct:d(6)+d(6),avEncumbrance:avJewelryBulkPoints(value)}
+}
+function avSpecialTreasureItem(){
+ let roll=d(100),row=AV_SPECIAL_TREASURE_TABLE.find(x=>roll<=x.max)||AV_SPECIAL_TREASURE_TABLE.at(-1),item={n:row.n,kind:"treasure",avTreasure:true,avSpecial:true};
+ if(row.encBottles){
+   let qty=avRollScaled(row.encBottles),per=avRollScaled(row.value);
+   item.avQuantity=qty;item.avUnit=row.unit;item.avEncumbrance=qty*10;item.avValuePerGP=per;item.gpValue=qty*per;item.treasureValueCP=gpToCP(item.gpValue);return item
+ }
+ let enc=avRollScaled(row.enc),value=avRollScaled(row.value);
+ if(row.quantityUnspecified){
+   let qty=d(6);item.avQuantity=qty;item.avUnit=row.unit;item.avQuantityRule="Averathia 1d6 square yards";item.avEncumbrancePerUnit=enc;item.avValuePerGP=value;item.avEncumbrance=qty*enc;item.gpValue=qty*value;item.treasureValueCP=gpToCP(item.gpValue);item.n=`${row.n} — ${qty} sq yd`;return item
+ }
+ item.avEncumbrance=enc;
+ if(row.valuePerEnc){
+   item.avValuePerGP=value;item.avValuePer="cn encumbrance";item.gpValue=enc*value;item.treasureValueCP=gpToCP(item.gpValue);return item
+ }
+ item.gpValue=value;item.treasureValueCP=gpToCP(value);if(row.unit)item.avUnit=row.unit;return item
+}
+function avRollMagicSpec(spec){
+ let out=[];
+ if(!spec)return out;
+ if(spec.oneOf){let map={sword:"sword",miscWeapon:"miscWeapon",armor:"armorShield"},cats=spec.oneOf.map(x=>map[x]||x);out.push(rollRcMagicAny(cats))}
+ for(let i=0;i<(spec.any||0);i++)out.push(rollRcMagicAny());
+ for(let i=0;i<(spec.potion||0);i++)out.push(rollRcPotion());
+ for(let i=0;i<(spec.scroll||0);i++)out.push(rollRcNamedMagic("scroll"));
+ for(let i=0;i<(spec.anyButWeapons||0);i++)out.push(rollRcMagicAny(["potion","scroll","wandStaffRod","ring","miscMagic","armorShield"]));
+ let np=spec.potions?avRollScaled(spec.potions):0;for(let i=0;i<np;i++)out.push(rollRcPotion());
+ let ns=spec.scrolls?avRollScaled(spec.scrolls):0;for(let i=0;i<ns;i++)out.push(rollRcNamedMagic("scroll"));
+ return out
+}
+function avRollCarriedType(type,mult=1,level=h?.level||1){
+ let row=AV_TREASURE_CARRIED[type],out=avBlankTreasure("carried",type);if(!row)return out;
+ for(const [kind,spec] of Object.entries(row.coins||{}))if(spec.chance===100||avChance(spec.chance))out.coins[kind]+=avRollScaled(spec.dice)*mult;
+ if(row.gems&&(row.gems.chance===100||avChance(row.gems.chance))){let n=avRollScaled(row.gems.dice)*mult;if(type==="U"||type==="V")n=Math.min(1,n);while(n--)out.gems.push(avGemItem(level))}
+ if(row.jewelry&&(row.jewelry.chance===100||avChance(row.jewelry.chance))){let n=avRollScaled(row.jewelry.dice)*mult;if(type==="U"||type==="V")n=Math.min(1,n);while(n--)out.jewelry.push(avJewelryItem(level))}
+ if(row.special&&(row.special.chance===100||avChance(row.special.chance))){let n=avRollScaled(row.special.dice)*mult;while(n--)out.special.push(avSpecialTreasureItem())}
+ if(row.magic&&(row.magic.chance===100||avChance(row.magic.chance))){let n=avRollScaled(row.magic.dice)*mult;while(n--)out.magic.push(rollRcMagicAny())}
+ return out
+}
+function avRollLairType(type,level=h?.level||1){
+ let row=AV_TREASURE_LAIR[type],out=avBlankTreasure("lair",type);if(!row)return out;
+ for(const [kind,spec] of Object.entries(row.coins||{}))if(avChance(spec[0]))out.coins[kind]+=avRollScaled(spec[1])*1000;
+ if(row.gems&&avChance(row.gems[0])){let n=avRollScaled(row.gems[1]);while(n--)out.gems.push(avGemItem(level))}
+ if(row.jewelry&&avChance(row.jewelry[0])){let n=avRollScaled(row.jewelry[1]);while(n--)out.jewelry.push(avJewelryItem(level))}
+ if(row.special&&avChance(row.special[0])){let n=avRollScaled(row.special[1]);while(n--)out.special.push(avSpecialTreasureItem())}
+ if(row.magic&&avChance(row.magic[0]))out.magic.push(...avRollMagicSpec(row.magic[1]));
+ return out
+}
 function monsterKey(m){return m?.monsterId??m?.id}
 function avMonsterTreasureProfile(m){
- let tt=String(m?.avTreasureType||"Nil").trim();if(!tt||tt==="Nil")return{carried:[]};
- if(monsterKey(m)==="ogre")return{carried:[{type:"S",mult:10}]};
- let carried=[],paren=tt.match(/^\(([P-V])\)\s*(.*)$/);
- if(paren)carried.push({type:paren[1],mult:1});
- return{carried}
+ let tt=String(m?.avTreasureType||"Nil").trim();if(!tt||tt==="Nil")return{carried:[],lair:[]};
+ if(monsterKey(m)==="ogre")return{carried:[{type:"S",mult:10}],lair:[{type:"S",mult:100,carriedStyle:true},{type:"C",mult:1}]};
+ let carried=[],lair=[],paren=tt.match(/^\(([P-V])\)\s*(.*)$/);
+ if(paren){carried.push({type:paren[1],mult:1});tt=paren[2].trim()}
+ for(const letter of tt.match(/[A-V]/g)||[]){if(/[P-V]/.test(letter))carried.push({type:letter,mult:1});else lair.push({type:letter,mult:1})}
+ return{carried,lair}
 }
 function avRollMonsterCarried(m,level=h?.level||1){
  let p=avMonsterTreasureProfile(m),out=avBlankTreasure("monster",m?.n||m?.id||"monster");
@@ -2364,7 +2711,7 @@ const CLERIC_EVENTS=[{"id":"CLE-001","type":"Encounter","title":"Restless Crypt"
 const THIEF_EVENTS=[{"id":"THI-001","type":"Encounter","title":"Warehouse Patrol","text":"Lantern-bearing guards round the warehouse corner.","choices":[{"label":"Slip past quietly","result":"thiefSkill","skill":"moveSilently","xp":3},{"label":"Confront them","result":"passed"}]},{"id":"THI-002","type":"Encounter","title":"Rooftop Watch","text":"A watchman scans the roofs from a bell tower.","choices":[{"label":"Melt into the shadows","result":"thiefSkill","skill":"hideInShadows","xp":3},{"label":"Withdraw","result":"passed"}]},{"id":"THI-003","type":"Encounter","title":"Manor Guard","text":"A guard pauses outside the room you entered.","choices":[{"label":"Listen through the door","result":"thiefSkill","skill":"hearNoise","xp":3},{"label":"Risk the corridor","result":"passed"}]},{"id":"THI-004","type":"Encounter","title":"Guild Enforcer","text":"A guild enforcer has his back to you in a narrow passage.","choices":[{"label":"Get behind him","result":"thiefSkill","skill":"moveSilently","xp":3},{"label":"Back away","result":"passed"}]},{"id":"THI-005","type":"Encounter","title":"Courtyard Patrol","text":"Bootsteps approach across the manor courtyard.","choices":[{"label":"Hide in the arcade","result":"thiefSkill","skill":"hideInShadows","xp":3},{"label":"Run","result":"passed"}]},{"id":"THI-006","type":"Encounter","title":"Cellar Sentry","text":"A sentry guards the cellar stairs beneath a tavern.","choices":[{"label":"Sneak past","result":"thiefSkill","skill":"moveSilently","xp":3},{"label":"Leave","result":"passed"}]},{"id":"THI-007","type":"Encounter","title":"Sleeping Guard","text":"A guard dozes beside the counting-room door.","choices":[{"label":"Lift his key","result":"thiefSkill","skill":"pickPockets","xp":3},{"label":"Leave him","result":"passed"}]},{"id":"THI-008","type":"Encounter","title":"Rooftop Pursuit","text":"Watchmen are gaining on you across wet rooftops.","choices":[{"label":"Scale the next wall","result":"thiefSkill","skill":"climbWalls","xp":3},{"label":"Take the stairs","result":"passed"}]},{"id":"THI-009","type":"Encounter","title":"Closed Gate","text":"The alley ends at a high locked gate as pursuers approach.","choices":[{"label":"Pick the gate lock","result":"thiefSkill","skill":"openLocks","xp":3},{"label":"Turn and fight","result":"passed"}]},{"id":"THI-010","type":"Encounter","title":"Dark Stairwell","text":"Someone is climbing the stairs below you.","choices":[{"label":"Listen and judge the approach","result":"thiefSkill","skill":"hearNoise","xp":3},{"label":"Hide blindly","result":"passed"}]},{"id":"THI-011","type":"Decision","title":"Counting House Door","text":"A reinforced side door protects a merchant counting house.","choices":[{"label":"Pick the lock","result":"thiefSkill","skill":"openLocks","xp":3},{"label":"Move on","result":"passed"}]},{"id":"THI-012","type":"Decision","title":"Upper Window","text":"A second-floor window stands above a narrow alley.","choices":[{"label":"Climb to the window","result":"thiefSkill","skill":"climbWalls","xp":3},{"label":"Move on","result":"passed"}]},{"id":"THI-013","type":"Decision","title":"Jeweller's Back Room","text":"A delicate lock protects the jeweller's back room.","choices":[{"label":"Work the lock","result":"thiefSkill","skill":"openLocks","xp":3},{"label":"Leave","result":"passed"}]},{"id":"THI-014","type":"Decision","title":"Merchant's Pocket","text":"A wealthy merchant watches a street performance.","choices":[{"label":"Lift his purse","result":"thiefSkill","skill":"pickPockets","xp":3},{"label":"Leave him","result":"passed"}]},{"id":"THI-015","type":"Decision","title":"Guard Rotation","text":"There is a short gap between two patrols.","choices":[{"label":"Cross silently","result":"thiefSkill","skill":"moveSilently","xp":3},{"label":"Wait","result":"passed"}]},{"id":"THI-016","type":"Decision","title":"Lamplit Gallery","text":"A servant crosses the gallery at irregular intervals.","choices":[{"label":"Use the shadows","result":"thiefSkill","skill":"hideInShadows","xp":3},{"label":"Withdraw","result":"passed"}]},{"id":"THI-017","type":"Decision","title":"Suspicious Floor","text":"One flagstone sits slightly higher than the others.","choices":[{"label":"Check for a trap","result":"thiefSkill","skill":"findTraps","xp":3},{"label":"Step over it","result":"passed"}]},{"id":"THI-018","type":"Decision","title":"Trapped Strongbox","text":"A wire disappears beneath the lid of a strongbox.","choices":[{"label":"Disarm the trap","result":"thiefSkill","skill":"removeTraps","xp":3},{"label":"Leave it","result":"passed"}]},{"id":"THI-019","type":"Decision","title":"Office Door","text":"Voices may be coming from behind the office door.","choices":[{"label":"Listen at the door","result":"thiefSkill","skill":"hearNoise","xp":3},{"label":"Open it","result":"passed"}]},{"id":"THI-020","type":"Decision","title":"Noble's Balcony","text":"The balcony above leads directly into the private apartments.","choices":[{"label":"Scale the facade","result":"thiefSkill","skill":"climbWalls","xp":3},{"label":"Find another route","result":"passed"}]},{"id":"THI-021","type":"Discovery","title":"Locked Cashbox","text":"A small iron cashbox is hidden beneath loose floorboards.","choices":[{"label":"Open the cashbox","result":"thiefSkill","skill":"openLocks","xp":3},{"label":"Leave it","result":"passed"}]},{"id":"THI-022","type":"Discovery","title":"Needle Trap","text":"A tiny hole beside the chest lock looks suspicious.","choices":[{"label":"Inspect the mechanism","result":"thiefSkill","skill":"findTraps","xp":3},{"label":"Ignore it","result":"passed"}]},{"id":"THI-023","type":"Discovery","title":"Armed Chest","text":"You identify a trap mechanism protecting an old chest.","choices":[{"label":"Disarm it","result":"thiefSkill","skill":"removeTraps","xp":3},{"label":"Leave it","result":"passed"}]},{"id":"THI-024","type":"Discovery","title":"Loose Purse","text":"A distracted gambler has a heavy purse at his belt.","choices":[{"label":"Take the purse","result":"thiefSkill","skill":"pickPockets","xp":3},{"label":"Leave it","result":"passed"}]},{"id":"THI-025","type":"Discovery","title":"High Cache","text":"A smuggler's cache is visible above a sheer warehouse wall.","choices":[{"label":"Climb to it","result":"thiefSkill","skill":"climbWalls","xp":3},{"label":"Leave it","result":"passed"}]},{"id":"THI-026","type":"Discovery","title":"Secret Meeting","text":"Muffled voices come through a thin cellar wall.","choices":[{"label":"Listen closely","result":"thiefSkill","skill":"hearNoise","xp":3},{"label":"Move on","result":"passed"}]},{"id":"THI-027","type":"Discovery","title":"Moonlit Courtyard","text":"A bright courtyard separates you from an open study window.","choices":[{"label":"Cross unseen","result":"thiefSkill","skill":"hideInShadows","xp":3},{"label":"Go around","result":"passed"}]},{"id":"THI-028","type":"Discovery","title":"Servants' Passage","text":"A narrow servants' passage leads deeper into the manor.","choices":[{"label":"Proceed silently","result":"thiefSkill","skill":"moveSilently","xp":3},{"label":"Leave","result":"passed"}]},{"id":"THI-029","type":"Discovery","title":"Locked Ledger Desk","text":"A merchant's desk has a sophisticated lock.","choices":[{"label":"Pick the desk lock","result":"thiefSkill","skill":"openLocks","xp":3},{"label":"Leave","result":"passed"}]},{"id":"THI-030","type":"Discovery","title":"Suspicious Rug","text":"A rug conceals an oddly shaped seam in the floor.","choices":[{"label":"Examine it carefully","result":"thiefSkill","skill":"findTraps","xp":3},{"label":"Ignore it","result":"passed"}]},{"id":"THI-031","type":"Quiet","title":"Sleeping Street","text":"The district lies quiet beneath shuttered windows.","choices":[]},{"id":"THI-032","type":"Quiet","title":"Empty Rooftop","text":"Rain taps softly on an empty rooftop.","choices":[]},{"id":"THI-033","type":"Quiet","title":"Canal Walk","text":"Black water moves beside silent warehouses.","choices":[]},{"id":"THI-034","type":"Quiet","title":"Abandoned Loft","text":"A dusty loft offers a concealed place to rest.","choices":[]},{"id":"THI-035","type":"Quiet","title":"Market After Dark","text":"Canvas awnings flap over deserted market stalls.","choices":[]},{"id":"THI-036","type":"Quiet","title":"Bell Tower","text":"The city spreads below the silent bell tower.","choices":[]},{"id":"THI-037","type":"Quiet","title":"Back Alley","text":"For once, no footsteps follow you through the alley.","choices":[]},{"id":"THI-038","type":"Quiet","title":"Warehouse Rafters","text":"You pause unseen among the rafters.","choices":[]},{"id":"THI-039","type":"Quiet","title":"Sewer Junction","text":"Only running water echoes through the brick tunnels.","choices":[]},{"id":"THI-040","type":"Quiet","title":"Inn Roof","text":"Warm chimney smoke drifts across the quiet roof.","choices":[]}];
 const ARCANIST_EVENTS=[{"id":"ARC-001","type":"Encounter","title":"Tower Familiar","text":"A hostile magical creature circles the stair of an abandoned arcane tower.","choices":[{"label":"Face the threat","result":"combat"},{"label":"Avoid it","result":"avoided"}]},{"id":"ARC-002","type":"Encounter","title":"Unstable Summoning","text":"A summoned creature strains against a failing containment circle.","choices":[{"label":"Face the threat","result":"combat"},{"label":"Avoid it","result":"avoided"}]},{"id":"ARC-003","type":"Encounter","title":"Arcane Sentinel","text":"An enchanted guardian wakes beside a sealed laboratory.","choices":[{"label":"Face the threat","result":"combat"},{"label":"Avoid it","result":"avoided"}]},{"id":"ARC-004","type":"Encounter","title":"Rift Creature","text":"Something clawed crawls through a dimensional tear.","choices":[{"label":"Face the threat","result":"combat"},{"label":"Avoid it","result":"avoided"}]},{"id":"ARC-005","type":"Encounter","title":"Living Spell","text":"Loose magic condenses into a violent, shifting form.","choices":[{"label":"Face the threat","result":"combat"},{"label":"Avoid it","result":"avoided"}]},{"id":"ARC-006","type":"Encounter","title":"Glass Golem","text":"A crystalline guardian steps from a shattered display chamber.","choices":[{"label":"Face the threat","result":"combat"},{"label":"Avoid it","result":"avoided"}]},{"id":"ARC-007","type":"Encounter","title":"Aether Parasite","text":"A pale creature feeds on the glow of an arcane conduit.","choices":[{"label":"Face the threat","result":"combat"},{"label":"Avoid it","result":"avoided"}]},{"id":"ARC-008","type":"Encounter","title":"Mirror Double","text":"A hostile reflection steps free of a black mirror.","choices":[{"label":"Face the threat","result":"combat"},{"label":"Avoid it","result":"avoided"}]},{"id":"ARC-009","type":"Encounter","title":"Runic Guardian","text":"A rune-carved construct blocks the archive stairs.","choices":[{"label":"Face the threat","result":"combat"},{"label":"Avoid it","result":"avoided"}]},{"id":"ARC-010","type":"Encounter","title":"Portal Hunter","text":"A strange predator emerges from a portal and fixes on you.","choices":[{"label":"Face the threat","result":"combat"},{"label":"Avoid it","result":"avoided"}]},{"id":"ARC-011","type":"Decision","title":"Dimensional Door","text":"A thin doorway opens onto impossible stars.","choices":[{"label":"Analyse the doorway","result":"classAbility","ability":"INT","difficulty":"Normal","xp":3},{"label":"Move on","result":"passed"}]},{"id":"ARC-012","type":"Decision","title":"Runed Observatory","text":"The observatory controls are covered in shifting runes.","choices":[{"label":"Decode the controls","result":"classAbility","ability":"INT","difficulty":"Normal","xp":3},{"label":"Move on","result":"passed"}]},{"id":"ARC-013","type":"Decision","title":"Broken Portal","text":"A damaged portal flickers between unknown destinations.","choices":[{"label":"Stabilise the pattern","result":"classAbility","ability":"INT","difficulty":"Normal","xp":3},{"label":"Move on","result":"passed"}]},{"id":"ARC-014","type":"Decision","title":"Forbidden Formula","text":"An unfinished formula covers an entire wall.","choices":[{"label":"Complete the reasoning","result":"classAbility","ability":"INT","difficulty":"Normal","xp":3},{"label":"Move on","result":"passed"}]},{"id":"ARC-015","type":"Decision","title":"Mirror Passage","text":"A black mirror reflects a corridor that is not here.","choices":[{"label":"Test the reflection","result":"classAbility","ability":"INT","difficulty":"Normal","xp":3},{"label":"Move on","result":"passed"}]},{"id":"ARC-016","type":"Decision","title":"Clockwork Orrery","text":"A brass model of unknown worlds turns by itself.","choices":[{"label":"Reconstruct its sequence","result":"classAbility","ability":"INT","difficulty":"Normal","xp":3},{"label":"Move on","result":"passed"}]},{"id":"ARC-017","type":"Decision","title":"Arcane Lock","text":"A door is sealed by interlocking magical symbols.","choices":[{"label":"Solve the sigil","result":"classAbility","ability":"INT","difficulty":"Normal","xp":3},{"label":"Move on","result":"passed"}]},{"id":"ARC-018","type":"Decision","title":"Gravity Well","text":"Loose stones hang motionless above a dark stair.","choices":[{"label":"Calculate a safe route","result":"classAbility","ability":"INT","difficulty":"Normal","xp":3},{"label":"Move on","result":"passed"}]},{"id":"ARC-019","type":"Decision","title":"Memory Prism","text":"A prism projects fragments of another scholar's memories.","choices":[{"label":"Order the fragments","result":"classAbility","ability":"INT","difficulty":"Normal","xp":3},{"label":"Move on","result":"passed"}]},{"id":"ARC-020","type":"Decision","title":"Shifting Library","text":"Shelves rearrange whenever you stop looking at them.","choices":[{"label":"Predict the pattern","result":"classAbility","ability":"INT","difficulty":"Normal","xp":3},{"label":"Move on","result":"passed"}]},{"id":"ARC-021","type":"Discovery","title":"Spell Fragment","text":"A surviving page contains a fragment of arcane notation.","choices":[{"label":"Interpret the notation","result":"classAbility","ability":"INT","difficulty":"Normal","xp":3},{"label":"Leave it","result":"left"}]},{"id":"ARC-022","type":"Discovery","title":"Aether Crystal","text":"A humming crystal rests in a brass cradle.","choices":[{"label":"Identify its function","result":"classAbility","ability":"INT","difficulty":"Normal","xp":3},{"label":"Leave it","result":"left"}]},{"id":"ARC-023","type":"Discovery","title":"Tower Archive","text":"A sealed cabinet preserves old magical records.","choices":[{"label":"Study the archive","result":"classAbility","ability":"INT","difficulty":"Normal","xp":3},{"label":"Leave it","result":"left"}]},{"id":"ARC-024","type":"Discovery","title":"Planar Residue","text":"Strange residue marks where another dimension touched this one.","choices":[{"label":"Analyse the residue","result":"classAbility","ability":"INT","difficulty":"Normal","xp":3},{"label":"Leave it","result":"left"}]},{"id":"ARC-025","type":"Discovery","title":"Astral Lens","text":"A cracked lens still reveals distant lights.","choices":[{"label":"Calibrate the lens","result":"classAbility","ability":"INT","difficulty":"Normal","xp":3},{"label":"Leave it","result":"left"}]},{"id":"ARC-026","type":"Discovery","title":"Sealed Thesis","text":"A metal tube protects a forgotten magical thesis.","choices":[{"label":"Evaluate the thesis","result":"classAbility","ability":"INT","difficulty":"Normal","xp":3},{"label":"Leave it","result":"left"}]},{"id":"ARC-027","type":"Discovery","title":"Portal Coordinates","text":"A slate records a sequence of impossible coordinates.","choices":[{"label":"Decode the sequence","result":"classAbility","ability":"INT","difficulty":"Normal","xp":3},{"label":"Leave it","result":"left"}]},{"id":"ARC-028","type":"Discovery","title":"Failed Homunculus","text":"Notes beside an inert construct document a failed experiment.","choices":[{"label":"Study the notes","result":"classAbility","ability":"INT","difficulty":"Normal","xp":3},{"label":"Leave it","result":"left"}]},{"id":"ARC-029","type":"Discovery","title":"Star Map","text":"A ceiling chart shows constellations that do not belong to this sky.","choices":[{"label":"Compare the pattern","result":"classAbility","ability":"INT","difficulty":"Normal","xp":3},{"label":"Leave it","result":"left"}]},{"id":"ARC-030","type":"Discovery","title":"Ciphered Grimoire","text":"A damaged book is written in a dense arcane cipher.","choices":[{"label":"Break the cipher","result":"classAbility","ability":"INT","difficulty":"Normal","xp":3},{"label":"Leave it","result":"left"}]},{"id":"ARC-031","type":"Quiet","title":"Empty Laboratory","text":"Cold burners and dusty glassware fill the silent room.","choices":[]},{"id":"ARC-032","type":"Quiet","title":"Tower Balcony","text":"The ruined tower offers a clear view of the land below.","choices":[]},{"id":"ARC-033","type":"Quiet","title":"Dormant Circle","text":"An old summoning circle lies cold and inactive.","choices":[]},{"id":"ARC-034","type":"Quiet","title":"Dusty Archive","text":"Nothing moves among the shelves but drifting dust.","choices":[]},{"id":"ARC-035","type":"Quiet","title":"Observatory Dome","text":"The great dome stands open beneath the night sky.","choices":[]},{"id":"ARC-036","type":"Quiet","title":"Scribe's Chamber","text":"Dry ink pots and blank parchment remain on a scholar's desk.","choices":[]},{"id":"ARC-037","type":"Quiet","title":"Quiet Portal Hall","text":"Every portal frame is dark and still.","choices":[]},{"id":"ARC-038","type":"Quiet","title":"Abandoned Lecture Room","text":"Rows of stone benches face a cracked slate.","choices":[]},{"id":"ARC-039","type":"Quiet","title":"Aether Garden","text":"Harmless motes of light drift through a glass-roofed chamber.","choices":[]},{"id":"ARC-040","type":"Quiet","title":"Silent Study","text":"A heavy desk and extinguished lamp offer a safe pause.","choices":[]}];
 const DWARF_EVENTS=[{"id":"DWA-001","type":"Encounter","title":"Mine Tunnel Ambush","text":"Movement breaks the darkness in an abandoned mine tunnel.","choices":[{"label":"Face the threat","result":"combat"},{"label":"Avoid it","result":"avoided"}]},{"id":"DWA-002","type":"Encounter","title":"Cavern Predator","text":"A subterranean predator emerges between the rocks.","choices":[{"label":"Face the threat","result":"combat"},{"label":"Avoid it","result":"avoided"}]},{"id":"DWA-003","type":"Encounter","title":"Collapsed Gallery","text":"Something waits beyond a recently collapsed mining gallery.","choices":[{"label":"Face the threat","result":"combat"},{"label":"Avoid it","result":"avoided"}]},{"id":"DWA-004","type":"Encounter","title":"Deep Delvers","text":"Hostile figures appear farther down the tunnel.","choices":[{"label":"Face the threat","result":"combat"},{"label":"Avoid it","result":"avoided"}]},{"id":"DWA-005","type":"Encounter","title":"Underground Nest","text":"A nest blocks the narrow cave passage.","choices":[{"label":"Face the threat","result":"combat"},{"label":"Avoid it","result":"avoided"}]},{"id":"DWA-006","type":"Encounter","title":"Mushroom Cavern","text":"A creature crashes through a forest of giant cave fungi.","choices":[{"label":"Face the threat","result":"combat"},{"label":"Avoid it","result":"avoided"}]},{"id":"DWA-007","type":"Encounter","title":"Old Guard Post","text":"Hostile squatters occupy a forgotten underground guard post.","choices":[{"label":"Face the threat","result":"combat"},{"label":"Avoid it","result":"avoided"}]},{"id":"DWA-008","type":"Encounter","title":"Deep Chasm","text":"Something climbs from a chasm beside the trail.","choices":[{"label":"Face the threat","result":"combat"},{"label":"Avoid it","result":"avoided"}]},{"id":"DWA-009","type":"Encounter","title":"Ore Cart Ambush","text":"An abandoned ore cart hides movement in the dark.","choices":[{"label":"Face the threat","result":"combat"},{"label":"Avoid it","result":"avoided"}]},{"id":"DWA-010","type":"Encounter","title":"Buried Hall","text":"A beast has taken shelter inside an ancestral stone hall.","choices":[{"label":"Face the threat","result":"combat"},{"label":"Avoid it","result":"avoided"}]},{"id":"DWA-011","type":"Decision","title":"Forked Mine","text":"The old mine splits into a worked tunnel and a natural cave.","choices":[{"label":"Read the stonework","result":"classAbility","ability":"INT","difficulty":"Normal","xp":3},{"label":"Move on","result":"passed"}]},{"id":"DWA-012","type":"Decision","title":"Unstable Supports","text":"Rotten timbers hold up the passage ahead.","choices":[{"label":"Judge the structure","result":"classAbility","ability":"INT","difficulty":"Normal","xp":3},{"label":"Move on","result":"passed"}]},{"id":"DWA-013","type":"Decision","title":"Flooded Shaft","text":"A mine shaft descends into black water.","choices":[{"label":"Assess the shaft","result":"classAbility","ability":"INT","difficulty":"Normal","xp":3},{"label":"Move on","result":"passed"}]},{"id":"DWA-014","type":"Decision","title":"Ore Vein","text":"A promising vein disappears behind fractured stone.","choices":[{"label":"Examine the vein","result":"classAbility","ability":"INT","difficulty":"Normal","xp":3},{"label":"Move on","result":"passed"}]},{"id":"DWA-015","type":"Decision","title":"Sealed Deep Door","text":"A heavy stone door closes an ancient tunnel.","choices":[{"label":"Inspect the masonry","result":"classAbility","ability":"INT","difficulty":"Normal","xp":3},{"label":"Move on","result":"passed"}]},{"id":"DWA-016","type":"Decision","title":"False Wall","text":"One stretch of rock looks subtly different from the rest.","choices":[{"label":"Test the stone","result":"classAbility","ability":"INT","difficulty":"Normal","xp":3},{"label":"Move on","result":"passed"}]},{"id":"DWA-017","type":"Decision","title":"Ancient Lift","text":"A counterweighted mining lift hangs over a deep shaft.","choices":[{"label":"Inspect the mechanism","result":"classAbility","ability":"INT","difficulty":"Normal","xp":3},{"label":"Move on","result":"passed"}]},{"id":"DWA-018","type":"Decision","title":"Fault Line","text":"A fresh crack runs across the cavern roof.","choices":[{"label":"Judge the danger","result":"classAbility","ability":"INT","difficulty":"Normal","xp":3},{"label":"Move on","result":"passed"}]},{"id":"DWA-019","type":"Decision","title":"Ventilation Shaft","text":"A narrow shaft carries warm air from somewhere below.","choices":[{"label":"Trace the airflow","result":"classAbility","ability":"INT","difficulty":"Normal","xp":3},{"label":"Move on","result":"passed"}]},{"id":"DWA-020","type":"Decision","title":"Lost Hold Gate","text":"An immense gate bears weathered clan marks.","choices":[{"label":"Read the construction","result":"classAbility","ability":"INT","difficulty":"Normal","xp":3},{"label":"Move on","result":"passed"}]},{"id":"DWA-021","type":"Discovery","title":"Forgotten Tools","text":"Old mining tools remain where their owners left them.","choices":[{"label":"Inspect the workmanship","result":"classAbility","ability":"INT","difficulty":"Normal","xp":3},{"label":"Leave it","result":"left"}]},{"id":"DWA-022","type":"Discovery","title":"Miner's Cache","text":"A hidden niche contains a miner's emergency cache.","choices":[{"label":"Find its purpose","result":"classAbility","ability":"INT","difficulty":"Normal","xp":3},{"label":"Leave it","result":"left"}]},{"id":"DWA-023","type":"Discovery","title":"Crystal Cavern","text":"Natural crystals glitter across the cavern walls.","choices":[{"label":"Assess the formation","result":"classAbility","ability":"INT","difficulty":"Normal","xp":3},{"label":"Leave it","result":"left"}]},{"id":"DWA-024","type":"Discovery","title":"Old Survey Marks","text":"Chiselled marks reveal the mine's forgotten layout.","choices":[{"label":"Read the survey marks","result":"classAbility","ability":"INT","difficulty":"Normal","xp":3},{"label":"Leave it","result":"left"}]},{"id":"DWA-025","type":"Discovery","title":"Buried Strongbox","text":"A battered strongbox protrudes from a cave-in.","choices":[{"label":"Examine the hiding place","result":"classAbility","ability":"INT","difficulty":"Normal","xp":3},{"label":"Leave it","result":"left"}]},{"id":"DWA-026","type":"Discovery","title":"Ancestral Carving","text":"A wall carving records names from a forgotten dwarf line.","choices":[{"label":"Read the genealogy","result":"classAbility","ability":"INT","difficulty":"Normal","xp":3},{"label":"Leave it","result":"left"}]},{"id":"DWA-027","type":"Discovery","title":"Worked Seam","text":"Tool marks reveal where miners followed a vanished ore seam.","choices":[{"label":"Reconstruct the work","result":"classAbility","ability":"INT","difficulty":"Normal","xp":3},{"label":"Leave it","result":"left"}]},{"id":"DWA-028","type":"Discovery","title":"Stone Cistern","text":"A carefully built cistern still collects clean cave water.","choices":[{"label":"Inspect the engineering","result":"classAbility","ability":"INT","difficulty":"Normal","xp":3},{"label":"Leave it","result":"left"}]},{"id":"DWA-029","type":"Discovery","title":"Rune Fragment","text":"A broken stone bears part of an old family rune.","choices":[{"label":"Interpret the fragment","result":"classAbility","ability":"INT","difficulty":"Normal","xp":3},{"label":"Leave it","result":"left"}]},{"id":"DWA-030","type":"Discovery","title":"Foundation Stone","text":"A massive dressed stone carries the mason's original mark.","choices":[{"label":"Identify the mason mark","result":"classAbility","ability":"INT","difficulty":"Normal","xp":3},{"label":"Leave it","result":"left"}]},{"id":"DWA-031","type":"Quiet","title":"Dry Cavern","text":"A broad dry cavern offers a safe place to pause.","choices":[]},{"id":"DWA-032","type":"Quiet","title":"Old Mine Office","text":"A stone desk stands untouched in a forgotten mine office.","choices":[]},{"id":"DWA-033","type":"Quiet","title":"Deep Hearth","text":"A cold hearth remains in an abandoned underground hall.","choices":[]},{"id":"DWA-034","type":"Quiet","title":"Echo Chamber","text":"Only the sound of dripping water crosses the cavern.","choices":[]},{"id":"DWA-035","type":"Quiet","title":"Tool Alcove","text":"An empty tool alcove provides shelter from the tunnel.","choices":[]},{"id":"DWA-036","type":"Quiet","title":"Stone Bridge","text":"An old bridge spans a silent underground stream.","choices":[]},{"id":"DWA-037","type":"Quiet","title":"Abandoned Forge","text":"The forge is cold, but its stonework remains sound.","choices":[]},{"id":"DWA-038","type":"Quiet","title":"Survey Chamber","text":"Faded maps cover the walls of an otherwise empty room.","choices":[]},{"id":"DWA-039","type":"Quiet","title":"Deep Well","text":"A covered well stands beside a quiet passage.","choices":[]},{"id":"DWA-040","type":"Quiet","title":"Ancestral Hall","text":"Rows of worn stone pillars disappear into the darkness.","choices":[]}];
-const ELF_EVENTS=[{"id":"ELF-001","type":"Encounter","title":"Forest Stalker","text":"Something follows silently between the trees.","choices":[{"label":"Face the threat","result":"combat"},{"label":"Avoid it","result":"avoided"}]},{"id":"ELF-002","type":"Encounter","title":"Ruined Grove","text":"Hostile movement disturbs an ancient grove.","choices":[{"label":"Face the threat","result":"combat"},{"label":"Avoid it","result":"avoided"}]},{"id":"ELF-003","type":"Encounter","title":"Woodland Ambush","text":"Shapes shift among the ferns beside the trail.","choices":[{"label":"Face the threat","result":"combat"},{"label":"Avoid it","result":"avoided"}]},{"id":"ELF-004","type":"Encounter","title":"Riverbank Predator","text":"A predator emerges near the forest river.","choices":[{"label":"Face the threat","result":"combat"},{"label":"Avoid it","result":"avoided"}]},{"id":"ELF-005","type":"Encounter","title":"Overgrown Ruin","text":"Something has settled in a vine-covered ruin.","choices":[{"label":"Face the threat","result":"combat"},{"label":"Avoid it","result":"avoided"}]},{"id":"ELF-006","type":"Encounter","title":"Blighted Clearing","text":"A hostile creature prowls a clearing where the plants have blackened.","choices":[{"label":"Face the threat","result":"combat"},{"label":"Avoid it","result":"avoided"}]},{"id":"ELF-007","type":"Encounter","title":"Canopy Hunter","text":"Branches shake overhead as a predator follows from tree to tree.","choices":[{"label":"Face the threat","result":"combat"},{"label":"Avoid it","result":"avoided"}]},{"id":"ELF-008","type":"Encounter","title":"Poacher Camp","text":"Armed intruders guard traps set along an animal trail.","choices":[{"label":"Face the threat","result":"combat"},{"label":"Avoid it","result":"avoided"}]},{"id":"ELF-009","type":"Encounter","title":"Root-Cave Den","text":"A beast bursts from beneath the roots of an ancient tree.","choices":[{"label":"Face the threat","result":"combat"},{"label":"Avoid it","result":"avoided"}]},{"id":"ELF-010","type":"Encounter","title":"Thorn Hollow","text":"Something dangerous moves inside a dense hollow of thorns.","choices":[{"label":"Face the threat","result":"combat"},{"label":"Avoid it","result":"avoided"}]},{"id":"ELF-011","type":"Decision","title":"Hidden Trail","text":"A barely visible trail leaves the main woodland path.","choices":[{"label":"Read the trail","result":"classAbility","ability":"WIS","difficulty":"Normal","xp":3},{"label":"Move on","result":"passed"}]},{"id":"ELF-012","type":"Decision","title":"Ancient Grove","text":"Old trees encircle a place untouched by axes.","choices":[{"label":"Sense the grove","result":"classAbility","ability":"WIS","difficulty":"Normal","xp":3},{"label":"Move on","result":"passed"}]},{"id":"ELF-013","type":"Decision","title":"River Crossing","text":"The forest river runs fast after recent rain.","choices":[{"label":"Choose a safe crossing","result":"classAbility","ability":"WIS","difficulty":"Normal","xp":3},{"label":"Move on","result":"passed"}]},{"id":"ELF-014","type":"Decision","title":"Fallen Oak","text":"A gigantic fallen oak conceals a hollow beneath its roots.","choices":[{"label":"Inspect the hollow","result":"classAbility","ability":"WIS","difficulty":"Normal","xp":3},{"label":"Move on","result":"passed"}]},{"id":"ELF-015","type":"Decision","title":"Moonlit Stones","text":"Standing stones glow faintly in a moonlit clearing.","choices":[{"label":"Read the signs","result":"classAbility","ability":"WIS","difficulty":"Normal","xp":3},{"label":"Move on","result":"passed"}]},{"id":"ELF-016","type":"Decision","title":"Storm-Damaged Path","text":"Windfall has erased the trail ahead.","choices":[{"label":"Find the true path","result":"classAbility","ability":"WIS","difficulty":"Normal","xp":3},{"label":"Move on","result":"passed"}]},{"id":"ELF-017","type":"Decision","title":"Wounded Stag","text":"A wounded stag watches from beneath the trees.","choices":[{"label":"Approach carefully","result":"classAbility","ability":"WIS","difficulty":"Normal","xp":3},{"label":"Move on","result":"passed"}]},{"id":"ELF-018","type":"Decision","title":"Withered Copse","text":"A small stand of trees has withered without obvious cause.","choices":[{"label":"Trace the cause","result":"classAbility","ability":"WIS","difficulty":"Normal","xp":3},{"label":"Move on","result":"passed"}]},{"id":"ELF-019","type":"Decision","title":"Forked Game Trail","text":"Two animal trails split around a wooded ridge.","choices":[{"label":"Read the tracks","result":"classAbility","ability":"WIS","difficulty":"Normal","xp":3},{"label":"Move on","result":"passed"}]},{"id":"ELF-020","type":"Decision","title":"Encroaching Bramble","text":"An unnatural wall of bramble chokes an old woodland route.","choices":[{"label":"Find a passage","result":"classAbility","ability":"WIS","difficulty":"Normal","xp":3},{"label":"Move on","result":"passed"}]},{"id":"ELF-021","type":"Discovery","title":"Herbal Clearing","text":"Useful herbs grow in a sheltered clearing.","choices":[{"label":"Identify the herbs","result":"classAbility","ability":"WIS","difficulty":"Normal","xp":3},{"label":"Leave it","result":"left"}]},{"id":"ELF-022","type":"Discovery","title":"Hunter's Marker","text":"An old woodland marker points toward a forgotten route.","choices":[{"label":"Interpret the marker","result":"classAbility","ability":"WIS","difficulty":"Normal","xp":3},{"label":"Leave it","result":"left"}]},{"id":"ELF-023","type":"Discovery","title":"Forest Spring","text":"Clear water rises between moss-covered stones.","choices":[{"label":"Judge the spring","result":"classAbility","ability":"WIS","difficulty":"Normal","xp":3},{"label":"Leave it","result":"left"}]},{"id":"ELF-024","type":"Discovery","title":"Overgrown Shrine","text":"Roots curl around a small forgotten shrine.","choices":[{"label":"Examine the growth","result":"classAbility","ability":"WIS","difficulty":"Normal","xp":3},{"label":"Leave it","result":"left"}]},{"id":"ELF-025","type":"Discovery","title":"Ancient Tree","text":"Carvings on an immense tree record an old journey.","choices":[{"label":"Read the carvings","result":"classAbility","ability":"WIS","difficulty":"Normal","xp":3},{"label":"Leave it","result":"left"}]},{"id":"ELF-026","type":"Discovery","title":"Rare Seedpod","text":"An unfamiliar seedpod hangs from a single old branch.","choices":[{"label":"Identify the seed","result":"classAbility","ability":"WIS","difficulty":"Normal","xp":3},{"label":"Leave it","result":"left"}]},{"id":"ELF-027","type":"Discovery","title":"Animal Crossing","text":"Tracks from many species converge at one narrow place.","choices":[{"label":"Study the tracks","result":"classAbility","ability":"WIS","difficulty":"Normal","xp":3},{"label":"Leave it","result":"left"}]},{"id":"ELF-028","type":"Discovery","title":"Old Boundary Oak","text":"Faint cuts in an oak mark an ancient forest boundary.","choices":[{"label":"Recognise the boundary","result":"classAbility","ability":"WIS","difficulty":"Normal","xp":3},{"label":"Leave it","result":"left"}]},{"id":"ELF-029","type":"Discovery","title":"Hidden Orchard","text":"Wild descendants of an old orchard grow deep in the forest.","choices":[{"label":"Study the trees","result":"classAbility","ability":"WIS","difficulty":"Normal","xp":3},{"label":"Leave it","result":"left"}]},{"id":"ELF-030","type":"Discovery","title":"Burned Glade","text":"New green shoots rise through the remains of an old fire.","choices":[{"label":"Read the recovery","result":"classAbility","ability":"WIS","difficulty":"Normal","xp":3},{"label":"Leave it","result":"left"}]},{"id":"ELF-031","type":"Quiet","title":"Green Canopy","text":"Sunlight filters peacefully through the leaves.","choices":[]},{"id":"ELF-032","type":"Quiet","title":"Forest Pool","text":"A still pool reflects the branches above.","choices":[]},{"id":"ELF-033","type":"Quiet","title":"Mossy Hollow","text":"Soft moss covers a sheltered hollow between roots.","choices":[]},{"id":"ELF-034","type":"Quiet","title":"Old Oak","text":"An immense oak offers shade and a dry place to rest.","choices":[]},{"id":"ELF-035","type":"Quiet","title":"Fern Clearing","text":"Nothing stirs beyond insects among the ferns.","choices":[]},{"id":"ELF-036","type":"Quiet","title":"Willow Bank","text":"Willows hang over a slow, quiet stream.","choices":[]},{"id":"ELF-037","type":"Quiet","title":"Pine Ridge","text":"Wind moves softly through high pine branches.","choices":[]},{"id":"ELF-038","type":"Quiet","title":"Deer Meadow","text":"A small meadow lies undisturbed between the woods.","choices":[]},{"id":"ELF-039","type":"Quiet","title":"Rain Shelter","text":"Dense branches keep the forest floor almost dry.","choices":[]},{"id":"ELF-040","type":"Quiet","title":"Dawn Grove","text":"Morning light slowly reaches the floor of an ancient grove.","choices":[]}];
+const ELF_EVENTS=[{"id":"ELF-001","type":"Encounter","title":"Forest Stalker","text":"Something follows silently between the trees.","choices":[{"label":"Face the threat","result":"combat"},{"label":"Avoid it","result":"avoided"}]},{"id":"ELF-002","type":"Encounter","title":"Ruined Grove","text":"Hostile movement disturbs an ancient grove.","choices":[{"label":"Face the threat","result":"combat"},{"label":"Avoid it","result":"avoided"}]},{"id":"ELF-003","type":"Encounter","title":"Woodland Ambush","text":"Shapes shift among the ferns beside the trail.","choices":[{"label":"Face the threat","result":"combat"},{"label":"Avoid it","result":"avoided"}]},{"id":"ELF-004","type":"Encounter","title":"Riverbank Predator","text":"A predator emerges near the forest river.","choices":[{"label":"Face the threat","result":"combat"},{"label":"Avoid it","result":"avoided"}]},{"id":"ELF-005","type":"Encounter","title":"Overgrown Ruin","text":"Something has settled in a vine-covered ruin.","choices":[{"label":"Face the threat","result":"combat"},{"label":"Avoid it","result":"avoided"}]},{"id":"ELF-006","type":"Encounter","title":"Blighted Clearing","text":"A hostile creature prowls a clearing where the plants have blackened.","choices":[{"label":"Face the threat","result":"combat"},{"label":"Avoid it","result":"avoided"}]},{"id":"ELF-007","type":"Encounter","title":"Canopy Hunter","text":"Branches shake overhead as a predator follows from tree to tree.","choices":[{"label":"Face the threat","result":"combat"},{"label":"Avoid it","result":"avoided"}]},{"id":"ELF-008","type":"Encounter","title":"Poacher Camp","text":"Armed intruders guard traps set along an animal trail.","choices":[{"label":"Face the threat","result":"combat"},{"label":"Avoid it","result":"avoided"}]},{"id":"ELF-009","type":"Encounter","title":"Root-Cave Lair","text":"A beast bursts from beneath the roots of an ancient tree.","choices":[{"label":"Face the threat","result":"combat"},{"label":"Avoid it","result":"avoided"}]},{"id":"ELF-010","type":"Encounter","title":"Thorn Hollow","text":"Something dangerous moves inside a dense hollow of thorns.","choices":[{"label":"Face the threat","result":"combat"},{"label":"Avoid it","result":"avoided"}]},{"id":"ELF-011","type":"Decision","title":"Hidden Trail","text":"A barely visible trail leaves the main woodland path.","choices":[{"label":"Read the trail","result":"classAbility","ability":"WIS","difficulty":"Normal","xp":3},{"label":"Move on","result":"passed"}]},{"id":"ELF-012","type":"Decision","title":"Ancient Grove","text":"Old trees encircle a place untouched by axes.","choices":[{"label":"Sense the grove","result":"classAbility","ability":"WIS","difficulty":"Normal","xp":3},{"label":"Move on","result":"passed"}]},{"id":"ELF-013","type":"Decision","title":"River Crossing","text":"The forest river runs fast after recent rain.","choices":[{"label":"Choose a safe crossing","result":"classAbility","ability":"WIS","difficulty":"Normal","xp":3},{"label":"Move on","result":"passed"}]},{"id":"ELF-014","type":"Decision","title":"Fallen Oak","text":"A gigantic fallen oak conceals a hollow beneath its roots.","choices":[{"label":"Inspect the hollow","result":"classAbility","ability":"WIS","difficulty":"Normal","xp":3},{"label":"Move on","result":"passed"}]},{"id":"ELF-015","type":"Decision","title":"Moonlit Stones","text":"Standing stones glow faintly in a moonlit clearing.","choices":[{"label":"Read the signs","result":"classAbility","ability":"WIS","difficulty":"Normal","xp":3},{"label":"Move on","result":"passed"}]},{"id":"ELF-016","type":"Decision","title":"Storm-Damaged Path","text":"Windfall has erased the trail ahead.","choices":[{"label":"Find the true path","result":"classAbility","ability":"WIS","difficulty":"Normal","xp":3},{"label":"Move on","result":"passed"}]},{"id":"ELF-017","type":"Decision","title":"Wounded Stag","text":"A wounded stag watches from beneath the trees.","choices":[{"label":"Approach carefully","result":"classAbility","ability":"WIS","difficulty":"Normal","xp":3},{"label":"Move on","result":"passed"}]},{"id":"ELF-018","type":"Decision","title":"Withered Copse","text":"A small stand of trees has withered without obvious cause.","choices":[{"label":"Trace the cause","result":"classAbility","ability":"WIS","difficulty":"Normal","xp":3},{"label":"Move on","result":"passed"}]},{"id":"ELF-019","type":"Decision","title":"Forked Game Trail","text":"Two animal trails split around a wooded ridge.","choices":[{"label":"Read the tracks","result":"classAbility","ability":"WIS","difficulty":"Normal","xp":3},{"label":"Move on","result":"passed"}]},{"id":"ELF-020","type":"Decision","title":"Encroaching Bramble","text":"An unnatural wall of bramble chokes an old woodland route.","choices":[{"label":"Find a passage","result":"classAbility","ability":"WIS","difficulty":"Normal","xp":3},{"label":"Move on","result":"passed"}]},{"id":"ELF-021","type":"Discovery","title":"Herbal Clearing","text":"Useful herbs grow in a sheltered clearing.","choices":[{"label":"Identify the herbs","result":"classAbility","ability":"WIS","difficulty":"Normal","xp":3},{"label":"Leave it","result":"left"}]},{"id":"ELF-022","type":"Discovery","title":"Hunter's Marker","text":"An old woodland marker points toward a forgotten route.","choices":[{"label":"Interpret the marker","result":"classAbility","ability":"WIS","difficulty":"Normal","xp":3},{"label":"Leave it","result":"left"}]},{"id":"ELF-023","type":"Discovery","title":"Forest Spring","text":"Clear water rises between moss-covered stones.","choices":[{"label":"Judge the spring","result":"classAbility","ability":"WIS","difficulty":"Normal","xp":3},{"label":"Leave it","result":"left"}]},{"id":"ELF-024","type":"Discovery","title":"Overgrown Shrine","text":"Roots curl around a small forgotten shrine.","choices":[{"label":"Examine the growth","result":"classAbility","ability":"WIS","difficulty":"Normal","xp":3},{"label":"Leave it","result":"left"}]},{"id":"ELF-025","type":"Discovery","title":"Ancient Tree","text":"Carvings on an immense tree record an old journey.","choices":[{"label":"Read the carvings","result":"classAbility","ability":"WIS","difficulty":"Normal","xp":3},{"label":"Leave it","result":"left"}]},{"id":"ELF-026","type":"Discovery","title":"Rare Seedpod","text":"An unfamiliar seedpod hangs from a single old branch.","choices":[{"label":"Identify the seed","result":"classAbility","ability":"WIS","difficulty":"Normal","xp":3},{"label":"Leave it","result":"left"}]},{"id":"ELF-027","type":"Discovery","title":"Animal Crossing","text":"Tracks from many species converge at one narrow place.","choices":[{"label":"Study the tracks","result":"classAbility","ability":"WIS","difficulty":"Normal","xp":3},{"label":"Leave it","result":"left"}]},{"id":"ELF-028","type":"Discovery","title":"Old Boundary Oak","text":"Faint cuts in an oak mark an ancient forest boundary.","choices":[{"label":"Recognise the boundary","result":"classAbility","ability":"WIS","difficulty":"Normal","xp":3},{"label":"Leave it","result":"left"}]},{"id":"ELF-029","type":"Discovery","title":"Hidden Orchard","text":"Wild descendants of an old orchard grow deep in the forest.","choices":[{"label":"Study the trees","result":"classAbility","ability":"WIS","difficulty":"Normal","xp":3},{"label":"Leave it","result":"left"}]},{"id":"ELF-030","type":"Discovery","title":"Burned Glade","text":"New green shoots rise through the remains of an old fire.","choices":[{"label":"Read the recovery","result":"classAbility","ability":"WIS","difficulty":"Normal","xp":3},{"label":"Leave it","result":"left"}]},{"id":"ELF-031","type":"Quiet","title":"Green Canopy","text":"Sunlight filters peacefully through the leaves.","choices":[]},{"id":"ELF-032","type":"Quiet","title":"Forest Pool","text":"A still pool reflects the branches above.","choices":[]},{"id":"ELF-033","type":"Quiet","title":"Mossy Hollow","text":"Soft moss covers a sheltered hollow between roots.","choices":[]},{"id":"ELF-034","type":"Quiet","title":"Old Oak","text":"An immense oak offers shade and a dry place to rest.","choices":[]},{"id":"ELF-035","type":"Quiet","title":"Fern Clearing","text":"Nothing stirs beyond insects among the ferns.","choices":[]},{"id":"ELF-036","type":"Quiet","title":"Willow Bank","text":"Willows hang over a slow, quiet stream.","choices":[]},{"id":"ELF-037","type":"Quiet","title":"Pine Ridge","text":"Wind moves softly through high pine branches.","choices":[]},{"id":"ELF-038","type":"Quiet","title":"Deer Meadow","text":"A small meadow lies undisturbed between the woods.","choices":[]},{"id":"ELF-039","type":"Quiet","title":"Rain Shelter","text":"Dense branches keep the forest floor almost dry.","choices":[]},{"id":"ELF-040","type":"Quiet","title":"Dawn Grove","text":"Morning light slowly reaches the floor of an ancient grove.","choices":[]}];
 
 const THIEF_RC_SKILLS={"openLocks":[15,20,25,30,35,40,45,50,54,58,62,66,69,72,75,78,81,84,86,88,90,92,94,96,98,100,102,104,106,108,110,112,114,116,118,120],"findTraps":[10,15,20,25,30,35,40,45,50,54,58,62,66,70,73,76,80,83,86,89,92,94,96,98,99,100,101,102,103,104,105,106,107,108,109,110],"removeTraps":[10,15,20,25,30,34,38,42,46,50,54,58,61,64,67,70,73,76,79,82,85,88,91,94,97,100,103,106,109,112,115,118,121,124,127,130],"climbWalls":[87,88,89,90,91,92,93,94,95,96,97,98,99,100,101,102,103,104,105,106,107,108,109,110,111,112,113,114,115,116,117,118,118,119,119,120],"moveSilently":[20,25,30,35,40,44,48,52,55,58,61,64,66,68,70,72,74,76,78,80,82,84,86,88,89,90,91,92,93,94,95,96,97,98,99,100],"hideInShadows":[10,15,20,24,28,32,35,38,41,44,47,50,53,56,58,60,62,64,66,68,70,72,74,76,78,80,82,84,86,88,90,92,94,96,98,100],"pickPockets":[20,25,30,35,40,45,50,55,60,65,70,75,80,85,90,95,100,105,110,115,120,125,130,135,140,145,150,155,160,165,170,175,180,185,190,195],"hearNoise":[30,35,40,45,50,54,58,62,66,70,74,78,81,84,87,90,92,94,96,98,100,102,104,106,108,110,112,114,116,118,120,122,124,126,128,130]};
 function thiefSkillChance(skill,level=h?.level||1){
