@@ -1261,9 +1261,9 @@ function awardMissionObjectiveTreasure(){
  h.trip.mission.objectiveTreasureAwarded=true;
  h.trip.mission.objectiveTreasureRolledGP=gp;
  h.trip.mission.objectiveTreasureKeptCP=credit.cpValue;
- if(credit.cpValue>0)h.trip.avTreasureXpCP=Math.max(0,Number(h.trip.avTreasureXpCP)||0)+credit.cpValue;
- journal({id:"MISSION-OBJECTIVE-TREASURE",type:"Treasure",title:"Mission Objective Treasure",text:`Mission site searched after the boss fight: ${gp} GP found.`,result:"objectiveTreasure",xp:0,coins:coinArrayFromCP(credit.cpValue),leftCoinCP:credit.leftCP||0});
- addlog(`Mission Objective Treasure: ${gp} GP found.${credit.cpValue?` ${coinTextCP(credit.cpValue)} kept.`:""}${credit.leftCP?` ${coinTextCP(credit.leftCP)} left behind at the carry limit.`:""}`,"Loot");
+ let treasureXP=credit.cpValue>=100?awardXP(Math.floor(credit.cpValue/100)):0;
+ journal({id:"MISSION-OBJECTIVE-TREASURE",type:"Treasure",title:"Mission Objective Treasure",text:`Mission site searched after the boss fight: ${gp} GP found.`,result:"objectiveTreasure",xp:treasureXP,coins:coinArrayFromCP(credit.cpValue),leftCoinCP:credit.leftCP||0});
+ addlog(`Treasure gained: ${gp} GP found.${credit.cpValue?` ${coinTextCP(credit.cpValue)} kept.`:""}${credit.leftCP?` ${coinTextCP(credit.leftCP)} left behind at the carry limit.`:""}${treasureXP?` +${treasureXP} XP.`:""}`,"Loot");
  return{rolledGP:gp,...credit}
 }
 function adventureEventTarget(minutes){
@@ -1754,9 +1754,9 @@ function avTreasureCoinCP(t){return Object.entries(t?.coins||{}).reduce((sum,[k,
 function avTreasureItemValueCP(t){return["gems","jewelry","special"].flatMap(k=>t?.[k]||[]).reduce((sum,x)=>sum+(Number.isFinite(x.treasureValueCP)?x.treasureValueCP:0),0)}
 function settleTripTreasureXP(){
  let cp=Math.max(0,Math.trunc(Number(h?.trip?.avTreasureXpCP)||0)),baseXP=Math.floor(cp/100);if(!baseXP)return{baseXP:0,gained:0,cp};
- let gained=awardXP(baseXP);
- journal({id:"Averathia-TREASURE-XP",type:"Progression",title:"Treasure XP",text:`${baseXP} GP eligible treasure value recovered.`,result:"treasureXP",xp:gained,coins:[0,0,0]});
- addlog(`Treasure recovered: +${gained} XP.`,"Progression");
+ let gained=awardXP(baseXP);h.trip.avTreasureXpCP=0;
+ journal({id:"Averathia-TREASURE-XP",type:"Progression",title:"Experience gained",text:`+${gained} XP.`,result:"treasureXP",xp:gained,coins:[0,0,0]});
+ addlog(`Experience gained: +${gained} XP.`,"Progression");
  return{baseXP,gained,cp}
 }
 
@@ -1777,10 +1777,9 @@ function avApplyTreasure(t){
  for(const item of items){if(!h.trip||canCarryAdditionalBP(itemBulkPoints(item))){h.inv.push(item);accepted.push(item)}else left.push(item)}
  let credited=avCreditCoins(t?.coins||{});
  let gemJewelryCP=accepted.filter(x=>x?.avGem||x?.avJewelry).reduce((sum,x)=>sum+(Number.isFinite(x?.treasureValueCP)?x.treasureValueCP:0),0);
- let eligibleXPcp=credited.cpValue+gemJewelryCP;
- if(h.trip&&eligibleXPcp>0)h.trip.avTreasureXpCP=Math.max(0,Number(h.trip.avTreasureXpCP)||0)+eligibleXPcp;
+ let eligibleXPcp=credited.cpValue+gemJewelryCP,treasureXP=eligibleXPcp>=100?awardXP(Math.floor(eligibleXPcp/100)):0;
  if(h.trip&&(left.length||credited.leftCP)){let bits=[];if(left.length)bits.push(`${left.length} item${left.length===1?"":"s"}`);if(credited.leftCP)bits.push(coinTextCP(credited.leftCP)+" in coins");addlog(`Carry limit: left behind ${bits.join(" and ")}.`,"Loot")}
- return{creditedCP:credited.cpValue,leftCoinCP:credited.leftCP||0,items:accepted.length,leftItems:left,converted:credited.converted,eligibleXPcp}
+ return{creditedCP:credited.cpValue,leftCoinCP:credited.leftCP||0,items:accepted.length,leftItems:left,converted:credited.converted,eligibleXPcp,treasureXP}
 }
 function avTreasureSummary(t){
  let c=t?.coins||{},parts=[],coinCP=0;
@@ -1806,7 +1805,7 @@ function avRollCombatTreasure(enemies=[],isBoss=false,level=h?.level||1,includeL
 }
 function avAwardTreasure(t,label="Treasure"){
  let applied=avApplyTreasure(t),summary=avTreasureSummary(t);
- addlog(`${label}: ${summary}.`,"Loot");
+ addlog(`${label}: ${summary}.${applied.treasureXP?` +${applied.treasureXP} XP.`:""}`,"Loot");
  return{...applied,summary}
 }
 
@@ -2679,10 +2678,10 @@ function finishCombat(){
  let foeParts=Object.entries(counts).map(([n,q])=>q>1?`${q} ${n}${/s$/i.test(n)?"":"s"}`:n),foes=foeParts.join(", ");
  if(!streetSleep)addlog(boss?`${foes} boss defeated.`:`${foes} defeated.`,"Combat");
  let applied=avApplyTreasure(treasure),summary=avTreasureSummary(treasure);
- if(streetSleep)addlog(`After searching the mugger, you found: ${summary}.`,"Loot");
+ if(streetSleep)addlog(`Treasure gained: ${summary}.${applied.treasureXP?` +${applied.treasureXP} XP.`:""}`,"Loot");
  else{
   let searched=Object.entries(counts).map(([n,q])=>q>1?`${q} ${n}${/s$/i.test(n)?"":"s"}`:`the ${n}`).join(", ");
-  addlog(`After searching ${searched}, you found: ${summary}.`,"Loot");
+  addlog(`Treasure gained after searching ${searched}: ${summary}.${applied.treasureXP?` +${applied.treasureXP} XP.`:""}`,"Loot");
  }
  if(streetSleep){
   ensureInnState();h.inn.lastStreetEvent={day:innCurrentDay(),type:"Mugging",combat:true,text:"You defeated the mugger who attacked while you slept on the street."};
@@ -2823,10 +2822,10 @@ function resolveSecretDoorSearch(ev,ch){
  let woodland=journeyFlavorEnvironment()==="outdoor"&&/^ELF-/.test(ev.id||""),outcome=d(6),detail=woodland?"A nearly invisible trail branches away through the undergrowth.":"A concealed seam gives way, revealing a forgotten passage.",treasure=null,applied=null;
  if(outcome>=4&&outcome<=5){
   treasure=avBlankTreasure("secret-door","small hidden cache");treasure.coins.sp=d(6)*10;applied=avApplyTreasure(treasure);
-  detail=woodland?`Along the hidden path is a small concealed cache: ${avTreasureSummary(treasure)}.`:`Behind the secret door is a small hidden cache: ${avTreasureSummary(treasure)}.`;
+  detail=woodland?`Along the hidden path is a small concealed cache: ${avTreasureSummary(treasure)}.${applied?.treasureXP?` +${applied.treasureXP} XP.`:""}`:`Behind the secret door is a small hidden cache: ${avTreasureSummary(treasure)}.${applied?.treasureXP?` +${applied.treasureXP} XP.`:""}`;
  }else if(outcome===6){
   treasure=avRollUnguardedTreasure(h.level);applied=avApplyTreasure(treasure);
-  detail=woodland?`The hidden path leads to a forgotten clearing containing ${avTreasureSummary(treasure)}.`:`The secret door opens into a forgotten chamber containing ${avTreasureSummary(treasure)}.`;
+  detail=woodland?`The hidden path leads to a forgotten clearing containing ${avTreasureSummary(treasure)}.${applied?.treasureXP?` +${applied.treasureXP} XP.`:""}`:`The secret door opens into a forgotten chamber containing ${avTreasureSummary(treasure)}.${applied?.treasureXP?` +${applied.treasureXP} XP.`:""}`;
  }
  let discovery=woodland?"Hidden path":"Secret door";
  addlog(`${discovery} discovered — ${detail}`,"Discovery");
@@ -2959,12 +2958,12 @@ function applyEventChoice(ev,ch){
  let baseXP=ch?.xp??ev.xp??0,xp=baseXP?awardXP(baseXP):0,coin=ch?.coins??ev.coins??[0,0,0],coinCredit=null;
  let result=ch?.result||"observed",avDiscoveryTreasure=null;
  if(ev?.type==="Discovery"&&result==="search"){
-   avDiscoveryTreasure=avRollUnguardedTreasure(h.level);avApplyTreasure(avDiscoveryTreasure);coin=[0,0,0]
+   avDiscoveryTreasure=avRollUnguardedTreasure(h.level);avDiscoveryTreasure._applied=avApplyTreasure(avDiscoveryTreasure);coin=[0,0,0]
  }else if(coin)coinCredit=addCoins(coin[0]||0,coin[1]||0,coin[2]||0);
  let keptCoins=coinCredit?coinArrayFromCP(coinCredit.cpValue):coin;
  journal({id:ev.id,type:ev.type,title:ev.title,text:ev.text,choice:ch?.label||null,result,xp,coins:keptCoins,leftCoinCP:coinCredit?.leftCP||0,avTreasure:avDiscoveryTreasure?avTreasureSummary(avDiscoveryTreasure):null});
  let coinReward=coinCredit?(coinCredit.cpValue?`${coinTextCP(coinCredit.cpValue)} kept.`:"")+(coinCredit.leftCP?` ${coinTextCP(coinCredit.leftCP)} left behind at the carry limit.`:""):"";
- let rewardText=`${xp?`+${xp} XP. `:""}${avDiscoveryTreasure?`Treasure: ${avTreasureSummary(avDiscoveryTreasure)}.`:coinReward}`.trim(),summary=ch?.label?`${ch.label}.${rewardText?` ${rewardText}`:""}`:(rewardText||ev.text||"Observed."),logType=avDiscoveryTreasure||coinCredit?.cpValue||coinCredit?.leftCP?"Loot":(result==="combat"?"Encounter":(ev.type||"Event"));addlog(`${ev.title}: ${summary}`,logType);
+ let rewardText=`${xp?`+${xp} XP. `:""}${avDiscoveryTreasure?`Treasure gained: ${avTreasureSummary(avDiscoveryTreasure)}.${avDiscoveryTreasure._applied?.treasureXP?` +${avDiscoveryTreasure._applied.treasureXP} XP.`:""}`:coinReward}`.trim(),summary=ch?.label?`${ch.label}.${rewardText?` ${rewardText}`:""}`:(rewardText||ev.text||"Observed."),logType=avDiscoveryTreasure||coinCredit?.cpValue||coinCredit?.leftCP?"Loot":(result==="combat"?"Encounter":(ev.type||"Event"));addlog(`${ev.title}: ${summary}`,logType);
  if(result==="combat"){let combatContext=encounterContextFromEvent(ev);h.pendingEvent=null;renderPendingEvent();save();if(h.trip?.mode==="auto")autonomousCombat(false,combatContext);else makeCombat(false,combatContext);return}
  h.pendingEvent=null;endTripPause();save();renderPendingEvent();if(resumeAfter)tick()
 }
