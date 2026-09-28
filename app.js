@@ -203,6 +203,10 @@ function spendTownFunds(cp){
  if(cp)setHomeCoinValueCP(homeCoinValueCP()-cp);
  return true
 }
+function renderHealerSupplyPrices(){
+ if(!h)return;let a=$("#antivenomPrice"),t=$("#tincturePrice");
+ if(a)a.textContent=curePoisonCostGP()+" gp";if(t)t.textContent=cureDiseaseCostGP()+" gp"
+}
 function renderMoneychanger(){
  let box=$("#moneychangerContent");if(!box||!h)return;ensureMoneychanger();
  box.innerHTML=`<div class="settingsSection"><p><b>Account:</b> ${coinTextCP(moneychangerCP())}</p><p><b>Carried:</b> ${coinTextCP(walletCP())} · ${formatBP(coinBulkPoints())} BP</p><div class="row"><button id="moneyDepositAll" ${walletCP()<1?"disabled":""}>Deposit All Coins</button><button id="moneyWithdraw100" ${moneychangerCP()<10000||!canCarryAdditionalBP(100)?"disabled":""}>Withdraw 100 GP</button></div><p id=moneychangerMsg class=small></p></div>`;
@@ -546,7 +550,7 @@ function ensureTrophies(){if(h&&!Array.isArray(h.trophies))h.trophies=[]}
 function unlockTrophy(name){ensureTrophies();if(!h||h.trophies.includes(name))return false;let valid=(TROPHY_COLLECTIONS[h.className]||[]).some(x=>x[0]===name);if(!valid)return false;h.trophies.push(name);save();return true}
 function renderTrophies(){let grid=$("#trophyGrid"),intro=$("#trophyIntro"),heading=$("#trophyHeading"),nav=$("#trophyNav");if(!grid||!h)return;ensureTrophies();let display=trophyDisplayName(),list=TROPHY_COLLECTIONS[h.className]||[],got=new Set(h.trophies);if(heading)heading.textContent="🏆 "+display;if(nav)nav.textContent=display;intro.textContent=`${TROPHY_TITLES[h.className]||"Collection"} — ${list.filter(x=>got.has(x[0])).length}/${list.length} discovered`;grid.innerHTML=list.map(([name,kind])=>got.has(name)?`<div class="trophyCard unlocked"><div class=trophyIcon>✦</div><b>${name}</b><span>${kind}</span></div>`:`<div class="trophyCard locked"><div class=trophyIcon>?</div><b>???</b><span>Undiscovered</span></div>`).join("")}
 
-function refresh(){updateNavigationLock();renderMoneychanger();if(h){processInnLodging();ageTimedBuffsClock(Date.now());if(ageTimedConditionsClock(Date.now())===false)return;if(updateDiseases())return}if(h?.deadUntil&&Date.now()<h.deadUntil){renderDeathPage();return}renderTrophies();if(h)renderSkills();renderPendingEvent();if(!h)return;updateRest();
+function refresh(){updateNavigationLock();renderMoneychanger();renderHealerSupplyPrices();if(h){processInnLodging();ageTimedBuffsClock(Date.now());if(ageTimedConditionsClock(Date.now())===false)return;if(updateDiseases())return}if(h?.deadUntil&&Date.now()<h.deadUntil){renderDeathPage();return}renderTrophies();if(h)renderSkills();renderPendingEvent();if(!h)return;updateRest();
  if(h.deadUntil&&Date.now()>=h.deadUntil){h.deadUntil=null;h.hp=Math.max(1,h.maxhp);h.trip=null;h.combat=null;vibrateJourneyReturn();save();page("town");return}
  if($("#worldClock"))$("#worldClock").textContent=atClockText();
  if($("#longRestBtn")){$("#longRestBtn").disabled=!!h.restUntil||!!h.deadUntil;$("#longRestBtn").onclick=()=>startLongRest()}if($("#cureDiseaseHealer")){$("#cureDiseaseHealer").textContent=`Cure Disease — ${cureDiseaseCostGP()} gp`;$("#cureDiseaseHealer").disabled=!hasCurableDisease()}if($("#curePoisonHealer")){$("#curePoisonHealer").textContent=`Cure Poison — ${curePoisonCostGP()} gp`;$("#curePoisonHealer").disabled=!hasActivePoison()}
