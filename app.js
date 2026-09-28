@@ -1756,7 +1756,7 @@ function settleTripTreasureXP(){
  let cp=Math.max(0,Math.trunc(Number(h?.trip?.avTreasureXpCP)||0)),baseXP=Math.floor(cp/100);if(!baseXP)return{baseXP:0,gained:0,cp};
  let gained=awardXP(baseXP);
  journal({id:"Averathia-TREASURE-XP",type:"Progression",title:"Treasure XP",text:`${baseXP} GP eligible treasure value recovered.`,result:"treasureXP",xp:gained,coins:[0,0,0]});
- addlog(`Treasure XP: ${baseXP} GP eligible value → +${gained} XP.`,"Progression");
+ addlog(`Treasure recovered: +${gained} XP.`,"Progression");
  return{baseXP,gained,cp}
 }
 
@@ -1792,14 +1792,12 @@ function avTreasureSummary(t){
 }
 
 function avRollCombatTreasure(enemies=[],isBoss=false,level=h?.level||1,includeLair=false){
- let out=avBlankTreasure(includeLair?"lair-combat":(isBoss?"boss-combat":"combat"),includeLair?"lair":(isBoss?"boss":"ordinary")),ogres=enemies.filter(e=>monsterKey(e)==="ogre");
+ let out=avBlankTreasure(includeLair?"lair-combat":(isBoss?"boss-combat":"combat"),includeLair?"lair":(isBoss?"boss":"ordinary"));
  for(const e of enemies){
-  if(monsterKey(e)==="ogre")continue; // Averathia Ogre prose overrides generic carried notation for the encountered group.
   let profile=avMonsterTreasureProfile(e),carried=avRollMonsterCarried(e,level);
   if(!profile.carried.length)carried=journeySpoilsForMonster(e);
   avMergeTreasure(out,carried)
  }
- if(ogres.length)out.coins.gp+=d(6)*100; // Averathia: an ogre group encountered outside its lair carries 1d6 x 100 gp.
  if(includeLair&&enemies.length){
   let hoardOwner=enemies.find(e=>e?.boss)||enemies[0];
   avMergeTreasure(out,avRollMonsterLair(hoardOwner,level))
