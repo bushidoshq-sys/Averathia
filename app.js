@@ -3113,6 +3113,10 @@ function taleEventScene(e,name){
  if(!e||e.type==="Progression"||e.result==="combat")return"";
  if(e.type==="Quiet")return taleSentence(e.text);
  if(e.result==="secretDoor"){
+  if(e.discoveryKind==="hiddenPath"){
+   let detail=String(e.text||"").replace(/^Beyond the hidden path is /,"Beyond it is ").replace(/^The hidden path leads to /,"It leads to ");
+   return taleSentence("A hidden path is discovered. "+detail)
+  }
   let detail=String(e.text||"").replace(/^Behind the secret door is /,"Behind it is ").replace(/^The secret door opens into /,"It opens into ");
   return taleSentence("A secret door is discovered. "+detail)
  }
@@ -3145,15 +3149,15 @@ function taleCombatScene(trip,name){
  let wins=logs.filter(x=>/^Combat won(?:\s|—|\.)/i.test(x.text||"")).length,boss=!!(trip&&trip.mission&&trip.mission.bossWon),escaped=logs.some(x=>/escape the encounter/i.test(x.text||""));
  if(wins)sentence+=" "+(wins===1?"One battle is won.":wins+" battles are won.");
  if(escaped)sentence+=" At least one fight is escaped rather than finished.";
- if(boss)sentence+=" At the journey's decisive encounter, the opposition is overcome."+(trip?.mission?.trophyFound?" The rare trophy is secured.":" No rare trophy is found.");
+ if(boss){sentence+=" At the journey's decisive encounter, the opposition is overcome.";if(trip?.mission?.objectiveKind==="find")sentence+=trip?.mission?.objectiveCompleted?" The sought objective is recovered.":" The sought objective is not found."}
  return sentence
 }
 function taleJourneyFacts(trip,name){
  let parts=[],journal=trip?.journal||[],logs=trip?.adventureLog||[];
- let rests=logs.filter(x=>x.type==="Rest").length,secrets=journal.filter(x=>x.result==="secretDoor").length;
+ let rests=logs.filter(x=>x.type==="Rest").length,hiddenPaths=journal.filter(x=>x.result==="secretDoor"&&x.discoveryKind==="hiddenPath").length,secrets=journal.filter(x=>x.result==="secretDoor"&&x.discoveryKind!=="hiddenPath").length;
  let discoveries=journal.filter(x=>x.type==="Discovery"&&x.result!=="secretDoor").length,decisions=journal.filter(x=>x.type==="Decision").length;
- if(discoveries||decisions||secrets){
-  let bits=[];if(discoveries)bits.push(discoveries+" discover"+(discoveries===1?"y":"ies"));if(decisions)bits.push(decisions+" decision"+(decisions===1?"":"s"));if(secrets)bits.push(secrets+" secret door"+(secrets===1?"":"s"));
+ if(discoveries||decisions||secrets||hiddenPaths){
+  let bits=[];if(discoveries)bits.push(discoveries+" discover"+(discoveries===1?"y":"ies"));if(decisions)bits.push(decisions+" decision"+(decisions===1?"":"s"));if(hiddenPaths)bits.push(hiddenPaths+" hidden path"+(hiddenPaths===1?"":"s"));if(secrets)bits.push(secrets+" secret door"+(secrets===1?"":"s"));
   parts.push("Along the way, the journey records "+bits.join(", ")+".")
  }
  if(rests)parts.push(name+" takes "+rests+" recorded rest"+(rests===1?"":"s")+" before pressing on.");
