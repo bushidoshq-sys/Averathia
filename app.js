@@ -1189,12 +1189,20 @@ const MISSION_OBJECTIVE_KIND={
  "Protect the woodland":"defeat","Seek a rare seed":"find","Preserve a vanishing grove":"find"
 };
 function missionObjectiveKind(title){return MISSION_OBJECTIVE_KIND[title]||"defeat"}
+const MISSION_OBJECTIVE_ITEM={
+ "Recover a saint's relic":"the saint's relic","Seek a lost reliquary":"the lost reliquary",
+ "Recover a lost arcane volume":"the lost arcane volume","Seek a vanished scholar's manuscript":"the vanished scholar's manuscript","Investigate an abandoned magical library":"the lost library records",
+ "Steal a guarded cache":"the guarded cache","Find a legendary jewel":"the legendary jewel","Raid a forgotten strongroom":"the strongroom's valuables",
+ "Recover an ancestral rune":"the ancestral rune","Trace a lost family inscription":"the lost family inscription","Search a forgotten deep hall":"the ancestral markings",
+ "Seek a rare seed":"the rare seed","Preserve a vanishing grove":"seeds from the vanishing grove"
+};
+function missionObjectiveItem(title){return MISSION_OBJECTIVE_ITEM[title]||"the sought objective"}
 function createMission(){
  let pool=CLASS_MISSIONS[h.className]||CLASS_MISSIONS.Fighter,m=pool[d(pool.length)-1];
  let trophyPool=TROPHY_COLLECTIONS[h.className]||[],locked=trophyPool.filter(x=>!h.trophies?.includes(x[0]));
  /* Trophy chance is deliberately uncommon: 20% on a successful boss mission, never guaranteed. */
  let trophyCandidate=locked.length&&d(100)<=20?locked[d(locked.length)-1][0]:null;
- return {title:m[0],brief:m[1],objectiveKind:missionObjectiveKind(m[0]),objectiveCompleted:false,trophyCandidate,trophyFound:false,bossWon:false,resolved:false}
+ return {title:m[0],brief:m[1],objectiveKind:missionObjectiveKind(m[0]),objectiveItem:missionObjectiveItem(m[0]),objectiveCompleted:false,trophyCandidate,trophyFound:false,bossWon:false,resolved:false}
 }
 function resolveMissionBoss(){
  if(!h.trip?.mission||h.trip.mission.resolved)return;
@@ -1205,16 +1213,14 @@ function resolveMissionBoss(){
    m.objectiveCompleted=true;
    addlog(`Objective completed: ${m.title}.`,"Objective");
  }else{
-   m.objectiveCompleted=false;
+   if(!m.objectiveItem)m.objectiveItem=missionObjectiveItem(m.title);
+   m.objectiveCompleted=true;
+   addlog(`Objective completed: Found ${m.objectiveItem}.`,"Objective");
  }
  if(m.trophyCandidate&&unlockTrophy(m.trophyCandidate)){
    m.trophyFound=true;
-   if(m.objectiveKind==="find")m.objectiveCompleted=true;
    addlog(`TROPHY DISCOVERED: ${m.trophyCandidate}. It has been added to your ${TROPHY_TITLES[h.className]}.`,"Objective");
- }else{
-   m.trophyFound=false;
-   if(m.objectiveKind==="find")addlog(`Objective not found: ${m.title}.`,"Objective");
- }
+ }else m.trophyFound=false;
 }
 
 function ageTimedBuffsClock(now=Date.now()){
