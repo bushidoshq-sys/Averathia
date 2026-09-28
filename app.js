@@ -1234,12 +1234,12 @@ function ageTimedBuffsClock(now=Date.now()){
  return rounds
 }
 function beginTripPause(){if(h?.trip&&!h.trip.pauseStart){ageTimedBuffsClock(Date.now());ageTimedConditionsClock(Date.now());h.trip.pauseStart=Date.now();h.buffAgeAt=h.trip.pauseStart;h.timedConditionAgeAt=h.trip.pauseStart}}
-function endTripPause(){if(!h?.trip?.pauseStart)return;let now=Date.now(),dt=now-h.trip.pauseStart;for(const k of ["start","end","half","nextEvent","resourceAt"])if(Number.isFinite(h.trip[k]))h.trip[k]+=dt;h.trip.pauseStart=null;h.buffAgeAt=now;h.timedConditionAgeAt=now}
+function endTripPause(){if(!h?.trip?.pauseStart)return;let now=Date.now(),dt=now-h.trip.pauseStart;for(const k of ["start","end","half","nextEvent","nextFlavorAt","resourceAt"])if(Number.isFinite(h.trip[k]))h.trip[k]+=dt;h.trip.pauseStart=null;h.buffAgeAt=now;h.timedConditionAgeAt=now}
 function advanceJourneyMinutes(minutes){
  if(!h?.trip)return 0;
  let ms=Math.max(0,Number(minutes)||0)*60000;if(!ms)return 0;
  // Consuming Journey time moves all future Journey milestones earlier; planned duration remains unchanged for rewards/summary.
- for(const k of ["end","half","nextEvent"])if(Number.isFinite(Number(h.trip[k])))h.trip[k]=Number(h.trip[k])-ms;
+ for(const k of ["end","half","nextEvent","nextFlavorAt"])if(Number.isFinite(Number(h.trip[k])))h.trip[k]=Number(h.trip[k])-ms;
  h.trip.timeConsumedByEventsMinutes=Math.max(0,Number(h.trip.timeConsumedByEventsMinutes)||0)+ms/60000;
  return ms
 }
