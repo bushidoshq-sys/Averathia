@@ -3070,11 +3070,15 @@ function maybeJourneyFlavor(){
 function event(eventTime=Date.now()){
  if(!h||!h.trip||h.combat||h.pendingEvent)return;
  h.trip.currentEventTime=eventTime;
- if(d(100)<=35)maybeJourneyFlavor();
- let ev=pickEvent();
- if(ev.choices.length&&h.trip.mode==="present"){beginTripPause();adventureLog(`${ev.title}: ${ev.text}`,ev.type||"Event");h.pendingEvent=ev;renderPendingEvent();save();return}
- if(ev.choices.length){applyEventChoice(ev,autonomousChoice(ev));return}
- applyEventChoice(ev,null)
+ try{
+  if(d(100)<=35)maybeJourneyFlavor();
+  let ev=pickEvent();
+  if(ev.choices.length&&h.trip.mode==="present"){beginTripPause();adventureLog(`${ev.title}: ${ev.text}`,ev.type||"Event");h.pendingEvent=ev;renderPendingEvent();save();return}
+  if(ev.choices.length){applyEventChoice(ev,autonomousChoice(ev));return}
+  applyEventChoice(ev,null)
+ }finally{
+  if(h?.trip)h.trip.currentEventTime=null
+ }
 }
 function renderPendingEvent(){
  let box=$("#eventChoice");if(!box)return;
