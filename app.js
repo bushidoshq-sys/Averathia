@@ -209,7 +209,7 @@ function renderMoneychanger(){
  $("#moneyDepositAll").onclick=()=>{let amount=walletCP();if(!amount)return;setWalletCP(0);h.moneychangerCP+=amount;save();renderMoneychanger();refresh()};
  $("#moneyWithdraw100").onclick=()=>{let amount=Math.min(10000,moneychangerCP()),coins=normalizedCoinCountFromCP(amount);if(amount<1||!canCarryAdditionalBP(coins))return;h.moneychangerCP-=amount;setWalletCP(walletCP()+amount);save();renderMoneychanger();refresh()}
 }
-function homeSpendableCP(){return walletCP()+homeCoinValueCP()+moneychangerCP()}
+function homeSpendableCP(){return walletCP()+homeCoinValueCP()}
 function setHomeCoinValueCP(cp){
  ensureHomeState();cp=Math.max(0,Math.round(Number(cp)||0));
  h.homeCoins.gp=Math.floor(cp/100);h.homeCoins.sp=Math.floor((cp%100)/10);h.homeCoins.cp=cp%10
