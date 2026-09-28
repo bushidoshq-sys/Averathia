@@ -3077,7 +3077,8 @@ function maybeJourneyFlavor(eventTime=Date.now()){
   if(d(100)<=25&&maybeJourneyWeatherFlavor())return true;
   let env=journeyFlavorEnvironment(),pool=JOURNEY_FLAVOR[env]||JOURNEY_FLAVOR.generic,recent=Array.isArray(h.trip.recentFlavorText)?h.trip.recentFlavorText:[],choices=pool.filter(x=>!recent.includes(x));
   if(!choices.length){recent=[];choices=pool.slice()}
-  let t=choices[d(choices.length)-1]||pool[0];recent.push(t);h.trip.recentFlavorText=recent.slice(-Math.min(24,Math.max(1,pool.length-1)));addlog(t,"Quiet",eventTime);return true
+  let t=choices[d(choices.length)-1]||pool[0];recent.push(t);h.trip.recentFlavorText=recent.slice(-Math.min(24,Math.max(1,pool.length-1)));
+  let xp=awardXP(1);journal({time:eventTime,id:"JOURNEY-FLAVOR",type:"Quiet",title:"Journey observation",text:t,result:"flavor",xp,coins:[0,0,0]});addlog(`${t} +${xp} XP.`,"Quiet",eventTime);return true
  }finally{if(h?.trip)h.trip.currentEventTime=previous}
 }
 function event(eventTime=Date.now()){
