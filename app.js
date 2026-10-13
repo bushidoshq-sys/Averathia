@@ -582,7 +582,7 @@ function renderTrophies(){
  if(heading)heading.textContent="🏆 "+display;
  if(nav)nav.textContent=display;
  intro.textContent=`${TROPHY_TITLES[h.className]||"Collection"} — ${list.filter(x=>got.has(x[0])).length}/${list.length} discovered`;
- grid.innerHTML=list.map(([name,kind])=>got.has(name)?`<div class="trophyCard unlocked"><div class=trophyIcon>✦</div><b>${name}</b><span>${kind} · Owned: ${h.trophyCounts[name]||0}</span></div>`:`<div class="trophyCard locked"><div class=trophyIcon>?</div><b>???</b><span>Undiscovered</span></div>`).join("");
+ grid.innerHTML=list.map(([name,kind])=>got.has(name)?`<div class="trophyCard ${(h.trophyCounts[name]||0)>0?"unlocked":"locked"}"><div class=trophyIcon>${(h.trophyCounts[name]||0)>0?"✦":"☆"}</div><b>${name}</b><span>${kind} · Owned: ${h.trophyCounts[name]||0}</span></div>`:`<div class="trophyCard locked"><div class=trophyIcon>?</div><b>???</b><span>Undiscovered</span></div>`).join("");
  let panel=$("#collectionTurnInPanel");
  if(!panel){panel=document.createElement("div");panel.id="collectionTurnInPanel";panel.style.cssText="text-align:center;margin:20px auto;padding:16px;border:1px solid #76558a;border-radius:12px";grid.insertAdjacentElement("afterend",panel)}
  const owned=list.filter(([name])=>(h.trophyCounts[name]||0)>0).length;
