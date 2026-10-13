@@ -546,9 +546,50 @@ function trophyDisplayName(obj=h){
  let tier=homeTier(obj);
  return tier>=3?"Trophy Hall":tier===2?"Trophy Cabinet":tier===1?"Trophy Shelf":"Trophies"
 }
-function ensureTrophies(){if(h&&!Array.isArray(h.trophies))h.trophies=[]}
-function unlockTrophy(name){ensureTrophies();if(!h||h.trophies.includes(name))return false;let valid=(TROPHY_COLLECTIONS[h.className]||[]).some(x=>x[0]===name);if(!valid)return false;h.trophies.push(name);save();return true}
-function renderTrophies(){let grid=$("#trophyGrid"),intro=$("#trophyIntro"),heading=$("#trophyHeading"),nav=$("#trophyNav");if(!grid||!h)return;ensureTrophies();let display=trophyDisplayName(),list=TROPHY_COLLECTIONS[h.className]||[],got=new Set(h.trophies);if(heading)heading.textContent="🏆 "+display;if(nav)nav.textContent=display;intro.textContent=`${TROPHY_TITLES[h.className]||"Collection"} — ${list.filter(x=>got.has(x[0])).length}/${list.length} discovered`;grid.innerHTML=list.map(([name,kind])=>got.has(name)?`<div class="trophyCard unlocked"><div class=trophyIcon>✦</div><b>${name}</b><span>${kind}</span></div>`:`<div class="trophyCard locked"><div class=trophyIcon>?</div><b>???</b><span>Undiscovered</span></div>`).join("")}
+function ensureTrophies(){
+ if(!h)return;
+ if(!Array.isArray(h.trophies))h.trophies=[];
+ if(!h.trophyCounts||typeof h.trophyCounts!=="object"||Array.isArray(h.trophyCounts)){
+  h.trophyCounts={};
+  for(const name of h.trophies)h.trophyCounts[name]=(h.trophyCounts[name]||0)+1;
+ }
+}
+function unlockTrophy(name){
+ ensureTrophies();
+ if(!h||!(TROPHY_COLLECTIONS[h.className]||[]).some(x=>x[0]===name))return false;
+ const first=!h.trophies.includes(name);
+ if(first)h.trophies.push(name);
+ h.trophyCounts[name]=(h.trophyCounts[name]||0)+1;
+ save();
+ return true;
+}
+function turnInCollection(){
+ ensureTrophies();
+ const list=TROPHY_COLLECTIONS[h?.className]||[];
+ if(list.length!==6||!list.every(([name])=>(h.trophyCounts[name]||0)>=1))return false;
+ const xp=1000*Math.max(1,Math.floor(h.level||1));
+ for(const [name] of list)h.trophyCounts[name]--;
+ h.xp=(h.xp||0)+xp;
+ addlog(`Collection turned in: six unique trophies for ${xp} XP.`,"Objective");
+ save();
+ return true;
+}
+function renderTrophies(){
+ let grid=$("#trophyGrid"),intro=$("#trophyIntro"),heading=$("#trophyHeading"),nav=$("#trophyNav");
+ if(!grid||!h)return;
+ ensureTrophies();
+ let display=trophyDisplayName(),list=TROPHY_COLLECTIONS[h.className]||[],got=new Set(h.trophies);
+ if(heading)heading.textContent="🏆 "+display;
+ if(nav)nav.textContent=display;
+ intro.textContent=`${TROPHY_TITLES[h.className]||"Collection"} — ${list.filter(x=>got.has(x[0])).length}/${list.length} discovered`;
+ grid.innerHTML=list.map(([name,kind])=>got.has(name)?`<div class="trophyCard unlocked"><div class=trophyIcon>✦</div><b>${name}</b><span>${kind} · Owned: ${h.trophyCounts[name]||0}</span></div>`:`<div class="trophyCard locked"><div class=trophyIcon>?</div><b>???</b><span>Undiscovered</span></div>`).join("");
+ let panel=$("#collectionTurnInPanel");
+ if(!panel){panel=document.createElement("div");panel.id="collectionTurnInPanel";panel.style.cssText="text-align:center;margin:20px auto;padding:16px;border:1px solid #76558a;border-radius:12px";grid.insertAdjacentElement("afterend",panel)}
+ const owned=list.filter(([name])=>(h.trophyCounts[name]||0)>0).length;
+ const ready=list.length===6&&owned===6;
+ panel.innerHTML=`<div style="margin-bottom:10px">Collection: ${owned}/6 owned · Reward: ${1000*Math.max(1,Math.floor(h.level||1))} XP</div><button id="turnInCollectionButton" ${ready?"":"disabled"}>Turn In Collection</button>`;
+ panel.querySelector("button").onclick=turnInCollection;
+}
 
 function refresh(){updateNavigationLock();renderMoneychanger();renderHealerSupplyPrices();if(h){processInnLodging();ageTimedBuffsClock(Date.now());if(ageTimedConditionsClock(Date.now())===false)return;if(updateDiseases())return}if(h?.deadUntil&&Date.now()<h.deadUntil){renderDeathPage();return}renderTrophies();if(h)renderSkills();renderPendingEvent();if(!h)return;updateRest();
  if(h.deadUntil&&Date.now()>=h.deadUntil){h.deadUntil=null;h.hp=Math.max(1,h.maxhp);h.trip=null;h.combat=null;vibrateJourneyReturn();save();page("town");return}
@@ -1228,7 +1269,7 @@ const MISSION_OBJECTIVE_ITEM={
 function missionObjectiveItem(title){return MISSION_OBJECTIVE_ITEM[title]||"the sought objective"}
 function createMission(){
  let pool=CLASS_MISSIONS[h.className]||CLASS_MISSIONS.Fighter,m=pool[d(pool.length)-1];
- let trophyPool=TROPHY_COLLECTIONS[h.className]||[],locked=trophyPool.filter(x=>!h.trophies?.includes(x[0]));
+ let trophyPool=TROPHY_COLLECTIONS[h.className]||[],locked=trophyPool.filter(x=>!(h.trophyCounts?.[x[0]]>0));
  /* Trophy chance is deliberately uncommon: 20% on a successful boss mission, never guaranteed. */
  let trophyCandidate=locked.length&&d(100)<=20?locked[d(locked.length)-1][0]:null;
  return {title:m[0],brief:m[1],objectiveKind:missionObjectiveKind(m[0]),objectiveItem:missionObjectiveItem(m[0]),objectiveCompleted:false,trophyCandidate,trophyFound:false,bossWon:false,resolved:false}
