@@ -582,7 +582,7 @@ function renderTrophies(){
  if(heading)heading.textContent="🏆 "+display;
  if(nav)nav.textContent=display;
  intro.textContent=`${TROPHY_TITLES[h.className]||"Collection"} — ${list.filter(x=>got.has(x[0])).length}/${list.length} discovered`;
- grid.innerHTML=list.map(([name,kind])=>got.has(name)?`<div class="trophyCard ${(h.trophyCounts[name]||0)>0?"unlocked":"locked"}"><div class=trophyIcon>${(h.trophyCounts[name]||0)>0?"✦":"☆"}</div><b>${name}</b><span>${kind} · Owned: ${h.trophyCounts[name]||0}</span></div>`:`<div class="trophyCard locked"><div class=trophyIcon>?</div><b>???</b><span>Undiscovered</span></div>`).join("");
+ grid.innerHTML=list.map(([name,kind])=>got.has(name)?`<div class="trophyCard ${(h.trophyCounts[name]||0)>0?"unlocked":"locked"}"><div class=trophyIcon>${(h.trophyCounts[name]||0)>0?"★":"☆"}</div><b>${name}</b><span>${kind} · Owned: ${h.trophyCounts[name]||0}</span></div>`:`<div class="trophyCard locked"><div class=trophyIcon>?</div><b>???</b><span>Undiscovered</span></div>`).join("");
  let panel=$("#collectionTurnInPanel");
  if(!panel){panel=document.createElement("div");panel.id="collectionTurnInPanel";panel.style.cssText="text-align:center;margin:20px auto;padding:16px;border:1px solid #76558a;border-radius:12px";grid.insertAdjacentElement("afterend",panel)}
  const owned=list.filter(([name])=>(h.trophyCounts[name]||0)>0).length;
@@ -607,11 +607,18 @@ function updateNavigationLock(){
  let lockedTarget=h?.combat?"combat":h?.trip?"depart":null;
  document.querySelectorAll("[data-page]").forEach(b=>{let allowed=!lockedTarget||b.dataset.page===lockedTarget||b.dataset.page==="settings";b.disabled=!allowed;b.classList.toggle("journeyLocked",!allowed)});
 }
+function centerActiveNavTab(id,behavior="smooth"){
+ let tab=$("[data-page]").find(x=>x.dataset.page===id&&x.offsetParent!==null);
+ if(!tab)return;
+ let nav=tab.closest(".nav");if(!nav)return;
+ let left=tab.offsetLeft-(nav.clientWidth-tab.offsetWidth)/2;
+ nav.scrollTo({left:Math.max(0,left),behavior});
+}
 function page(id){
  if(h?.combat&&id!=="settings")id="combat";
  else if(h?.trip&&id!=="depart"&&id!=="settings")id="depart";
  if(h?.deadUntil&&Date.now()<h.deadUntil&&id!=="death"&&id!=="settings"){renderDeathPage();return}
- $$(".page").forEach(x=>x.classList.add("hide"));$("#"+id).classList.remove("hide");$$("[data-page]").forEach(x=>x.classList.toggle("on",x.dataset.page===id));updateNavigationLock();if(id!=="settings")refresh()
+ $(".page").forEach(x=>x.classList.add("hide"));$("#"+id).classList.remove("hide");$("[data-page]").forEach(x=>x.classList.toggle("on",x.dataset.page===id));updateNavigationLock();requestAnimationFrame(()=>centerActiveNavTab(id));if(id!=="settings")refresh()
 }
 $$("[data-page]").forEach(b=>b.onclick=()=>page(b.dataset.page));$$("[data-go]").forEach(b=>b.onclick=()=>page(b.dataset.go));
 let swipeStart=null;
@@ -3007,7 +3014,7 @@ function applyEventChoice(ev,ch){
  if(ch?.result==="clericTurn"){resolveTurnUndead(ev);return}
  if(ch?.result==="combat"&&ev?.id?.startsWith("CLE-")&&ev.type==="Encounter"){startClericUndeadFight(ev);return}
  if(ch?.result==="clericWis"){
-   let test=clericWisCheck(ch.difficulty||"Normal"),baseXP=test.success?(ch.xp||0):0,xp=baseXP?awardXP(baseXP):0;
+   let test=clericWisCheck(ch.difficulty||"Normal"),baseXP=test.success?50*Math.max(1,h.level||1):0,xp=baseXP?awardXP(baseXP):0;
    let outcome=test.success?"SUCCESS":"FAILURE";
    journal({id:ev.id,type:ev.type,title:ev.title,text:ev.text,choice:ch.label,result:outcome,xp,coins:[0,0,0],ability:"WIS",roll:test.roll,target:test.target});
    addlog(`${ev.title}: ${ch.label} — ${outcome} (WIS ${test.roll} / ${test.target}).${xp?` +${xp} XP.`:""}`,"Check");
@@ -3015,14 +3022,14 @@ function applyEventChoice(ev,ch){
  }
  if(ch?.result==="classAbility"){
    let adj=ch.difficulty==="Easy"?4:ch.difficulty==="Hard"?-4:0,ability=ch.ability||"WIS";
-   let target=Math.max(1,Math.min(19,(h.stats[ability]||9)+adj)),roll=d(20),success=roll<=target,baseXP=success?(d(4)+d(4)+d(4))*Math.max(1,h.level||1):0,xp=baseXP?awardXP(baseXP):0;
+   let target=Math.max(1,Math.min(19,(h.stats[ability]||9)+adj)),roll=d(20),success=roll<=target,baseXP=success?50*Math.max(1,h.level||1):0,xp=baseXP?awardXP(baseXP):0;
    let outcome=success?"SUCCESS":"FAILURE";
    journal({id:ev.id,type:ev.type,title:ev.title,text:ev.text,choice:ch.label,result:outcome,xp,coins:[0,0,0],ability,roll,target});
    addlog(`${ev.title}: ${ch.label} — ${outcome} (${ability} ${roll} / ${target}).${xp?` +${xp} XP.`:""}`,"Check");
    h.pendingEvent=null;endTripPause();save();renderPendingEvent();if(resumeAfter)tick();return
  }
  if(ch?.result==="thiefSkill"){
-   let test=thiefSkillCheck(ch.skill),baseXP=test.success?(ch.xp||0):0,xp=baseXP?awardXP(baseXP):0;
+   let test=thiefSkillCheck(ch.skill),baseXP=test.success?50*Math.max(1,h.level||1):0,xp=baseXP?awardXP(baseXP):0;
    let outcome=test.success?"SUCCESS":"FAILURE";
    journal({id:ev.id,type:ev.type,title:ev.title,text:ev.text,choice:ch.label,result:outcome,xp,coins:[0,0,0],skill:ch.skill,roll:test.roll,chance:test.chance});
    addlog(`${ev.title}: ${ch.label} — ${outcome} (${test.roll} / ${test.chance}%).${xp?` +${xp} XP.`:""}`,"Check");
