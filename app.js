@@ -1644,10 +1644,10 @@ function avRollScaled(expr){
 }
 function avCoinValueCP(kind,count){return Math.max(0,Math.floor(Number(count)||0))*(AV_COIN_TO_CP[kind]||0)}
 function avCreditCoins(coins={}){
- let total=0,converted={ep:0,pp:0};
- for(const [kind,count] of Object.entries(coins)){total+=avCoinValueCP(kind,count);if(kind==="ep"||kind==="pp")converted[kind]+=count}
- let credited=creditWalletValueCP(total,!!h?.trip);
- return{cpValue:credited.cpValue,leftCP:credited.leftCP,converted};
+ let converted={ep:0,pp:0},gp=Math.max(0,Math.trunc(Number(coins.gp)||0)),sp=Math.max(0,Math.trunc(Number(coins.sp)||0)),cp=Math.max(0,Math.trunc(Number(coins.cp)||0));
+ let credited=addCoins(gp,sp,cp),cpValue=credited.cpValue,leftCP=credited.leftCP;
+ for(const kind of ["ep","pp"]){let count=Math.max(0,Math.trunc(Number(coins[kind])||0));if(!count)continue;converted[kind]=count;let extra=creditWalletValueCP(avCoinValueCP(kind,count),!!h?.trip);cpValue+=extra.cpValue;leftCP+=extra.leftCP}
+ return{cpValue,leftCP,converted};
 }
 function avMagicInventoryItem(category,name){
  if(category==="potion"&&name==="Healing")return{n:"Healing Potion",kind:"gear",can:false,eq:false,avMagic:true,avCategory:"potion",avItem:"Healing"};
