@@ -353,6 +353,11 @@ function renderTown(){
  if($("#wellStatus"))$("#wellStatus").textContent=h.waterCapacity?"Water: "+h.water.toFixed(2)+"/"+h.waterCapacity+" skins · "+(freeWater?(hasHouse()?"Free with House":"Free while checked in at "+h.inn.name):"2 CP per refill"):"Buy a Waterskin in the Shop first.";
  if($("#fillWaterskinsBtn")){$("#fillWaterskinsBtn").textContent=freeWater?"Fill Waterskins — FREE":"Fill Waterskins — 2 CP";$("#fillWaterskinsBtn").disabled=h.waterCapacity<1||full||(cost>0&&walletCP()<cost)}
  if($("#wellMsg")&&h.townAutomationMsg)$("#wellMsg").textContent=h.townAutomationMsg;
+ let log=$("#townJourneyLog");
+ if(log){
+  log.innerHTML=h.lastAdventure?'<div id="lastAdventure" class="settingsSection"><details id="lastAdventureDetails"><summary id="lastAdventureSummary">📖 '+(h.lastAdventureTitle||"Journey Log")+'</summary><div id="lastAdventureText"></div></details></div>':"";
+  if(h.lastAdventure&&$("#lastAdventureText"))$("#lastAdventureText").textContent=h.lastAdventure;
+ }
 }
 function renderHome(){
  let box=$("#homeContent");if(!box||!h)return;ensureHomeState();let t=homeTier(),next=t<3?HOME_TIER_NAMES[t+1]:null,cost=homeUpgradeCostCP(),out=[];
@@ -363,7 +368,6 @@ function renderHome(){
   let streetNote=h.inn?.lastStreetEvent?'<p class="small">Last night: '+h.inn.lastStreetEvent.text+'</p>':'';
   out.push('<div class="settingsSection"><h3>🛏 '+h.inn.name+'</h3><p class="small">'+(h.inn.checkedIn?'You are checked in. No street-night events can occur. The inn well is free to use.':'You are not checked in. If you sleep on the street, at most one night event can occur.')+'</p>'+streetNote+'<div class="row"><button id="innToggleBtn" class="'+(h.inn.checkedIn?'':'primary')+'">'+(h.inn.checkedIn?'Check Out':'Check In — 2 SP/day')+'</button><button id="homeRestBtn" '+(h.restUntil?'disabled':'')+'>Sleep 8 AT hours</button></div></div>');
  }
- if(h.lastAdventure)out.push('<div id="lastAdventure" class="settingsSection"><details id="lastAdventureDetails"><summary id="lastAdventureSummary">📖 Journey Log</summary><div id="lastAdventureText"></div></details></div>');
  if(hasRoom()){
   let stored=h.homeStorage.map(function(x,i){let cap=gpSackCapacity(x),gp=Math.max(0,Math.trunc(Number(x.storedGP)||0)),money=cap?'<div class="small">GP '+gp+'/'+cap+'</div>':'',controls=cap?'<div class="row"><button data-home-gp-store="'+i+'" '+(gp>=cap||Math.trunc(Number(h.gp??h.gold)||0)<1?'disabled':'')+'>Store GP</button><button data-home-gp-take="'+i+'" '+(gp<1?'disabled':'')+'>Take GP</button><button data-home-take="'+i+'">Take Sack</button></div>':'<button data-home-take="'+i+'">Take</button>';return '<div class="item"><span><b>'+x.n+'</b><div class="small">'+formatBP(itemBulkPoints(x))+' BP stored</div>'+money+'</span>'+controls+'</div>'}).join("")||'<div class="small">Nothing stored.</div>';
   let carry=h.inv.map(function(x,i){return '<div class="item"><span><b>'+x.n+'</b><div class="small">'+formatBP(itemBulkPoints(x))+' BP</div></span><button data-home-store="'+i+'">Store</button></div>'}).join("")||'<div class="small">No carried items.</div>';
@@ -380,7 +384,6 @@ function renderHome(){
   out.push('<div class="settingsSection"><h3>🐎 Stable</h3><p>Riding Horses: <b>'+h.mounts.horses+'</b></p><div class="row"><button id="buyHorseBtn">Buy — '+coinTextCP(horseBuyPriceCP())+'</button><button id="sellHorseBtn" '+(h.mounts.horses<1?"disabled":"")+'>Sell — '+coinTextCP(horseSellPriceCP())+'</button></div><p>Mount Feed reserve: <b>'+h.mounts.feedDays.toFixed(2)+' horse-days</b></p><button id="buyFeedBtn">Mount Feed — 7 days · '+coinTextCP(feedPackPriceCP())+'</button><label class="skillCard"><input id="useMountToggle" type="checkbox" '+(h.mounts.useOnJourney?"checked":"")+'> Use horse on Journeys</label></div>');
  }
  box.innerHTML=out.join("");
- if(h.lastAdventure&&$("#lastAdventureText")){$("#lastAdventureText").textContent=h.lastAdventure;if($("#lastAdventureSummary"))$("#lastAdventureSummary").textContent="📖 "+(h.lastAdventureTitle||"Journey Log")}
  if($("#buyHomeTier"))$("#buyHomeTier").onclick=buyHomeUpgrade;if($("#homeRestBtn"))$("#homeRestBtn").onclick=startLongRest;if($("#innToggleBtn"))$("#innToggleBtn").onclick=()=>{if(h.inn?.checkedIn)checkOutInn();else checkInInn();renderHome();renderTown()};
  document.querySelectorAll("[data-home-coin-mode]").forEach(b=>b.onclick=()=>{homeCoinMode=b.dataset.homeCoinMode;homeCoinAmount="";renderHome()});
  document.querySelectorAll("[data-home-coin-denom]").forEach(b=>b.onclick=()=>{homeCoinDenom=b.dataset.homeCoinDenom;homeCoinAmount="";renderHome()});
