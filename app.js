@@ -2877,9 +2877,9 @@ function renderSkills(){
  if(h.className==="Thief"){let a=thiefAbilities();for(const k of Object.keys(SKILL_LABELS))out.push(`<div class=skillCard><span class=skillPct>${a[k]}%</span><b>${SKILL_LABELS[k]}</b><span class=small>Improves automatically with level; no points to allocate.</span></div>`);out.push(`<div class=skillCard><b>Backstab</b><span class=small>+4 attack; ×2 damage when the backstab conditions are met.</span></div>`);if(h.level>=4)out.push(`<div class=skillCard><b>Read Languages</b><span class=small>80% chance.</span></div>`);if(h.level>=10)out.push(`<div class=skillCard><b>Magic-user Scrolls</b><span class=small>Can attempt scroll use; 10% backfire chance.</span></div>`)}
  for(const [name,desc] of (CLASS_SPECIALS[h.className]||[]))out.push(`<div class=skillCard><b>${name}</b><span class=small>${desc}</span></div>`);if(h.className!=="Elf")out.push(`<div class=skillCard><b>Secret Doors</b><span class=small>${h.className} has a 1-in-6 chance to find a secret or concealed door.</span></div>`);
  if(PREPARED_CASTERS.has(h.className)){
-  ensureSpellState();let slots=spellSlotsFor(),list=SPELLS[h.className]||[],prepLocked=!!h.trip||!!h.combat||!!h.restUntil||(h.spells.spentMem||[]).length>0;
-  out.push(`<div class=skillCard><b>Memorized Spells</b><span class=small>Choose the spells prepared for the current daily slots. Rest restores expended memorized spells.${prepLocked?" Loadout is locked until you are back in town with no expended prepared slots.":""}</span></div>`);
-  for(let sl=1;sl<=slots.length;sl++){let cap=slots[sl-1]||0;if(!cap)continue;let known=list.filter(s=>s.sl===sl),mem=(h.spells.memorized?.[sl]||[]);out.push(`<div class=skillCard><b>Spell Level ${sl} — ${mem.length}/${cap} memorized</b>`+known.map(s=>{let copies=mem.filter(id=>id===s.id).length;return `<div class=spellPick><span>${s.name}<br><span class=small>${SPELL_BRIEFS[s.name]||"Spell effect."} · Prepared: ${copies}</span></span><span><button data-mem-add="${s.id}" data-sl="${sl}" ${mem.length>=cap||prepLocked?"disabled":""}>+</button> <button data-mem-remove="${s.id}" data-sl="${sl}" ${!copies||prepLocked?"disabled":""}>−</button></span></div>`}).join("")+`</div>`)}
+  ensureSpellState();let slots=spellSlotsFor(),list=SPELLS[h.className]||[],hardPrepLocked=!!h.trip||!!h.combat||!!h.restUntil,spentPrep=(h.spells.spentMem||[]).length>0;
+  out.push(`<div class=skillCard><b>Memorized Spells</b><span class=small>Choose the spells prepared for the current daily slots. Rest restores expended memorized spells.${hardPrepLocked?" Loadout is locked while travelling, fighting, or resting.":spentPrep?" Expended prepared slots stay locked until Rest; newly gained empty slots can still be filled.":""}</span></div>`);
+  for(let sl=1;sl<=slots.length;sl++){let cap=slots[sl-1]||0;if(!cap)continue;let known=list.filter(s=>s.sl===sl),mem=(h.spells.memorized?.[sl]||[]);out.push(`<div class=skillCard><b>Spell Level ${sl} — ${mem.length}/${cap} memorized</b>`+known.map(s=>{let copies=mem.filter(id=>id===s.id).length;return `<div class=spellPick><span>${s.name}<br><span class=small>${SPELL_BRIEFS[s.name]||"Spell effect."} · Prepared: ${copies}</span></span><span><button data-mem-add="${s.id}" data-sl="${sl}" ${mem.length>=cap||hardPrepLocked?"disabled":""}>+</button> <button data-mem-remove="${s.id}" data-sl="${sl}" ${!copies||hardPrepLocked||spentPrep?"disabled":""}>−</button></span></div>`}).join("")+`</div>`)}
  }
  if(h.className==="Cleric"&&hasCurableDisease()){let ready=availableCombatSpells().some(x=>x.id==="cure_disease");out.push(`<div class=skillCard><b>Cure Disease</b><span class=small>${diseaseStatusText()}</span><button id=townCureDisease ${ready&&!h.trip&&!h.combat&&!h.restUntil?"":"disabled"}>Cast on self</button></div>`)}
  box.innerHTML=out.join("")||`<div class=small>No class skills or special abilities to manage.</div>`;
@@ -2890,10 +2890,11 @@ function castTownCureDisease(){
  let cured=cureOneDisease();if(cured){save();renderSkills();return true}return false
 }
 function changeMemorized(id,sl,delta){
- ensureSpellState();if(h.trip||h.combat||h.restUntil||(h.spells.spentMem||[]).length>0)return renderSkills();
- h.spells.memorized=h.spells.memorized||{};let a=h.spells.memorized[sl]||[],cap=spellSlotsFor()[sl-1]||0;
+ ensureSpellState();if(h.trip||h.combat||h.restUntil)return renderSkills();
+ h.spells.memorized=h.spells.memorized||{};let a=h.spells.memorized[sl]||[],cap=spellSlotsFor()[sl-1]||0,spent=(h.spells.spentMem||[]).length>0;
+ // A newly gained empty slot may be filled even when an older prepared spell is expended. Existing loadout cannot be rearranged until Rest.
  if(delta>0&&a.length<cap)a.push(id);
- if(delta<0){let i=a.lastIndexOf(id);if(i>=0)a.splice(i,1)}
+ if(delta<0&&!spent){let i=a.lastIndexOf(id);if(i>=0)a.splice(i,1)}
  h.spells.memorized[sl]=a;
  save();renderSkills();
 }
