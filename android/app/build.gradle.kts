@@ -6,6 +6,7 @@ plugins {
 android {
     namespace = "com.averathia.game"
     compileSdk = 35
+    buildToolsVersion = "35.0.0"
 
     defaultConfig {
         applicationId = "com.averathia.game"
