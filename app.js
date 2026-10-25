@@ -1483,10 +1483,8 @@ function processJourneySleep(now=Date.now()){
   if(PREPARED_CASTERS.has(h.className))resetDailySpells();
   h.trip.completedSleeps++;
   let sleepTime=h.trip.start+h.trip.completedSleeps*(JOURNEY_DAY_AT_HOURS*60*60*1000/AT_RATE);
-  journal({time:sleepTime,id:"JOURNEY-SLEEP-"+h.trip.completedSleeps,type:"Rest",title:"Night's Rest",text:"Slept through the night.",result:"longRest",xp:0,coins:[0,0,0],hpHealed:h.hp-before,spellsRefreshed:PREPARED_CASTERS.has(h.className)});
-  let bits=["Night's Rest — Slept through the night."];
-  if(h.hp-before)bits.push("+"+(h.hp-before)+" HP restored.");
-  addlog(bits.join(" "),"Rest",sleepTime);save();
+  journal({time:sleepTime,id:"JOURNEY-SLEEP-"+h.trip.completedSleeps,type:"Rest",title:"Night's Rest",text:"",result:"longRest",xp:0,coins:[0,0,0],hpHealed:h.hp-before,spellsRefreshed:PREPARED_CASTERS.has(h.className)});
+  save();
  }
  return count
 }
