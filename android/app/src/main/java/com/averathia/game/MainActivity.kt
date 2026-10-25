@@ -5,6 +5,7 @@ import android.annotation.SuppressLint
 import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Bundle
+import androidx.core.view.WindowCompat
 import android.webkit.JavascriptInterface
 import android.webkit.WebChromeClient
 import android.webkit.WebView
@@ -19,6 +20,8 @@ class MainActivity : AppCompatActivity() {
     @SuppressLint("SetJavaScriptEnabled")
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        // Keep the WebView inside Android system bars so controls remain fully visible and tappable.
+        WindowCompat.setDecorFitsSystemWindows(window, true)
         webView = WebView(this)
         setContentView(webView)
         webView.settings.javaScriptEnabled = true
