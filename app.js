@@ -628,6 +628,7 @@ function centerActiveNavTab(id,behavior="smooth"){
  nav.scrollTo({left:Math.max(0,left),behavior});
 }
 function page(id){
+ if(id==="depart"&&!h?.trip){const setup=document.getElementById("departSetup"),travel=document.getElementById("travel");if(setup)setup.classList.remove("hide");if(travel)travel.classList.add("hide")}
  if(h?.combat&&id!=="settings")id="combat";
  else if(h?.trip&&id!=="depart"&&id!=="settings")id="depart";
  if(h?.deadUntil&&Date.now()<h.deadUntil&&id!=="death"&&id!=="settings"){renderDeathPage();return}
