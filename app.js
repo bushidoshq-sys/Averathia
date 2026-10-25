@@ -631,7 +631,7 @@ function page(id){
  if(h?.combat&&id!=="settings")id="combat";
  else if(h?.trip&&id!=="depart"&&id!=="settings")id="depart";
  if(h?.deadUntil&&Date.now()<h.deadUntil&&id!=="death"&&id!=="settings"){renderDeathPage();return}
- document.querySelectorAll(".page").forEach(x=>x.classList.add("hide"));$("#"+id).classList.remove("hide");document.querySelectorAll("[data-page]").forEach(x=>x.classList.toggle("on",x.dataset.page===id));updateNavigationLock();requestAnimationFrame(()=>centerActiveNavTab(id));if(id!=="settings")refresh()
+ document.querySelectorAll(".page").forEach(x=>x.classList.add("hide"));$("#"+id).classList.remove("hide");if(id==="depart"){let setup=$("#departSetup"),travel=$("#travel");if(setup)setup.classList.toggle("hide",!!h?.trip);if(travel)travel.classList.toggle("hide",!h?.trip)}document.querySelectorAll("[data-page]").forEach(x=>x.classList.toggle("on",x.dataset.page===id));updateNavigationLock();requestAnimationFrame(()=>centerActiveNavTab(id));if(id!=="settings")refresh()
 }
 $$("[data-page]").forEach(b=>b.onclick=()=>page(b.dataset.page));$$("[data-go]").forEach(b=>b.onclick=()=>page(b.dataset.go));
 let swipeStart=null;
