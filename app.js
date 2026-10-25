@@ -869,11 +869,11 @@ function journeyLightSpellRealMinutes(obj=h){
 }
 function journeySpellLightMinutes(obj=h){return journeyPreparedLightUses(obj)*journeyLightSpellRealMinutes(obj)}
 function consumeJourneySpellLight(minutes,obj=h){
- let need=Math.max(0,Number(minutes)||0),per=journeyLightSpellRealMinutes(obj),uses=Math.min(journeyPreparedLightUses(obj),Math.ceil(need/per));
+ let need=Math.max(0,Number(minutes)||0),per=journeyLightSpellRealMinutes(obj),uses=Math.min(journeyPreparedLightUses(obj),Math.ceil(need/per)),castCount=uses;
  if(!uses)return 0;
  let id=obj.className==="Elf"?"elf_light":"light",mem=obj.spells.memorized[1]||[],spent=obj.spells.spentMem||[];
  for(let i=0;i<mem.length&&uses>0;i++)if(mem[i]===id&&!spent.includes("1:"+i)){spent.push("1:"+i);uses--}
- obj.spells.spentMem=spent;return Math.min(need,(journeyPreparedLightUses(obj)+1)*per)
+ obj.spells.spentMem=spent;return Math.min(need,castCount*per)
 }
 function journeyUsableLightMinutes(obj=h){
  let ls=ensureLightStock(obj),hasLantern=!!obj?.inv?.some(x=>x?.n==="Lantern");
