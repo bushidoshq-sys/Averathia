@@ -1042,6 +1042,45 @@ function enableInventoryDrag(box){
 }
 let shopMode="buy";
 
+const TRASH_LOOT=[
+ {n:"Bent Brass Buckle",valueCP:35,bp:2},{n:"Pewter Cup",valueCP:60,bp:5},{n:"Bone Comb",valueCP:45,bp:2},
+ {n:"Carved Wooden Figurine",valueCP:80,bp:3},{n:"Small Copper Brooch",valueCP:120,bp:1},{n:"Old Dice Set",valueCP:55,bp:1},
+ {n:"Brass Candlestick",valueCP:300,bp:8},{n:"Decorated Clay Flask",valueCP:180,bp:5},{n:"Iron Cooking Hook",valueCP:75,bp:6},
+ {n:"Polished Horn Cup",valueCP:250,bp:4},{n:"Worked Leather Pouch",valueCP:150,bp:2},{n:"Silvered Belt Clasp",valueCP:500,bp:2},
+ {n:"Engraved Drinking Horn",valueCP:700,bp:5},{n:"Small Bronze Idol",valueCP:900,bp:8},{n:"Fine Brass Hand Mirror",valueCP:1200,bp:6},
+ {n:"Silver Chain Fragment",valueCP:1500,bp:2},{n:"Decorated Pewter Casket",valueCP:2000,bp:12},{n:"Old Silver Goblet",valueCP:2500,bp:8}
+];
+function trashLootSaleCP(item){return item?.TrashLoot?Math.max(0,Math.trunc(Number(item.valueCP)||0)):0}
+function addRandomTrashLoot(chance=100){
+ if(d(100)>chance)return null;
+ let pool=TRASH_LOOT.filter(x=>canCarryAdditionalBP(x.bp));if(!pool.length)return null;
+ let base=pool[d(pool.length)-1],item={...base,kind:"loot",can:false,eq:false,TrashLoot:true};
+ h.inv.push(item);return item
+}
+function sellAllTrashLoot(){
+ let total=0,count=0,keep=[];
+ for(const q of h.inv||[]){if(q?.TrashLoot&&!q.noSell&&!q.bound){total+=trashLootSaleCP(q);count++}else keep.push(q)}
+ if(!count)return;
+ h.inv=keep;setWalletCP(walletCP()+total);save();renderShop();
+ averathiaPopup("Goods Sold",count+" item"+(count===1?"":"s")+" sold for "+coinTextCP(total)+".");
+}
+let avPopupActions=[];
+function closeAverathiaPopup(){let p=$("#averathiaPopup");if(p)p.classList.add("hide");avPopupActions=[]}
+function averathiaPopup(title,message,actions=[]){
+ let p=$("#averathiaPopup"),t=$("#averathiaPopupTitle"),m=$("#averathiaPopupMessage"),a=$("#averathiaPopupActions");
+ if(!p||!t||!m||!a){alert(message);return}
+ t.textContent=title||"Averathia";m.textContent=message||"";avPopupActions=actions;
+ a.innerHTML=actions.map((x,i)=>'<button data-av-popup-action="'+i+'" class="'+(x.primary?"primary":"")+'">'+x.label+'</button>').join("")+'<button data-av-popup-close>Close</button>';
+ a.querySelectorAll("[data-av-popup-action]").forEach(b=>b.onclick=()=>{let fn=avPopupActions[+b.dataset.avPopupAction]?.action;closeAverathiaPopup();if(fn)fn()});
+ a.querySelector("[data-av-popup-close]").onclick=closeAverathiaPopup;p.classList.remove("hide")
+}
+function buyJourneySupply(name,after){
+ let x=shopData(name);if(!x)return;
+ let cost=buyPriceCP(x);if(walletCP()<cost){averathiaPopup("Not Enough Coin",name+" costs "+coinTextCP(cost)+".");return}
+ let oldTab=tab;tab="Gear";buy(x);tab=oldTab;if(after)after()
+}
+
+
 function shopData(name){for(const cat of Object.keys(SHOP)){let x=SHOP[cat].find(v=>v[0]===name);if(x)return x}return null}
 function chaBuyDiscount(){return h.stats.CHA>=18?0.10:h.stats.CHA>=16?0.05:0}
 function chaSellBonus(){return h.stats.CHA>=18?0.15:h.stats.CHA>=16?0.10:h.stats.CHA>=13?0.05:0}
@@ -1080,12 +1119,14 @@ function avTreasureSalePriceCP(item){
  return 0
 }
 function sellPriceCP(item){
+ if(item?.TrashLoot)return trashLootSaleCP(item);
  if(item?.oreSack)return Math.max(0,Math.trunc(Number(item.oreValueCP)||0));
  if(item?.avTreasure)return avTreasureSalePriceCP(item);
  if(item?.starterClothing)return (h?.stats?.CHA||0)>=16?1:0;
  let d=shopData(item.n);if(!d)return 0;return Math.round(gpToCP(d[1])*.5*(1+chaSellBonus()))
 }
 function sellDescriptor(item){
+ if(item?.TrashLoot)return "Market value";
  if(item?.oreSack)return "Ore value · empty sack returned";
  if(item?.avGem)return `Cashing fee ${avTreasureCashFeePct(item)}%`;
  if(item?.avJewelry)return `Cashing fee ${avTreasureCashFeePct(item)}%`;
@@ -1172,11 +1213,12 @@ function renderShop(){
  $("#shopItems").innerHTML=
  `<div class="shopMode"><button id="buyMode" class="${shopMode!=="sell"?"on":""}">Buy</button><button id="sellMode" class="${shopMode==="sell"?"on":""}">Sell</button></div>`+
  (shopMode==="sell"
- ? `<div class="small">Ordinary gear resale: 50% of shop value${bonus?` + ${bonus}% CHA sell bonus`:""}. Resources are sold from their real stock, not duplicate inventory rows. Starter clothing is normally worthless; CHA 16+ can get 1 CP. Gems, jewelry and special treasure use their own cashing rules.</div>`+
+ ? `<button id="sellAllTrash" class="primary" ${!(h.inv||[]).some(x=>x?.TrashLoot)?"disabled":""}>Sell All Trash Loot</button><div class="small">Ordinary gear resale: 50% of shop value${bonus?` + ${bonus}% CHA sell bonus`:""}. Resources are sold from their real stock, not duplicate inventory rows. Starter clothing is normally worthless; CHA 16+ can get 1 CP. Gems, jewelry and special treasure use their own cashing rules.</div>`+
    ((h.inv.map((x,i)=>{let price=sellPriceCP(x),ok=!x.noSell&&!x.bound&&(price>0||x.starterClothing),action=x.starterClothing&&price===0?"Discard":"Sell";return `<div class=item><span><b>${x.n}</b><div class=small>${x.eq?"Equipped · ":""}${sellDescriptor(x)}</div></span><span>${coinTextCP(price)}</span><button data-sell="${i}" ${ok?"":"disabled"}>${action}</button></div>`}).join("")+resourceSellRows())||"<p>Inventory is empty.</p>")
  : SHOP[tab].map((x,i)=>{let kind=shopKind(x[0]),allowed=classCanUse(x[0],kind),price=buyPriceCP(x),disc=Math.round(chaBuyDiscount()*100),bp=shopPurchaseBulkPoints(x,tab),projected=projectedBulkAfterPurchase(x,tab),fits=projected<=maxCarryBP()+1e-9;return `<div class=item><span><b>${x[0]}</b><div class=small>${x[2]}${x[2]?" · ":""}Owned: ${shopOwnedText(x[0])} · ${formatBP(bp)} BP${allowed?"":" · Restricted for "+h.className}${disc?` · CHA -${disc}%`:""}${fits?"":" · Too much to carry"}</div></span><span>${coinTextCP(price)}</span><button data-buy="${i}" ${walletCP()<price||!allowed||!fits?"disabled":""}>Buy</button></div>`}).join(""));
  $("#buyMode").onclick=()=>{shopMode="buy";renderShop()};
  $("#sellMode").onclick=()=>{shopMode="sell";renderShop()};
+ if($("#sellAllTrash"))$("#sellAllTrash").onclick=sellAllTrashLoot;
  $$("[data-buy]").forEach(b=>b.onclick=()=>buy(SHOP[tab][+b.dataset.buy]));
  $$("[data-sell]").forEach(b=>b.onclick=()=>sell(+b.dataset.sell));
  $$("[data-sell-resource]").forEach(b=>b.onclick=()=>sellResource(b.dataset.sellResource));
@@ -1448,7 +1490,7 @@ function consumeTripSurvivalResources(now=Date.now()){
  if(h.water<=0&&t<h.trip.half&&!h.trip.forcedReturnWater){h.trip.forcedReturnWater=true;returnEarly("You are out of water. You turn back toward town.");return false}
  return true
 }
-function begin(){let rb=$("#recall");if(rb){rb.disabled=false;rb.textContent="↩ Return Early"}if(!hasBackpack()){alert("You need a Backpack before beginning a Journey.");return}if(carriedBulkPoints()>maxCarryBP()+1e-9){alert(`You are carrying ${formatBP(carriedBulkPoints())}/${formatBP(maxCarryBP())} BP. Reduce your load before beginning a Journey.`);return}if(diseaseJourneyBlocked()){alert(`${journeyBlockingCondition()?.name||"Current condition"} prevents travel. You cannot begin a Journey.`);return}if(timedConditionJourneyBlocked()){alert(`${timedConditionBlockingName()} prevents travel. You cannot begin a Journey.`);return}let ret=retainerSelected(),mounts=plannedHorseCount(),horseAttempt=hasHouse()&&h.mounts.useOnJourney;if(horseAttempt&&!mounts){alert("Not enough Riding Horses for mounted travel with this party.");return}let needs=survivalNeedsForMinutes(mins),nw=needs.waterSkins,nf=needs.foodDays,nl=needs.activeATHours*60/AT_RATE;if(h.waterCapacity<nw){alert(`You need ${nw} Waterskins for this party.`);return}if(h.water+1e-9<nw){alert(`Fill ${nw} Waterskins before beginning the Journey.`);return}if(h.rations<nf){alert("Not enough rations.");return}if(mounts&&h.mounts.feedDays+1e-9<needs.mountFeedDays){alert("Not enough Mount Feed.");return}if(journeyUsableLightMinutes()<nl){alert("Not enough usable light. A Lantern is required to use lamp oil.");return}let journeyLight=consumeJourneyLight(nl);if(!journeyLight.ok){alert("Not enough usable light.");return}ensureInnState();if(h.inn.checkedIn)h.inn.checkedIn=false;let now=Date.now(),total=mins*60000,eventTarget=adventureEventTarget(mins),eventIntervalMs=Math.max(5000,total/eventTarget);h.pendingEvent=null;ensureTrophies();let mission=createMission();h.trip={journal:[],adventureLog:[],mission,start:now,end:now+total,half:now+total/2,midBossDone:false,avTreasureXpCP:0,mode,risk,durationMinutes:mins,eventTarget,eventIntervalMs,resourceModel:"at-elapsed-v3-water-refill",resourceAt:now,waterRefillMode:"normal",waterStart:h.water,forcedReturnWater:false,retainer:ret,mountsUsed:mounts,mountedTravel:!!mounts,lightSource:journeyLight.source,plannedActiveATHours:needs.activeATHours,plannedSleepATHours:needs.sleepATHours,startHP:h.hp,startXP:h.xp,startWalletCP:walletCP(),completedSleeps:0,nextEvent:now+Math.min(15000,Math.max(5000,total/(eventTarget+1))),nextFlavorAt:now+Math.max(5000,journeyFlavorIntervalMs({eventIntervalMs})/2)};$("#departSetup").classList.add("hide");$("#travel").classList.remove("hide");$("#departedAt").textContent=clock(h.trip.start);$("#returnAt").textContent=clock(h.trip.end);$("#runner").innerHTML=spriteHTML(h.sex,h.avatar,h.className);$("#log").innerHTML="";let mountText=mounts===1?" Mount secured.":mounts>1?" Mounts secured.":"";
+function begin(){let rb=$("#recall");if(rb){rb.disabled=false;rb.textContent="↩ Return Early"}if(!hasBackpack()){alert("You need a Backpack before beginning a Journey.");return}if(carriedBulkPoints()>maxCarryBP()+1e-9){alert(`You are carrying ${formatBP(carriedBulkPoints())}/${formatBP(maxCarryBP())} BP. Reduce your load before beginning a Journey.`);return}if(diseaseJourneyBlocked()){alert(`${journeyBlockingCondition()?.name||"Current condition"} prevents travel. You cannot begin a Journey.`);return}if(timedConditionJourneyBlocked()){alert(`${timedConditionBlockingName()} prevents travel. You cannot begin a Journey.`);return}let ret=retainerSelected(),mounts=plannedHorseCount(),horseAttempt=hasHouse()&&h.mounts.useOnJourney;if(horseAttempt&&!mounts){alert("Not enough Riding Horses for mounted travel with this party.");return}let needs=survivalNeedsForMinutes(mins),nw=needs.waterSkins,nf=needs.foodDays,nl=needs.activeATHours*60/AT_RATE;if(h.waterCapacity<nw){alert(`You need ${nw} Waterskins for this party.`);return}if(h.water+1e-9<nw){alert(`Fill ${nw} Waterskins before beginning the Journey.`);return}if(h.rations<nf){averathiaPopup("Not Enough Rations",`You need ${nf.toFixed(2)} ration-days for this Journey.`,[{label:"Buy Rations",primary:true,action:()=>buyJourneySupply("Rations — 7 days",begin)}]);return}if(mounts&&h.mounts.feedDays+1e-9<needs.mountFeedDays){alert("Not enough Mount Feed.");return}if(journeyUsableLightMinutes()<nl){let hasLantern=!!h.inv.some(x=>x?.n==="Lantern");averathiaPopup("Not Enough Light",hasLantern?"You do not have enough torch or lamp light for this Journey.":"You do not have enough usable light. Lamp Oil requires a Lantern.",[{label:hasLantern?"Buy Lamp Oil":"Buy Lantern",primary:true,action:()=>buyJourneySupply(hasLantern?"Oil Flask":"Lantern",begin)},{label:"Buy Torches",action:()=>buyJourneySupply("6 Torches",begin)}]);return}let journeyLight=consumeJourneyLight(nl);if(!journeyLight.ok){alert("Not enough usable light.");return}ensureInnState();if(h.inn.checkedIn)h.inn.checkedIn=false;let now=Date.now(),total=mins*60000,eventTarget=adventureEventTarget(mins),eventIntervalMs=Math.max(5000,total/eventTarget);h.pendingEvent=null;ensureTrophies();let mission=createMission();h.trip={journal:[],adventureLog:[],mission,start:now,end:now+total,half:now+total/2,midBossDone:false,avTreasureXpCP:0,mode,risk,durationMinutes:mins,eventTarget,eventIntervalMs,resourceModel:"at-elapsed-v3-water-refill",resourceAt:now,waterRefillMode:"normal",waterStart:h.water,forcedReturnWater:false,retainer:ret,mountsUsed:mounts,mountedTravel:!!mounts,lightSource:journeyLight.source,plannedActiveATHours:needs.activeATHours,plannedSleepATHours:needs.sleepATHours,startHP:h.hp,startXP:h.xp,startWalletCP:walletCP(),completedSleeps:0,nextEvent:now+Math.min(15000,Math.max(5000,total/(eventTarget+1))),nextFlavorAt:now+Math.max(5000,journeyFlavorIntervalMs({eventIntervalMs})/2)};$("#departSetup").classList.add("hide");$("#travel").classList.remove("hide");$("#departedAt").textContent=clock(h.trip.start);$("#returnAt").textContent=clock(h.trip.end);$("#runner").innerHTML=spriteHTML(h.sex,h.avatar,h.className);$("#log").innerHTML="";let mountText=mounts===1?" Mount secured.":mounts>1?" Mounts secured.":"";
  addlog(`${mission.title} — ${mission.brief} ${mins} min Journey${mode==="present"?"":` · ${risk}`}${mountText}`,"Departure");
  renderAdventureLog();save();tick()}
 function journeySummaryText(trip=h?.trip){
@@ -2778,10 +2820,11 @@ function finishCombat(){
  let foeParts=Object.entries(counts).map(([n,q])=>q>1?`${q} ${n}${/s$/i.test(n)?"":"s"}`:n),foes=foeParts.join(", ");
  if(!streetSleep)addlog(boss?`${foes} boss defeated.`:`${foes} defeated.`,"Combat");
  let applied=avApplyTreasure(treasure),summary=avTreasureSummary(treasure);
+ let mundane=streetSleep?null:addRandomTrashLoot(boss?80:55);
  if(streetSleep)addlog(`Treasure gained: ${summary}.`,"Loot");
  else{
   let searched=Object.entries(counts).map(([n,q])=>q>1?`${q} ${n}${/s$/i.test(n)?"":"s"}`:`the ${n}`).join(", ");
-  addlog(`Treasure gained after searching ${searched}: ${summary}.`,"Loot");
+  addlog(`Treasure gained after searching ${searched}: ${summary}${mundane?`; ${mundane.n} (${coinTextCP(mundane.valueCP)})`:""}.`,"Loot");
  }
  if(streetSleep){
   ensureInnState();h.inn.lastStreetEvent={day:innCurrentDay(),type:"Mugging",combat:true,text:"You defeated the mugger who attacked while you slept on the street."};
