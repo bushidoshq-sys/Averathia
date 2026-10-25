@@ -633,7 +633,8 @@ function page(id){
  if(h?.deadUntil&&Date.now()<h.deadUntil&&id!=="death"&&id!=="settings"){renderDeathPage();return}
  document.querySelectorAll(".page").forEach(x=>{x.style.removeProperty("display");x.classList.add("hide")});let target=$("#"+id);target.style.removeProperty("display");target.classList.remove("hide");if(id==="depart"){let setup=$("#departSetup"),travel=$("#travel");setup?.style.removeProperty("display");travel?.style.removeProperty("display");setup?.classList.toggle("hide",!!h?.trip);travel?.classList.toggle("hide",!h?.trip)}document.querySelectorAll("[data-page]").forEach(x=>x.classList.toggle("on",x.dataset.page===id));updateNavigationLock();requestAnimationFrame(()=>centerActiveNavTab(id));if(id!=="settings")refresh()
 }
-$$("[data-page]").forEach(b=>b.onclick=()=>page(b.dataset.page));$$("[data-go]").forEach(b=>b.onclick=()=>page(b.dataset.go));
+let journeyPage=$("#depart"),gameRoot=$("#game");if(journeyPage&&gameRoot&&journeyPage.parentElement!==gameRoot)gameRoot.appendChild(journeyPage);
+$("[data-page]").forEach(b=>b.onclick=()=>page(b.dataset.page));$$("[data-go]").forEach(b=>b.onclick=()=>page(b.dataset.go));
 let swipeStart=null;
 document.addEventListener("touchstart",e=>{
  if(e.touches.length!==1)return;
