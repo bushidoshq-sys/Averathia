@@ -26,6 +26,8 @@ jobs:
       - uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: "8.9"
+      - name: Install icon image support
+        run: python3 -m pip install --disable-pip-version-check pillow
       - name: Prepare Android launcher icons
         run: |
           python3 - <<'PY'
