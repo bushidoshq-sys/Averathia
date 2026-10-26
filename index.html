@@ -99,6 +99,15 @@
 .spellPick{display:grid;grid-template-columns:1fr auto;gap:8px;align-items:center}.homeCoinPanel{display:grid;gap:10px}.homeCoinToggle{display:grid;gap:8px}.homeCoinModeToggle{grid-template-columns:repeat(2,minmax(0,1fr))}.homeCoinDenomToggle{grid-template-columns:repeat(3,minmax(0,1fr))}.homeCoinToggle button{min-height:44px}.homeCoinInput{width:100%;font-size:20px;text-align:center;min-height:48px}.homeCoinKeypad{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}.homeCoinKeypad button{min-height:48px;font-size:18px}.homeCoinActions{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}.homeCoinActions button{min-height:46px}.settingsSection{border:1px solid #42344c;border-radius:10px;padding:14px;background:#15101c}.settingsToggle{display:flex;align-items:flex-start;gap:10px;margin:8px 0;line-height:1.35}.settingsToggle input{flex:0 0 auto;width:20px;height:20px;margin:1px 0 0}.settingsToggle span{min-width:0;flex:1}.dangerBtn{border-color:#a54d59!important;color:#ffd9de!important}.dangerBox{margin-top:14px;padding:14px;border:1px solid #a54d59;border-radius:10px;background:#241319}.dangerBox b{color:#ffd0d6}.dangerBox p{line-height:1.45}
 @media(max-width:650px){.stickyStatus{top:52px}.nav{overflow-x:auto;flex-wrap:nowrap}.nav button{min-width:max-content}#healer .row{display:flex;flex-direction:column;align-items:center;gap:12px}#healer [data-heal]{display:block;width:min(100%,280px);margin:0 auto}#resetCharacterConfirm .row{display:flex;flex-direction:column;align-items:center;gap:10px}#resetCharacterConfirm button{width:min(100%,300px)}}
 #depart{padding-bottom:calc(100px + env(safe-area-inset-bottom,0px))}#departSetup{margin-bottom:16px}
+/* Shop controls: keep category tabs separate from action controls. */
+#shop #tabs{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:14px}
+#shop #shopItems .shopMode{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+#shop #shopItems:has(#sellAllTrash){display:grid;grid-template-columns:max-content minmax(0,1fr);column-gap:10px;row-gap:12px;align-items:center}
+#shop #shopItems:has(#sellAllTrash) .shopMode{grid-column:1}
+#shop #sellAllTrash{grid-column:2;justify-self:start;min-width:0;max-width:100%;white-space:normal}
+#shop #shopItems:has(#sellAllTrash)>:not(.shopMode):not(#sellAllTrash){grid-column:1/-1}
+#shop #shopItems:not(:has(#sellAllTrash)) .shopMode{margin-bottom:12px}
+@media(max-width:420px){#shop #shopItems:has(#sellAllTrash){grid-template-columns:1fr}#shop #shopItems:has(#sellAllTrash) .shopMode,#shop #sellAllTrash{grid-column:1}}
 </style></head><body><main><div class=brand>AVERATHIA</div>
 <section id="create">
 <div class="p"><h2>Create Character</h2>
