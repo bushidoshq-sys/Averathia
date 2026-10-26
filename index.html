@@ -108,6 +108,12 @@
 #shop #shopItems:has(#sellAllTrash)>:not(.shopMode):not(#sellAllTrash){grid-column:1/-1}
 #shop #shopItems:not(:has(#sellAllTrash)) .shopMode{margin-bottom:12px}
 @media(max-width:420px){#shop #shopItems:has(#sellAllTrash){grid-template-columns:1fr}#shop #shopItems:has(#sellAllTrash) .shopMode,#shop #sellAllTrash{grid-column:1}}
+/* Let the Shop grow with its inventory and keep the final Sell action reachable. */
+#shop,#shop>.p,#shopItems,#owned{height:auto;max-height:none;overflow:visible}
+#shop{padding-bottom:calc(110px + env(safe-area-inset-bottom,0px))}
+#shopItems .item,#owned .item{min-width:0}
+#shopItems .item>*,#owned .item>*{min-width:0}
+@media(max-width:650px){#shopItems .item,#owned .item{grid-template-columns:minmax(0,1fr) auto auto}#shopItems .item button,#owned .item button{max-width:100%}}
 </style></head><body><main><div class=brand>AVERATHIA</div>
 <section id="create">
 <div class="p"><h2>Create Character</h2>
