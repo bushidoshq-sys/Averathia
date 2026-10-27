@@ -2267,7 +2267,10 @@ function runAutonomousCombat(){
      if(h.combat)advanceCombatRound(h.combat,false)
      continue
    }
-   let ratio=h.hp/h.maxhp,mi=autoRcHealingIndex();if(mi>=0){useRcMagicItemCombat(mi);continue}
+   let ratio=h.hp/h.maxhp;
+   let healingSpell=availableCombatSpells().find(sp=>sp.kind==="heal"&&autoSpellScore(sp)>=45);
+   if(healingSpell){castCombatSpell(healingSpell.id);continue}
+   let mi=autoRcHealingIndex();if(mi>=0){useRcMagicItemCombat(mi);continue}
    let pi=h.inv.findIndex(x=>x.n==="Healing Potion");if(ratio<=autoPotionThreshold()&&pi>=0){usePotionCombat();continue}
    let knownMummy=living().find(e=>e.mummy&&h.mummyWeaknessKnown);
    if(knownMummy&&h.inv.some(x=>x.n==="Holy Water")&&combatDistance()>50){changeRange("closer");continue}
@@ -2837,10 +2840,13 @@ function finishCombat(){
  if(!streetSleep)addlog(boss?`${foes} boss defeated.`:`${foes} defeated.`,"Combat");
  let applied=avApplyTreasure(treasure),summary=avTreasureSummary(treasure);
  let mundane=streetSleep?null:addRandomTrashLoot(boss?80:55);
+ let foundPotion=null;
+ // Rare independent drop after a victorious Journey encounter (2%); never a trash item.
+ if(!streetSleep&&d(100)<=2){let potion=avMagicInventoryItem("potion","Healing");if(canCarryAdditionalBP(itemBulkPoints(potion))){h.inv.push(potion);foundPotion=potion}}
  if(streetSleep)addlog(`Treasure gained: ${summary}.`,"Loot");
  else{
   let searched=Object.entries(counts).map(([n,q])=>q>1?`${q} ${n}${/s$/i.test(n)?"":"s"}`:`the ${n}`).join(", ");
-  addlog(`Treasure gained after searching ${searched}: ${summary}${mundane?`; ${mundane.n} (${coinTextCP(mundane.valueCP)})`:""}.`,"Loot");
+  addlog(`Treasure gained after searching ${searched}: ${summary}${mundane?`; ${mundane.n} (${coinTextCP(mundane.valueCP)})`:""}${foundPotion?"; Healing Potion":""}.`,"Loot");
  }
  if(streetSleep){
   ensureInnState();h.inn.lastStreetEvent={day:innCurrentDay(),type:"Mugging",combat:true,text:"You defeated the mugger who attacked while you slept on the street."};
